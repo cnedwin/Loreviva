@@ -1,0 +1,21 @@
+{
+  "name": "loreviva-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "generate:contracts": "node scripts/generate-contracts.mjs",
+    "test:contracts": "node scripts/check-generated.mjs && node --test scripts/contracts.test.mjs scripts/review-regressions.test.mjs scripts/memory-contract.test.mjs",
+    "test:sdk": "node --test scripts/sdk-config.test.mjs && pnpm --filter @loreviva/sdk-ts typecheck",
+    "test": "pnpm test:contracts && pnpm test:sdk"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "typescript": "5.9.3"
+  }
+}

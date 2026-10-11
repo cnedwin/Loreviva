@@ -1,0 +1,18 @@
+# Deterministic sources and generated outputs must survive Windows checkouts.
+/contracts/source/** text eol=lf
+/contracts/generated/** text eol=lf
+/internal/generated/** text eol=lf
+/packages/sdk-ts/src/generated/** text eol=lf
+/scripts/** text eol=lf
+/migrations/** text eol=lf
+# Preserve raw console and upstream license bytes, including original whitespace.
+/evidence/r0/task02/** -text whitespace=-blank-at-eol
+/evidence/r0/task03/** -text whitespace=-blank-at-eol
+/evidence/r0/task04/** -text whitespace=-blank-at-eol,-blank-at-eof
+/evidence/r0/task05/** -text whitespace=-blank-at-eol,-blank-at-eof
+*.go text eol=lf
+/README.md text eol=lf
+/.env.example text eol=lf
+/examples/coffee/** text eol=lf
+/.gitattributes text eol=lf
+/package.json text eol=lf
