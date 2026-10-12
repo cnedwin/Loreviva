@@ -30,11 +30,11 @@ test('original18 operations permit only explicit memory protocol deltas; origina
  }
  for(const [name,schema]of Object.entries(old.schemas))assert.deepEqual(openapi.components.schemas[name],schema,name);
 });
-test('1.2 retains content/runtime and adds five explicit Operator memory routes',async()=>{
+test('1.3 retains content/runtime/memory and adds two fixed Operator reads',async()=>{
  const {openapi}=await loadSources(sourceRoot);
- assert.equal(openapi.info.version,'1.2.0');
+ assert.equal(openapi.info.version,'1.3.0');
  const ids=Object.values(openapi.paths).flatMap(x=>Object.values(x).filter(v=>v.operationId).map(v=>v.operationId));
- assert.equal(ids.length,49);
+ assert.equal(ids.length,51);
  for(const id of ['createContentDraft','saveContentDraft','publishContentDraft','readAuthorizedAsset','previewInstanceMigration','executeInstanceMigration','createAdminInstance','listAdminInstances','getAdminInstance','controlAdminInstance','listAdminActorInstances'])assert.ok(ids.includes(id),id);
  for(const name of ['DraftInput','ContentDraft','Release','PublishCheckReport','AdminTaskReceipt','MigrationPlan','CharacterDefinition','InitialActorSetup'])assert.ok(openapi.components.schemas[name],name);
  assert.deepEqual(openapi.components.schemas.TaskReceipt.properties.task_kind.enum,['TURN','CONTROL','MEMORY_GOVERNANCE','MEDIA','MEMORY_MAINTENANCE']);

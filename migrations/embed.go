@@ -17,3 +17,6 @@ var Runtime string
 
 //go:embed 0005_memory_governance.sql
 var MemoryGovernance string
+
+//go:embed 0006_turn_attempt.sql
+var TurnAttempt string

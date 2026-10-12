@@ -14,9 +14,10 @@ import (
 )
 
 type Runtime struct {
-	Store         *store.Store
-	Content       *content.Service
-	InitialMemory InitialMemoryAdapter
+	Store           *store.Store
+	Content         *content.Service
+	InitialMemory   InitialMemoryAdapter
+	RehearsalMemory RehearsalMemoryInitializer
 }
 
 // InitialMemoryAdapter participates only in the original creation transaction.
@@ -70,6 +71,21 @@ func InitializationEvidence(ctx context.Context, tx store.Tx, s domain.Scope) (I
 		return out, e
 	}
 	var committed bool
+	if b, _, e := qualifiedRehearsalTx(ctx, tx, s); e != nil {
+		return out, e
+	} else if b != nil {
+		if out.CreationCommandID != content.Identity(b.RootTaskID, "rehearsal-init") || out.ReleaseID != content.Identity(b.RootTaskID, "rehearsal-version") || out.ReleaseHash != b.Binding.DraftHash {
+			return out, store.ErrConflict
+		}
+		e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM harness_rehearsal_worlds w JOIN commit_receipts c ON c.commit_key=w.initialization_receipt AND c.task_id=w.root_task_id AND c.tenant_id=w.tenant_id AND c.product_id=w.product_id AND c.operation='REHEARSAL_INIT' AND c.phase='COMMIT' WHERE w.tenant_id=? AND w.product_id=? AND w.root_task_id=? AND w.world_instance_id=? AND w.release_id=? AND c.owner_subject_id=?)", s.TenantID, s.ProductID, b.RootTaskID, s.WorldInstanceID, out.ReleaseID, s.SubjectID).Scan(&committed)
+		if e != nil {
+			return out, e
+		}
+		if !committed {
+			return out, store.ErrDenied
+		}
+		return out, nil
+	}
 	e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM commit_receipts WHERE commit_key=? AND tenant_id=? AND product_id=? AND owner_subject_id=? AND operation='createAdminInstance' AND task_id IS NULL)", out.CreationCommandID, s.TenantID, s.ProductID, s.SubjectID).Scan(&committed)
 	if e != nil {
 		return out, e
@@ -355,7 +371,7 @@ func (r *Runtime) ListInstances(ctx context.Context, s domain.ProductScope, limi
 	if after != "" && domain.ValidateID(after) != nil {
 		return out, content.ErrBlocked
 	}
-	rows, e := r.Store.DB.QueryContext(ctx, "SELECT world_instance_id FROM runtime_instances WHERE tenant_id=? AND product_id=? AND owner_subject_id=? AND world_instance_id>? ORDER BY world_instance_id LIMIT ?", s.TenantID, s.ProductID, s.SubjectID, after, limit+1)
+	rows, e := r.Store.DB.QueryContext(ctx, "SELECT i.world_instance_id FROM runtime_instances i JOIN world_controls w USING(tenant_id,product_id,world_instance_id) JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id WHERE i.tenant_id=? AND i.product_id=? AND i.owner_subject_id=? AND i.world_instance_id>? AND r.available=1 ORDER BY i.world_instance_id LIMIT ?", s.TenantID, s.ProductID, s.SubjectID, after, limit+1)
 	if e != nil {
 		return out, e
 	}

@@ -174,6 +174,9 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 			if _, e = tx.ExecContext(ctx, "UPDATE content_drafts SET deleted=1 WHERE tenant_id=? AND product_id=? AND draft_id=?", scope.TenantID, scope.ProductID, id); e != nil {
 				return nil, e
 			}
+			if e = tx.PurgeRehearsalInputs(ctx, scope, id); e != nil {
+				return nil, e
+			}
 			return generated.DraftCommandReceipt{DraftID: d.DraftID, Action: generated.DraftAction(action), DraftRevision: d.DraftRevision, State: "DELETED"}, nil
 		default:
 			return nil, ErrBlocked

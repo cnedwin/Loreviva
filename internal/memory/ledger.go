@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -51,6 +52,8 @@ type ledgerAnchor struct {
 	Pending                      map[string]string
 }
 type DeletionLedger struct {
+	participant                  *maintenance.Participant
+	binding                      string
 	root                         *localstate.Root
 	installation, ledger, anchor string
 }
@@ -90,7 +93,7 @@ func ledgerRoot(dir, installation, ledger, anchor string, create bool) (*Deletio
 	if e != nil {
 		return nil, e
 	}
-	return &DeletionLedger{r, installation, ledger, anchor}, nil
+	return &DeletionLedger{root: r, installation: installation, ledger: ledger, anchor: anchor, binding: localstate.RootHash(dir)}, nil
 }
 func OpenLedger(dir, installation, ledger, anchor string) (*DeletionLedger, error) {
 	l, e := ledgerRoot(dir, installation, ledger, anchor, false)
@@ -101,6 +104,9 @@ func OpenLedger(dir, installation, ledger, anchor string) (*DeletionLedger, erro
 	return l, e
 }
 func (l *DeletionLedger) load() (ledgerAnchor, []LedgerEntry, error) {
+	return l.loadContext(context.Background())
+}
+func (l *DeletionLedger) loadContext(ctx context.Context) (ledgerAnchor, []LedgerEntry, error) {
 	var a ledgerAnchor
 	b, e := l.root.Read("anchor.json")
 	if e != nil || json.Unmarshal(b, &a) != nil {
@@ -110,7 +116,7 @@ func (l *DeletionLedger) load() (ledgerAnchor, []LedgerEntry, error) {
 		return a, nil, ErrPreservation
 	}
 	raw, e := l.root.Read("journal.jsonl")
-	if e != nil {
+	if e != nil || len(raw) > MaxJournalBytes {
 		return a, nil, ErrPreservation
 	}
 	entries := []LedgerEntry{}
@@ -162,6 +168,9 @@ func (l *DeletionLedger) load() (ledgerAnchor, []LedgerEntry, error) {
 	if !matched || a.Sequence > uint64(len(entries)) {
 		return a, nil, ErrPreservation
 	}
+	if e = l.verifyContinuity(ctx, a, entries); e != nil {
+		return a, nil, e
+	}
 	// Advance a lagging anchor only from a verified continuous journal tail.
 	if a.Sequence < uint64(len(entries)) {
 		a.Sequence = uint64(len(entries))
@@ -174,7 +183,7 @@ func (l *DeletionLedger) load() (ledgerAnchor, []LedgerEntry, error) {
 	}
 	return a, entries, nil
 }
-func (l *DeletionLedger) append(a ledgerAnchor, v LedgerEntry) error {
+func (l *DeletionLedger) append(ctx context.Context, a ledgerAnchor, v LedgerEntry) error {
 	current, readError := l.root.Read("journal.jsonl")
 	if readError != nil {
 		return readError
@@ -198,6 +207,11 @@ func (l *DeletionLedger) append(a ledgerAnchor, v LedgerEntry) error {
 	if len(current)+size > MaxJournalBytes {
 		return ErrPreservation
 	}
+	if l.participant != nil {
+		if e = l.participant.BeginGovernanceAppend(ctx, l.binding, l.ledger, l.anchor, maintenance.GovernanceHead{Sequence: a.Sequence, Hash: a.Hash}, maintenance.GovernanceHead{Sequence: v.Sequence, Hash: v.Hash}); e != nil {
+			return ErrPreservation
+		}
+	}
 	if e = l.root.Append("journal.jsonl", append(b, '\n')); e != nil {
 		return e
 	}
@@ -209,13 +223,35 @@ func (l *DeletionLedger) append(a ledgerAnchor, v LedgerEntry) error {
 		delete(a.Pending, v.Reservation.ID)
 	}
 	b, _ = json.Marshal(a)
-	return l.root.Replace("anchor.json", b)
+	if e = l.root.Replace("anchor.json", b); e != nil {
+		return e
+	}
+	if l.participant != nil {
+		if e = l.participant.ConfirmGovernanceAppend(ctx, l.binding, l.ledger, l.anchor, maintenance.GovernanceHead{Sequence: a.Sequence, Hash: a.Hash}); e != nil {
+			return ErrPreservation
+		}
+	}
+	return nil
 }
 func (l *DeletionLedger) ReserveOnce(ctx context.Context, r Reservation) error {
 	_, e := l.reserve(ctx, r)
 	return e
 }
 func (l *DeletionLedger) reserve(ctx context.Context, r Reservation) (bool, error) {
+	if l.participant != nil {
+		if _, err := l.participant.GovernanceJournalIdentity(ctx); err != nil {
+			return false, err
+		}
+	}
+	if l.participant != nil {
+		var leave func()
+		var err error
+		ctx, leave, err = l.participant.Enter(ctx, maintenance.GovernanceWriter)
+		if err != nil {
+			return false, err
+		}
+		defer leave()
+	}
 	if domain.ValidateID(r.ID) != nil || r.RequestHash == "" || len(r.RequestHash) > 64 || len(r.Scope) != 5 {
 		return false, ErrPreservation
 	}
@@ -229,7 +265,7 @@ func (l *DeletionLedger) reserve(ctx context.Context, r Reservation) (bool, erro
 		return false, e
 	}
 	defer done()
-	a, entries, e := l.load()
+	a, entries, e := l.loadContext(ctx)
 	if e != nil {
 		return false, e
 	}
@@ -246,17 +282,31 @@ func (l *DeletionLedger) reserve(ctx context.Context, r Reservation) (bool, erro
 			return false, nil
 		}
 	}
-	e = l.append(a, LedgerEntry{Kind: "RESERVED", Reservation: r})
+	e = l.append(ctx, a, LedgerEntry{Kind: "RESERVED", Reservation: r})
 	return e == nil, e
 }
 
 func (l *DeletionLedger) AppendOnce(ctx context.Context, id string, b Binding) error {
+	if l.participant != nil {
+		if _, err := l.participant.GovernanceJournalIdentity(ctx); err != nil {
+			return err
+		}
+	}
+	if l.participant != nil {
+		var leave func()
+		var err error
+		ctx, leave, err = l.participant.Enter(ctx, maintenance.GovernanceWriter)
+		if err != nil {
+			return err
+		}
+		defer leave()
+	}
 	done, e := l.root.Lock(ctx, "state.lock")
 	if e != nil {
 		return e
 	}
 	defer done()
-	a, entries, e := l.load()
+	a, entries, e := l.loadContext(ctx)
 	if e != nil {
 		return e
 	}
@@ -279,7 +329,7 @@ func (l *DeletionLedger) AppendOnce(ctx context.Context, id string, b Binding) e
 	if original == nil || b.SourceEpoch == "" || b.SelectorHash == "" {
 		return ErrPreservation
 	}
-	return l.append(a, LedgerEntry{Kind: "APPENDED", Reservation: *original, Binding: &b})
+	return l.append(ctx, a, LedgerEntry{Kind: "APPENDED", Reservation: *original, Binding: &b})
 }
 func (l *DeletionLedger) LatestHead(ctx context.Context, challenge string) (Head, error) {
 	if challenge == "" || len(challenge) > 128 {
@@ -290,7 +340,7 @@ func (l *DeletionLedger) LatestHead(ctx context.Context, challenge string) (Head
 		return Head{}, e
 	}
 	defer done()
-	a, _, e := l.load()
+	a, _, e := l.loadContext(ctx)
 	return Head{a.Installation, a.Ledger, a.Anchor, a.Sequence, a.Hash, challenge}, e
 }
 func (l *DeletionLedger) VerifyHead(ctx context.Context, h Head) error {
@@ -306,7 +356,7 @@ func (l *DeletionLedger) Ready(ctx context.Context) error {
 		return e
 	}
 	defer done()
-	a, _, e := l.load()
+	a, _, e := l.loadContext(ctx)
 	if e != nil {
 		return e
 	}
@@ -321,7 +371,7 @@ func (l *DeletionLedger) Lookup(ctx context.Context, id string) (LedgerEntry, er
 		return LedgerEntry{}, e
 	}
 	defer done()
-	_, entries, e := l.load()
+	_, entries, e := l.loadContext(ctx)
 	if e != nil {
 		return LedgerEntry{}, e
 	}
@@ -341,7 +391,7 @@ func (l *DeletionLedger) ReadAfter(ctx context.Context, h Head, after uint64, li
 		return nil, e
 	}
 	defer done()
-	a, entries, e := l.load()
+	a, entries, e := l.loadContext(ctx)
 	if e != nil || a.Sequence != h.Sequence || a.Hash != h.Hash || a.Installation != h.Installation || a.Ledger != h.Ledger || a.Anchor != h.Anchor {
 		return nil, ErrPreservation
 	}
@@ -366,6 +416,20 @@ func (l *DeletionLedger) beginIntake(ctx context.Context) (*intakePermit, func()
 	return p, func() { p.active = false; done() }, nil
 }
 func (l *DeletionLedger) SealRejectedOnce(ctx context.Context, p *intakePermit, id string, proof *store.RejectionProof) error {
+	if l.participant != nil {
+		if _, err := l.participant.GovernanceJournalIdentity(ctx); err != nil {
+			return err
+		}
+	}
+	if l.participant != nil {
+		var leave func()
+		var err error
+		ctx, leave, err = l.participant.Enter(ctx, maintenance.GovernanceWriter)
+		if err != nil {
+			return err
+		}
+		defer leave()
+	}
 	if p == nil || !p.active || p.ledger != l {
 		return ErrPreservation
 	}
@@ -374,7 +438,7 @@ func (l *DeletionLedger) SealRejectedOnce(ctx context.Context, p *intakePermit, 
 		return e
 	}
 	defer done()
-	a, entries, e := l.load()
+	a, entries, e := l.loadContext(ctx)
 	if e != nil {
 		return e
 	}
@@ -395,7 +459,7 @@ func (l *DeletionLedger) SealRejectedOnce(ctx context.Context, p *intakePermit, 
 	if reservation == nil || !proof.Matches(l.installation, id, reservation.RequestHash) {
 		return ErrPreservation
 	}
-	return l.append(a, LedgerEntry{Kind: "REJECTED", Reservation: *reservation})
+	return l.append(ctx, a, LedgerEntry{Kind: "REJECTED", Reservation: *reservation})
 }
 
 // ReplayDeny applies only retained negative evidence under the same local
@@ -471,6 +535,13 @@ func (s *MemoryService) ReplayDeny(ctx context.Context, p *maintenance.ClosedPer
 					if v.ID == node {
 						permitted = true
 					}
+				}
+				var resultRaw []byte
+				resultErr := s.Store.DB.QueryRowContext(ctx, "SELECT document FROM harness_result_sources WHERE tenant_id=? AND product_id=? AND storage_key=?", n.TenantID, n.ProductID, asset.Storage).Scan(&resultRaw)
+				if resultErr == nil {
+					permitted = resultSourcesAllowed(resultRaw, a, actor, time.Now())
+				} else if !errors.Is(resultErr, sql.ErrNoRows) {
+					return resultErr
 				}
 				replayAssets = append(replayAssets, store.MemoryReplayAsset{ID: asset.ID, Storage: asset.Storage, Delete: !permitted})
 			}

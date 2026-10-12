@@ -26,11 +26,30 @@ var ErrReplan = errors.New("lock absent from frozen plan; rollback and replan wh
 // conservative UNKNOWN. It may not perform provider/network work. BeforeCommit
 // is an optional local pre-commit validation seam and always rolls back on error.
 type Store struct {
-	Guard        OperationGuard
-	DB           *sql.DB
-	BeforeCommit func(context.Context, *sql.Tx) error
-	Commit       func(context.Context, *sql.Tx) error
-	Trace        func(LockKey)
+	RehearsalPurgeOwner      RehearsalPurgeOwner
+	TurnSkills               TurnSkillOwner
+	RehearsalReportReader    RehearsalReportReader
+	RehearsalInputOwner      RehearsalInputOwner
+	DraftRehearsalOwner      DraftRehearsalOwner
+	DraftRehearsalReader     DraftRehearsalSourceReader
+	RehearsalInitializer     RehearsalInitializer
+	DraftCandidateOwner      DraftCandidateOwner
+	DraftCandidateReader     DraftCandidateReader
+	WorldAccountingAuthority WorldAccountingAuthority
+	SettlementAuthority      SettlementAuthority
+	ApprovedTurnReader       ApprovedTurnReader
+	CandidateOwner           OriginalCandidateOwner
+	OriginalResultReader     OriginalResultReader
+	OriginalResultProgram    OriginalResultProgram
+	QueryAuthority           OriginalQueryAuthority
+	ProviderEvidence         OriginalProviderEvidence
+	GenerationContext        HarnessContextValidator
+	TurnOwner                TurnInputOwner
+	Guard                    OperationGuard
+	DB                       *sql.DB
+	BeforeCommit             func(context.Context, *sql.Tx) error
+	Commit                   func(context.Context, *sql.Tx) error
+	Trace                    func(LockKey)
 }
 type OperationGuard interface {
 	EnterStore(context.Context) (context.Context, func(), error)
@@ -46,6 +65,20 @@ func (s *Store) EnterOperation(ctx context.Context) (context.Context, func(), er
 }
 
 type Tx interface {
+	RehearsalBasis(domain.Scope) (*domain.RehearsalBasis, error)
+	RehearsalReportHistoryBasis(domain.Scope) (*domain.RehearsalBasis, error)
+	AssertRehearsalInput(domain.TurnInput) error
+	AssertRehearsalInitialization(domain.Scope, string) error
+	PurgeRehearsalInputs(context.Context, domain.ProductScope, string) error
+	KeepCandidateStage(context.Context, domain.ProductScope, string) (bool, error)
+	KeepRehearsalStage(context.Context, domain.ProductScope, string) (bool, error)
+	AcknowledgeRehearsalStagePurge(context.Context, domain.ProductScope, string) error
+	AssertCommittedHistory(context.Context, domain.Scope, string) (bool, error)
+	AssertWorldAccounting(context.Context, domain.Scope) (string, error)
+	SealWorldAccounting(context.Context, domain.Scope) error
+	BindHarnessResult(context.Context, domain.Scope, string, string, domain.ResultSourceBinding) error
+	AssertTurnIntake(domain.Scope, string) error
+	BindHarnessContext(context.Context, domain.Scope, string, domain.GenerationBinding) error
 	// Only local, bounded SQL is allowed. Modules must RequireLock for every
 	// precollected business row before issuing its SQL; this is a trusted module
 	// port, never an HTTP/general SQL endpoint. The callback MUST NOT do network I/O.
@@ -78,6 +111,35 @@ const (
 )
 
 type BarrierRequest struct {
+	rehearsalPurgeACK                                                  *rehearsalPurgeACK
+	draftResolution                                                    bool
+	rehearsalNegative                                                  *rehearsalNegativeGuard
+	rehearsalReportRead                                                bool
+	rehearsalReport                                                    *rehearsalReportInspection
+	rehearsalHistory                                                   *rehearsalHistoryPlan
+	rehearsalExecution                                                 *rehearsalExecution
+	rehearsalChildStart                                                *rehearsalChildStart
+	rehearsalInitialization                                            *rehearsalInitialization
+	rehearsalIntake                                                    *rehearsalIntakeProvision
+	candidateExecution                                                 bool
+	candidateAttempt                                                   string
+	candidateOriginalRead                                              bool
+	candidateRepairApproval                                            *candidateRepairPlan
+	candidateCommitGuard                                               *candidateCommitGuard
+	candidateHistoryRead                                               *draftCandidateCommit
+	candidateResultGuard                                               *candidateResultGuard
+	candidateIntake                                                    *candidateIntakeProvision
+	approvedInstallation                                               *WorldAccountingIdentity
+	approvedHistoryRead                                                bool
+	worldAccounting                                                    *worldAccountingPlan
+	originalSettlementService                                          *domain.SettlementServiceIdentity
+	recoveryEvidence                                                   OriginalResultEvidence
+	localCandidateRound                                                *candidateRound
+	harnessPerceptionReleases                                          map[string]struct{}
+	harnessResultStorage                                               string
+	harnessOriginalResultAttempt                                       string
+	harnessRecoveryAttempt                                             string
+	originalQueryService                                               *domain.QueryServiceIdentity
 	Runtime                                                            *RuntimeBinding
 	ProductScope                                                       domain.ProductScope
 	WorldScope                                                         *domain.Scope
@@ -91,6 +153,11 @@ type BarrierRequest struct {
 	commandOnly                                                        bool
 	Purpose                                                            BarrierPurpose
 	ExpectedWorldStatus                                                string
+	harnessIntakeQuote                                                 string
+	harnessDispatchRoute                                               string
+	harnessDispatchHash                                                [32]byte
+	harnessInitializeContext                                           bool
+	r0TurnProvision                                                    bool
 }
 type CommandBarrierRequest struct {
 	Runtime                                          *RuntimeBinding
@@ -120,12 +187,14 @@ type Reservation struct {
 }
 type DispatchRequest struct {
 	BarrierRequest
+	HarnessQuoteID                                string
 	AttemptID, AuthorizationID, Route, RequestKey string
 	RequestHash                                   [32]byte
 	Slot                                          uint8
 	Reservations                                  []Reservation
 }
 type DispatchAuthorization struct {
+	send                   *OriginalSendPermit
 	AttemptID              string
 	Receipt                CommitReceipt
 	CanSend, QueryOriginal bool
@@ -169,7 +238,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return errors.New("schema migration lock unavailable")
 	}
 	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK('loreviva.core.schema')")
-	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance} {
+	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
 		e = conn.QueryRowContext(ctx, "SELECT sha256 FROM schema_migrations WHERE version=?", version+1).Scan(&existing)
@@ -231,10 +300,151 @@ func (s *Store) Readiness(ctx context.Context, prerequisites ...func(context.Con
 	}
 	return nil
 }
-func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest) error {
+func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning ...*unit) error {
 	if s.BeforeCommit != nil {
 		if e := s.BeforeCommit(ctx, tx); e != nil {
 			return e
+		}
+	}
+	if r.rehearsalPurgeACK != nil {
+		if len(owning) != 1 || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkRehearsalPurgeACK(ctx, owning[0], r); e != nil {
+			return e
+		}
+	}
+	if len(owning) == 1 && owning[0] != nil {
+		if e := owning[0].checkSkillProofs(ctx); e != nil {
+			return e
+		}
+	}
+	if len(owning) == 1 && owning[0] != nil && owning[0].rehearsalCleanup != nil {
+		if e := owning[0].checkRehearsalCleanup(ctx); e != nil {
+			return e
+		}
+	}
+	if len(owning) == 1 && owning[0] != nil && owning[0].serviceMetering != nil {
+		u := owning[0]
+		m := u.serviceMetering
+		if u.tx != tx || m.request.CommitKey != r.CommitKey || m.request.TaskID != r.TaskID || m.request.Operation != r.Operation || m.request.ProductScope != r.ProductScope {
+			return ErrDenied
+		}
+		receipt, e := queryReceipt(ctx, tx, r.CommitKey)
+		if e != nil {
+			return e
+		}
+		if !receipt.matches(r) {
+			return ErrDenied
+		}
+		if e = checkOriginalServiceMeteringTx(ctx, u, r.ProductScope, r.TaskID, m.service, r.CommitKey, m.costs); e != nil {
+			return e
+		}
+	}
+	if r.rehearsalIntake != nil {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkRehearsalIntakeFinish(ctx, owning[0], r); e != nil {
+			return e
+		}
+	}
+	if r.rehearsalInitialization != nil {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkRehearsalInitialization(ctx, owning[0], r); e != nil {
+			return e
+		}
+		if r.rehearsalReport != nil {
+			if e := s.inspectRehearsalReportTx(ctx, owning[0], r); e != nil {
+				return e
+			}
+			if r.Operation == "REHEARSAL_REPORT_COMMIT" {
+				if r.rehearsalReport.applied != owning[0] {
+					return ErrDenied
+				}
+				if e := s.checkRehearsalReportStageTx(ctx, owning[0], r); e != nil {
+					return e
+				}
+			}
+		}
+		if r.rehearsalChildStart != nil {
+			if e := s.checkRehearsalChildStart(ctx, owning[0], r); e != nil {
+				return e
+			}
+			if r.Operation == "REHEARSAL_CHILD_CLAIM" {
+				if e := s.checkRehearsalClaim(ctx, owning[0], r); e != nil {
+					return e
+				}
+			}
+		}
+	}
+	if r.rehearsalExecution != nil {
+		if r.rehearsalNegative != nil {
+			if len(owning) != 1 || r.rehearsalNegative.applied != owning[0] {
+				return ErrDenied
+			}
+			if e := s.checkRehearsalNegativeTx(ctx, owning[0], r); e != nil {
+				return e
+			}
+		}
+		if len(owning) != 1 {
+			return ErrDenied
+		}
+		if e := s.checkRehearsalExecution(ctx, owning[0], r); e != nil {
+			return e
+		}
+		if r.Operation == "HARNESS_TURN_COMMIT" {
+			if e := s.checkRehearsalAppliedCommit(ctx, owning[0], r); e != nil {
+				return e
+			}
+		} else if e := s.checkHarnessContext(ctx, owning[0], r); e != nil {
+			return e
+		}
+	}
+	if r.candidateIntake != nil {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkCandidateIntakeFinish(ctx, owning[0], r); e != nil {
+			return e
+		}
+	}
+	if r.candidateExecution {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if _, e := s.candidateMaterialTx(ctx, owning[0], r); e != nil {
+			return e
+		}
+		if plan := r.candidateRepairApproval; plan != nil {
+			base, e := s.candidateMaterialTx(ctx, owning[0], r)
+			if e != nil {
+				return e
+			}
+			extra, e := s.candidateRepairReasonTx(ctx, owning[0], r, base, *plan)
+			if e != nil {
+				return e
+			}
+			base.Canonical = nil
+			extra.Canonical = nil
+			if !sameCandidateBinding(base, plan.Base) || !sameCandidateBinding(extra, plan.Binding) {
+				return ErrConflict
+			}
+		}
+		if guard := r.candidateResultGuard; guard != nil {
+			if r.originalQueryService == nil {
+				return ErrDenied
+			}
+			if _, e := s.checkCandidateResultTx(ctx, owning[0], guard.dispatch, guard.storage, guard.hash, *r.originalQueryService); e != nil {
+				return e
+			}
+		}
+		if r.candidateCommitGuard != nil {
+			if _, e := s.checkCandidateCommitTx(ctx, owning[0], r); e != nil {
+				return e
+			}
 		}
 	}
 	if e := checkCurrentLease(ctx, tx, r); e != nil {
@@ -243,6 +453,9 @@ func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest) error 
 	commit := s.Commit
 	if commit == nil {
 		commit = func(_ context.Context, t *sql.Tx) error { return t.Commit() }
+	}
+	if r.localCandidateRound != nil {
+		r.localCandidateRound.commitAttempted = true
 	}
 	if e := commit(ctx, tx); e != nil {
 		return ErrCommitUnknown

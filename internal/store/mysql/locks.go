@@ -90,21 +90,41 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 }
 
 type unit struct {
-	tx             *sql.Tx
-	plan           map[string]bool
-	err            error
-	active         *LockKey
-	scope          domain.ProductScope
-	taskID         string
-	commandOnly    bool
-	fence          uint64
-	purpose        BarrierPurpose
-	world          string
-	controlVersion uint64
-	runtime        *RuntimeBinding
+	skillProofs             []skillInvocationProof
+	serviceMetering         *originalServiceMetering
+	rehearsalHistory        *rehearsalHistoryPlan
+	rehearsalReport         *rehearsalReportInspection
+	rehearsalReportRead     bool
+	rehearsalExecution      *rehearsalExecution
+	rehearsalChildStart     *rehearsalChildStart
+	rehearsalInitialization *rehearsalInitialization
+	approvedHistoryRead     bool
+	worldAccounting         *worldAccountingPlan
+	resultStorage           string
+	tx                      *sql.Tx
+	plan                    map[string]bool
+	err                     error
+	active                  *LockKey
+	scope                   domain.ProductScope
+	taskID                  string
+	commandOnly             bool
+	fence                   uint64
+	purpose                 BarrierPurpose
+	world                   string
+	controlVersion          uint64
+	runtime                 *RuntimeBinding
+	acceptedTurnID          string
+	candidateSourcesOwner   DraftCandidateOwner
+	rehearsalSourcesOwner   DraftRehearsalOwner
+	rehearsalCleanup        *rehearsalStageClosure
+	rehearsalPurged         string
 }
 
 func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
+	if u.rehearsalReportRead || u.rehearsalHistory != nil {
+		u.err = ErrDenied
+		return nil, u.err
+	}
 	if u.err != nil {
 		return nil, u.err
 	}

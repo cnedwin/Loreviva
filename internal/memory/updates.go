@@ -18,45 +18,76 @@ type MemoryUpdateRequest struct {
 // provisional until the shared outer commit succeeds.
 func ApplyUpdates(tx store.Tx, r MemoryUpdateRequest) ([]MemoryRecord, error) {
 	ctx := context.Background()
-	if e := tx.AssertWorldTask(r.Namespace.Scope, r.TaskID); e != nil {
-		return nil, e
-	}
-	if len(r.Nodes) == 0 || len(r.Nodes) > 32 {
-		return nil, ErrInvalid
-	}
-	if e := authorizeTx(ctx, tx, r.Namespace, "memory.intake"); e != nil {
-		return nil, e
-	}
-	a, e := loadTx(ctx, tx, r.Namespace)
+	a, e := validatedUpdatesTx(ctx, tx, r)
 	if e != nil {
 		return nil, e
-	}
-	for _, n := range r.Nodes {
-		if domain.ValidateID(n.ActorID) != nil {
-			return nil, ErrInvalid
-		}
-		if n.TargetKind == "PLAYER" {
-			if n.TargetID != r.Namespace.DataSubjectID {
-				return nil, ErrInvalid
-			}
-		} else if n.TargetKind == "ACTOR" {
-			if e = actorExists(ctx, tx, r.Namespace, n.TargetID); e != nil {
-				return nil, e
-			}
-		} else {
-			return nil, ErrInvalid
-		}
-		if e = actorExists(ctx, tx, r.Namespace, n.ActorID); e != nil {
-			return nil, e
-		}
-		if e = a.AddDerived(n, time.Now()); e != nil {
-			return nil, e
-		}
 	}
 	if e = saveTx(ctx, tx, r.Namespace, a); e != nil {
 		return nil, e
 	}
 	return r.Nodes, nil
+}
+
+// ValidateUpdatesTx checks exactly the same proposals as ApplyUpdates without
+// saving the prospective graph. It grants no standalone commit permission.
+func ValidateUpdatesTx(ctx context.Context, tx store.Tx, r MemoryUpdateRequest) error {
+	_, e := validatedUpdatesTx(ctx, tx, r)
+	return e
+}
+func validatedUpdatesTx(ctx context.Context, tx store.Tx, r MemoryUpdateRequest) (Aggregate, error) {
+	zero := Aggregate{}
+	if e := tx.AssertWorldTask(r.Namespace.Scope, r.TaskID); e != nil {
+		return zero, e
+	}
+	if len(r.Nodes) == 0 || len(r.Nodes) > 32 {
+		return zero, ErrInvalid
+	}
+	if e := authorizeTx(ctx, tx, r.Namespace, "memory.intake"); e != nil {
+		return zero, e
+	}
+	a, e := loadTx(ctx, tx, r.Namespace)
+	if e != nil {
+		return zero, e
+	}
+	basis, e := tx.RehearsalBasis(r.Namespace.Scope)
+	if e != nil {
+		return zero, e
+	}
+	var now time.Time
+	if e = tx.QueryRowContext(ctx, "SELECT UTC_TIMESTAMP(6)").Scan(&now); e != nil {
+		return zero, e
+	}
+	for _, n := range r.Nodes {
+		if domain.ValidateID(n.ActorID) != nil {
+			return zero, ErrInvalid
+		}
+		if n.TargetKind == "PLAYER" {
+			if n.TargetID != r.Namespace.DataSubjectID {
+				return zero, ErrInvalid
+			}
+		} else if n.TargetKind == "ACTOR" {
+			if e = actorExists(ctx, tx, r.Namespace, n.TargetID); e != nil {
+				return zero, e
+			}
+		} else {
+			return zero, ErrInvalid
+		}
+		if e = actorExists(ctx, tx, r.Namespace, n.ActorID); e != nil {
+			return zero, e
+		}
+		if basis != nil {
+			if n.ActorID != basis.ActorID || n.TargetKind != "PLAYER" || n.TargetID != r.Namespace.SubjectID {
+				return zero, ErrInvalid
+			}
+			e = a.addRehearsalDerived(n, now)
+		} else {
+			e = a.AddDerived(n, now)
+		}
+		if e != nil {
+			return zero, e
+		}
+	}
+	return a, nil
 }
 
 const MaxDerivedAssets = 1000
@@ -292,6 +323,11 @@ func (s *MemoryService) blockAssets(ctx context.Context, tx store.Tx, n Namespac
 			if v.ID == node {
 				allowed = true
 			}
+		}
+		if result, eligible, e := resultLineageTx(ctx, tx, n, ref.Storage, actor, a); e != nil {
+			return e
+		} else if result {
+			allowed = eligible
 		}
 		if allowed {
 			continue

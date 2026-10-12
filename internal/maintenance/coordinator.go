@@ -37,6 +37,8 @@ type registration struct {
 	Writers     []Writer
 }
 type coordinatorState struct {
+	GovernanceContinuity                       *GovernanceContinuity
+	Mock                                       *MockContinuity
 	Installation, Database, Files, Phase, Plan string
 	Generation                                 uint64
 	Participants                               map[string]registration

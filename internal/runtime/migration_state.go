@@ -85,23 +85,26 @@ func preserveHash(ctx context.Context, tx store.Tx, s domain.Scope, rows migrati
 	if taskCount != expected || actorCount != len(rows.Actors) || itemCount != len(rows.Items) {
 		return "", store.ErrReplan
 	}
-	// Until a closed ACCOUNTING_ONLY adapter exists, preserve and block every
-	// attempt, including terminal-looking rows. A terminal task is not that proof.
-	e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM attempts a JOIN tasks t ON t.tenant_id=a.tenant_id AND t.product_id=a.product_id AND t.task_id=a.task_id WHERE t.tenant_id=? AND t.product_id=? AND t.world_instance_id=?", s.TenantID, s.ProductID, s.WorldInstanceID).Scan(&attempts)
+	// Original attempts require the fixed complete narrative closure.
+	e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM tasks t WHERE t.tenant_id=? AND t.product_id=? AND t.world_instance_id=? AND (t.task_kind='TURN' OR EXISTS(SELECT 1 FROM attempts a WHERE a.tenant_id=t.tenant_id AND a.product_id=t.product_id AND a.task_id=t.task_id))", s.TenantID, s.ProductID, s.WorldInstanceID).Scan(&attempts)
 	if e != nil {
 		return "", e
 	}
+	accountingHash := ""
 	if attempts != 0 {
-		return "", content.ErrBlocked
+		accountingHash, e = tx.AssertWorldAccounting(ctx, s)
+		if e != nil {
+			return "", e
+		}
 	}
-	e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM tasks t WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND task_id<>? AND NOT ((state='COMMITTED' AND EXISTS(SELECT 1 FROM commit_receipts c WHERE c.tenant_id=t.tenant_id AND c.product_id=t.product_id AND c.task_id=t.task_id)) OR (state='CANCELLED' AND cancelled=1))", s.TenantID, s.ProductID, s.WorldInstanceID, own).Scan(&blocked)
+	e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM tasks t WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND task_id<>? AND NOT ((state='COMMITTED' AND EXISTS(SELECT 1 FROM commit_receipts c WHERE c.tenant_id=t.tenant_id AND c.product_id=t.product_id AND c.task_id=t.task_id)) OR (state='CANCELLED' AND cancelled=1) OR (task_kind='TURN' AND EXISTS(SELECT 1 FROM harness_envelopes h WHERE h.tenant_id=t.tenant_id AND h.product_id=t.product_id AND h.task_id=t.task_id AND h.state IN ('CUTOFF','ACCOUNTING_ONLY'))))", s.TenantID, s.ProductID, s.WorldInstanceID, own).Scan(&blocked)
 	if e != nil {
 		return "", e
 	}
 	if blocked != 0 {
 		return "", content.ErrBlocked
 	}
-	parts := []string{migrationPolicy}
+	parts := []string{migrationPolicy, accountingHash}
 	var initial []byte
 	if e = tx.QueryRowContext(ctx, "SELECT initialization FROM runtime_instances WHERE tenant_id=? AND product_id=? AND world_instance_id=?", s.TenantID, s.ProductID, s.WorldInstanceID).Scan(&initial); e != nil {
 		return "", e

@@ -15,6 +15,39 @@ type RegisteredLease struct {
 	Kind, Operation string
 }
 
+// The legacy Operator task surface owns only these exact registered families.
+// A WORLD association does not exclude actual CONTROL or MIGRATION work.
+func registeredAdminKind(kind, operation string) bool {
+	if kind == "CONTROL" {
+		return operation == "INSTANCE_CONTROL"
+	}
+	if kind == "MIGRATION" {
+		return operation == "INSTANCE_MIGRATION"
+	}
+	if kind != "ADMIN" {
+		return false
+	}
+	switch operation {
+	case "REHEARSAL", "CANDIDATE", "FILE_CLEANUP", "PACKAGE_PREFLIGHT", "PACKAGE_IMPORT", "PACKAGE_EXPORT", "DOCUMENT_EXTRACTION":
+		return true
+	}
+	return false
+}
+
+func (s *Store) ReadRegisteredAdminTask(ctx context.Context, scope domain.ProductScope, id string) (operation, state string, err error) {
+	ctx, close, err := s.EnterOperation(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	defer close()
+	var kind string
+	err = s.DB.QueryRowContext(ctx, "SELECT t.task_kind,j.operation,t.state FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) WHERE t.tenant_id=? AND t.product_id=? AND t.task_id=? AND t.owner_subject_id=?", scope.TenantID, scope.ProductID, id, scope.SubjectID).Scan(&kind, &operation, &state)
+	if err == nil && !registeredAdminKind(kind, operation) {
+		err = sql.ErrNoRows
+	}
+	return
+}
+
 func (u *unit) CreateRegisteredTask(ctx context.Context, in domain.TaskIntake, operation string) error {
 	if e := domain.ValidateID(operation); e != nil {
 		u.err = e
@@ -41,11 +74,15 @@ func (u *unit) CancelRegisteredTask(ctx context.Context, id string) error {
 	if e := u.RequireLock(LockKey{Rank: 50, IDs: []string{u.scope.TenantID, u.scope.ProductID, id}}); e != nil {
 		return e
 	}
-	var state, kind string
-	e := u.tx.QueryRowContext(ctx, "SELECT t.state,t.task_kind FROM tasks t JOIN registered_jobs j ON j.tenant_id=t.tenant_id AND j.product_id=t.product_id AND j.task_id=t.task_id WHERE t.tenant_id=? AND t.product_id=? AND t.task_id=? AND t.owner_subject_id=?", u.scope.TenantID, u.scope.ProductID, id, u.scope.SubjectID).Scan(&state, &kind)
+	var state, kind, operation string
+	e := u.tx.QueryRowContext(ctx, "SELECT t.state,t.task_kind,j.operation FROM tasks t JOIN registered_jobs j ON j.tenant_id=t.tenant_id AND j.product_id=t.product_id AND j.task_id=t.task_id WHERE t.tenant_id=? AND t.product_id=? AND t.task_id=? AND t.owner_subject_id=?", u.scope.TenantID, u.scope.ProductID, id, u.scope.SubjectID).Scan(&state, &kind, &operation)
 	if e != nil {
 		u.err = e
 		return e
+	}
+	if !registeredAdminKind(kind, operation) {
+		u.err = ErrDenied
+		return ErrDenied
 	}
 	if state == "COMMITTED" || kind == "MIGRATION" || kind == "GOVERNANCE" {
 		u.err = ErrConflict
@@ -97,7 +134,7 @@ func (s *Store) ClaimRegistered(ctx context.Context, worker string, now time.Tim
 	}
 	defer tx.Rollback()
 	var world sql.NullString
-	e = tx.QueryRowContext(ctx, "SELECT t.tenant_id,t.product_id,t.task_id,t.owner_subject_id,t.world_instance_id,t.fence,t.task_kind,j.operation FROM tasks t JOIN registered_jobs j ON j.tenant_id=t.tenant_id AND j.product_id=t.product_id AND j.task_id=t.task_id WHERE t.state IN ('ACCEPTED','RUNNING') AND t.cancelled=0 AND t.next_run_at<=? AND (t.state='ACCEPTED' OR t.lease_expires_at IS NULL OR t.lease_expires_at<=?) AND ("+strings.Join(filters, " OR ")+") ORDER BY t.next_run_at,t.tenant_id,t.product_id,t.task_id LIMIT 1 FOR UPDATE OF t SKIP LOCKED", args...).Scan(&lease.TenantID, &lease.ProductID, &lease.TaskID, &lease.OwnerSubjectID, &world, &lease.Fence, &lease.Kind, &lease.Operation)
+	e = tx.QueryRowContext(ctx, "SELECT t.tenant_id,t.product_id,t.task_id,t.owner_subject_id,t.world_instance_id,t.fence,t.task_kind,j.operation FROM tasks t JOIN registered_jobs j ON j.tenant_id=t.tenant_id AND j.product_id=t.product_id AND j.task_id=t.task_id WHERE NOT EXISTS(SELECT 1 FROM harness_rehearsal_worlds rw WHERE rw.tenant_id=t.tenant_id AND rw.product_id=t.product_id AND rw.world_instance_id=t.world_instance_id) AND NOT EXISTS(SELECT 1 FROM harness_envelopes h WHERE h.tenant_id=t.tenant_id AND h.product_id=t.product_id AND h.task_id=t.task_id AND h.state IN ('CUTOFF','ACCOUNTING_ONLY')) AND t.state IN ('ACCEPTED','RUNNING') AND t.cancelled=0 AND t.next_run_at<=? AND (t.state='ACCEPTED' OR t.lease_expires_at IS NULL OR t.lease_expires_at<=?) AND ("+strings.Join(filters, " OR ")+") ORDER BY t.next_run_at,t.tenant_id,t.product_id,t.task_id LIMIT 1 FOR UPDATE OF t SKIP LOCKED", args...).Scan(&lease.TenantID, &lease.ProductID, &lease.TaskID, &lease.OwnerSubjectID, &world, &lease.Fence, &lease.Kind, &lease.Operation)
 	if errors.Is(e, sql.ErrNoRows) {
 		return lease, ErrNoTask
 	}

@@ -29,7 +29,7 @@ func MigrationPlan(ctx context.Context, s *store.Store) (Plan, error) {
 	if e := s.DB.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&p.Database); e != nil {
 		return p, errors.New("database unavailable")
 	}
-	for i, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance} {
+	for i, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt} {
 		h := sha256.Sum256([]byte(source))
 		m := Migration{Version: i + 1, Hash: hex.EncodeToString(h[:])}
 		var got []byte
@@ -48,14 +48,14 @@ func MigrationPlan(ctx context.Context, s *store.Store) (Plan, error) {
 		p.Migrations = append(p.Migrations, m)
 	}
 	var n int
-	e := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN (1,2,3,4,5)").Scan(&n)
+	e := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN (1,2,3,4,5,6)").Scan(&n)
 	if e == nil && n != 0 {
 		return p, errors.New("schema newer than this application")
 	}
 	identity := struct {
 		Database string
 		Hashes   []string
-	}{p.Database, []string{p.Migrations[0].Hash, p.Migrations[1].Hash, p.Migrations[2].Hash, p.Migrations[3].Hash, p.Migrations[4].Hash}}
+	}{p.Database, []string{p.Migrations[0].Hash, p.Migrations[1].Hash, p.Migrations[2].Hash, p.Migrations[3].Hash, p.Migrations[4].Hash, p.Migrations[5].Hash}}
 	b, _ := json.Marshal(identity)
 	h := sha256.Sum256(b)
 	p.PlanID = hex.EncodeToString(h[:])

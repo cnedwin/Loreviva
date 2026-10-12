@@ -67,6 +67,7 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		flags := flag.NewFlagSet("bootstrap", flag.ContinueOnError)
 		flags.SetOutput(io.Discard)
 		mock := flags.Bool("mock", false, "explicit synthetic bootstrap")
+		consent := flags.Bool("owner-private-generation-consent", false, "explicit fresh owner private generation opt-in for at most 30 days")
 		tenant := flags.String("tenant", "", "synthetic tenant")
 		if e = flags.Parse(args[1:]); e != nil || flags.NArg() != 0 || !*mock || *tenant != cfg.OperatorTenant || *tenant != "demo-local" {
 			return errors.New("bootstrap requires --mock --tenant demo-local")
@@ -75,10 +76,17 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		if e = app.InitializeLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot); e != nil {
 			return errors.New("independent fresh bootstrap unavailable")
 		}
-		if e = maintenance.BootstrapSynthetic(ctx, s, a.Scope(), cfg.OperatorCredentialID, cfg.OperatorSecret.Reveal()); e != nil {
+		if e = maintenance.BootstrapSyntheticWithConsent(ctx, s, a.Scope(), cfg.OperatorCredentialID, cfg.OperatorSecret.Reveal(), *consent); e != nil {
 			return errors.New("synthetic bootstrap refused; existing governance and credentials are preserved")
 		}
-		return emit(map[string]any{"bootstrap": "fresh-synthetic-owner", "tenant_id": *tenant, "product_id": cfg.OperatorProduct, "credential_reference": cfg.OperatorSecretRef, "mock_only": true})
+		if e = a.Check(ctx); e != nil {
+			return e
+		}
+		var current bool
+		if e = s.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM memory_subject_permissions WHERE tenant_id=? AND product_id=? AND caller_subject_id=? AND data_subject_id=? AND action='memory.generation.use' AND allowed_use='PRIVATE_RESPONSE' AND enabled=1 AND expires_at>UTC_TIMESTAMP(6))", a.Scope().TenantID, a.Scope().ProductID, a.Scope().SubjectID, a.Scope().SubjectID).Scan(&current); e != nil {
+			return e
+		}
+		return emit(map[string]any{"bootstrap": "fresh-synthetic-owner", "tenant_id": *tenant, "product_id": cfg.OperatorProduct, "credential_reference": cfg.OperatorSecretRef, "mock_only": true, "owner_private_generation_consent_requested": *consent, "owner_private_generation_grant_current": current})
 	case "seed":
 		local, e := app.OpenLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot)
 		if e != nil {
@@ -149,7 +157,7 @@ func runtime(cfg config.Config) (*app.Runtime, func(), error) {
 		s.Close()
 		return nil, nil, e
 	}
-	r.Local = local
+	r.BindLocal(local)
 	r.Memory.Ledger = local.Ledger
 	r.Worker.Memory = r.Memory
 	return r, func() { local.Participant.Close(context.Background()); f.Close(); s.Close() }, nil

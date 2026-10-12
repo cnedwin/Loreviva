@@ -219,7 +219,7 @@ func (r *Runtime) Handler() http.Handler {
 		response(w, 200, map[string]any{"status": "ready", "gate": "M1_FRESH_SYNTHETIC", "mock_only": true})
 	})
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, q *http.Request) {
-		response(w, 200, map[string]any{"name": "Loreviva", "version": "0.0.0-r0", "contract_version": "1.2.0", "source_hash": generated.SourceHash, "mock_only": true})
+		response(w, 200, map[string]any{"name": "Loreviva", "version": "0.0.0-r0", "contract_version": "1.3.0", "source_hash": generated.SourceHash, "mock_only": true})
 	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, q *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -322,6 +322,7 @@ func (r *Runtime) Handler() http.Handler {
 		return 200, v, e
 	}))
 	r.taskRoutes(mux)
+	r.adminReadRoutes(mux)
 	r.assetRoutes(mux)
 	mux.HandleFunc("GET "+root+"/capabilities", r.admin("", "content.read", r.capabilities))
 	r.instanceRoutes(mux)
@@ -342,12 +343,20 @@ func (r *Runtime) Handler() http.Handler {
 	})
 }
 func (r *Runtime) unsupportedRoutes(m *http.ServeMux) {
-	entries := []struct{ method, path, schema, action string }{{"POST", "/content-drafts/{draft_id}/rehearsals", "RehearsalRequest", "content.rehearse"}, {"POST", "/content-drafts/{draft_id}/candidates", "CandidateRequest", "content.assist"}}
-	for _, entry := range entries {
-		m.HandleFunc(entry.method+" /world/v1/admin"+entry.path, r.admin(entry.schema, entry.action, func(context.Context, domain.ProductScope, *http.Request, []byte) (int, any, error) {
-			return 0, nil, errors.New("handler unavailable; not accepted")
-		}))
-	}
+	m.HandleFunc("POST /world/v1/admin/content-drafts/{draft_id}/candidates", r.admin("CandidateRequest", "content.assist", func(ctx context.Context, s domain.ProductScope, q *http.Request, b []byte) (int, any, error) {
+		if r.Candidates == nil || r.Worker.Turns != r.Candidates.Executor || !r.Worker.Turns.CandidateReady() {
+			return 0, nil, errors.New("candidate handler unavailable; not accepted")
+		}
+		out, e := r.Candidates.Submit(ctx, s, q.PathValue("draft_id"), q.Header.Get("Idempotency-Key"), decode[generated.CandidateRequest](b))
+		return 202, out, e
+	}))
+	m.HandleFunc("POST /world/v1/admin/content-drafts/{draft_id}/rehearsals", r.admin("RehearsalRequest", "content.rehearse", func(ctx context.Context, s domain.ProductScope, q *http.Request, b []byte) (int, any, error) {
+		if r.Worker == nil || r.Worker.Turns == nil || !r.Worker.Turns.RehearsalReady() {
+			return 0, nil, errors.New("rehearsal handler unavailable; not accepted")
+		}
+		out, e := r.Store.AcceptDraftRehearsal(ctx, s, q.PathValue("draft_id"), q.Header.Get("Idempotency-Key"), decode[generated.RehearsalRequest](b))
+		return 202, out, e
+	}))
 }
 
 func pageOptions(q *http.Request) content.PageOptions {

@@ -1,9 +1,11 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"loreviva.local/loreviva/internal/app"
 	"loreviva.local/loreviva/internal/content"
@@ -14,6 +16,7 @@ import (
 	"loreviva.local/loreviva/tests/integration/dbfixture"
 	"os"
 	"os/exec"
+	"sort"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -47,7 +50,66 @@ func TestMigrationRejectsCommittedTaskWithUnclosedSentAttempt(t *testing.T) {
 	runtimeHTTP(t, r, "GET", "/instances/"+i.Scope.WorldInstanceID+"?product_id=coffee", "", nil, 200, &i)
 	i = runtimeControl(t, r, i, "PAUSE")
 	target := nextRuntimeRelease(t, r, s, rel, "expression_style", "short")
-	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, 422, nil)
+	// A legacy Task4 COMMITTED enum plus SENT attempt is deliberately not a
+	// registered, fully closed Task6 TURN. AssertWorldAccounting rejects its
+	// missing original ownership/hold proof before the old generic 422 gate.
+	var missing int
+	if e := r.Store.DB.QueryRow("SELECT (SELECT COUNT(*) FROM registered_jobs WHERE task_id=?)+(SELECT COUNT(*) FROM harness_envelopes WHERE task_id=?)", br.TaskID, br.TaskID).Scan(&missing); e != nil || missing != 0 {
+		t.Fatal("fixture unexpectedly became a managed TURN", missing, e)
+	}
+	snapshot := func() []byte {
+		t.Helper()
+		state := map[string][]string{}
+		for _, table := range []string{"tasks", "attempts", "reservations", "commit_receipts", "events", "approved_results", "postings", "outbox", "world_controls", "actors", "items", "runtime_instances", "harness_world_seals"} {
+			rows, e := r.Store.DB.Query("SELECT * FROM " + table)
+			if e != nil {
+				t.Fatal(e)
+			}
+			columns, e := rows.Columns()
+			if e != nil {
+				rows.Close()
+				t.Fatal(e)
+			}
+			for rows.Next() {
+				values := make([]any, len(columns))
+				pointers := make([]any, len(columns))
+				for n := range values {
+					pointers[n] = &values[n]
+				}
+				if e = rows.Scan(pointers...); e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				b, e := json.Marshal(values)
+				if e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				state[table] = append(state[table], string(b))
+			}
+			e = rows.Err()
+			rows.Close()
+			if e != nil {
+				t.Fatal(e)
+			}
+			sort.Strings(state[table])
+		}
+		b, e := json.Marshal(state)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return b
+	}
+	before, originalJ := snapshot(), journalBytes(t, r)
+	request := generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}
+	scope := domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}
+	if _, e := r.World.PreviewInstanceMigration(ctx, scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
+		t.Fatal("incomplete original accounting proof must be denied", e)
+	}
+	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", request, 403, nil)
+	if !bytes.Equal(before, snapshot()) || !bytes.Equal(originalJ, journalBytes(t, r)) {
+		t.Fatal("denied migration changed original state, facts, holds, receipts or journal")
+	}
 	var state string
 	if e := r.Store.DB.QueryRow("SELECT state FROM attempts WHERE attempt_id='original-attempt'").Scan(&state); e != nil || state != "SENT" {
 		t.Fatal("migration erased pending history", state, e)
@@ -101,52 +163,100 @@ func TestRuntimeWorkerCrashRollsBackAndRecovers(t *testing.T) {
 }
 
 func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
-	r, s, rel := runtimeFixture(t)
 	ctx := context.Background()
-	i := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "create"), "START")
-	br, q := actionTask(t, r, s, i, "history-turn")
-	if _, e := commitAction(r, br, q); e != nil {
+	r, scope, task, _ := actionResultFixture(t)
+	s := scope.ProductScope
+	turnLease, turnWorker := currentResultLease(t, task, scope, r.Store.DB)
+	if e := r.Store.ApproveOriginalTurn(ctx, turnLease, turnWorker); e != nil {
 		t.Fatal(e)
 	}
-	runtimeHTTP(t, r, "GET", "/instances/"+i.Scope.WorldInstanceID+"?product_id=coffee", "", nil, 200, &i)
-	i = runtimeControl(t, r, i, "PAUSE")
-	var itemBefore, actorBefore []byte
-	if e := r.Store.DB.QueryRow("SELECT document FROM items").Scan(&itemBefore); e != nil {
-		t.Fatal(e)
+	joint, e := r.Store.CommitOriginalTurn(ctx, turnLease, turnWorker)
+	if e != nil || !joint.Committed || joint.TaskID != task || joint.OwnerSubjectID != s.SubjectID {
+		t.Fatal("managed original joint commit missing", joint, e)
 	}
-	if e := r.Store.DB.QueryRow("SELECT document FROM actors ORDER BY actor_id LIMIT 1").Scan(&actorBefore); e != nil {
-		t.Fatal(e)
+	var operation, taskState, envelope string
+	var holds, attempts, validations int
+	if e = r.Store.DB.QueryRow("SELECT j.operation,t.state,h.state,(SELECT COUNT(*) FROM reservations WHERE task_id=?),(SELECT COUNT(*) FROM attempts WHERE task_id=?),(SELECT COUNT(*) FROM harness_original_validations WHERE task_id=?) FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) JOIN harness_envelopes h USING(tenant_id,product_id,task_id) WHERE t.task_id=?", task, task, task, task).Scan(&operation, &taskState, &envelope, &holds, &attempts, &validations); e != nil || operation != "TURN" || taskState != "COMMITTED" || envelope != "COMMITTED" || holds != 6 || attempts != 1 || validations != 1 {
+		t.Fatal("fixture lacks managed original closure", operation, taskState, envelope, holds, attempts, validations, e)
 	}
-	target := nextRuntimeRelease(t, r, s, rel, "expression_style", "quiet and precise")
-	scope := domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}
-	p, e := r.World.PreviewInstanceMigration(ctx, scope, generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "preview")
+	i, e := r.World.GetInstance(ctx, scope)
 	if e != nil {
 		t.Fatal(e)
 	}
+	i = runtimeControl(t, r, i, "PAUSE")
+	versionsBefore := runtimeVersions(t, i)
+	snapshot := func() []byte {
+		t.Helper()
+		out := map[string][]string{}
+		for _, spec := range []struct{ table, key string }{{"actors", "actor_id"}, {"items", "item_id"}, {"memory_aggregates", "aggregate_id"}} {
+			rows, e := r.Store.DB.Query("SELECT document FROM "+spec.table+" WHERE world_instance_id=? ORDER BY "+spec.key, scope.WorldInstanceID)
+			if e != nil {
+				t.Fatal(e)
+			}
+			for rows.Next() {
+				var raw string
+				if e = rows.Scan(&raw); e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				out[spec.table] = append(out[spec.table], raw)
+			}
+			e = rows.Err()
+			rows.Close()
+			if e != nil || len(out[spec.table]) == 0 {
+				t.Fatal("missing actual history", spec.table, e)
+			}
+		}
+		b, e := json.Marshal(out)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return b
+	}
+	documentsBefore, journalBefore := snapshot(), journalBytes(t, r)
+	target := nextRuntimeRelease(t, r, s, i.Versions.ReleaseID, "expression_style", "quiet and precise")
+	if _, e = r.Auth.Authorize(ctx, "Bearer "+runtimeToken, s.ProductID, "runtime.migrate"); e != nil {
+		t.Fatal("fixture lacks migration permission", e)
+	}
+	var p generated.MigrationPlan
+	runtimeHTTP(t, r, "POST", "/instances/"+scope.WorldInstanceID+"/migration-previews", "preview", generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, 201, &p)
 	hash, e := content.Hash(p)
 	if e != nil {
 		t.Fatal(e)
 	}
 	req := generated.MigrationExecuteRequest{ProductID: "coffee", PlanID: p.PlanID, PlanHash: hash, ExpectedVersions: i.Versions, ResolutionMap: p.ResolutionMap}
-	receipt, e := r.World.ExecuteInstanceMigration(ctx, scope, req, "migrate")
-	if e != nil {
-		t.Fatal(e)
+	var receipt generated.AdminTaskReceipt
+	runtimeHTTP(t, r, "POST", "/instances/"+scope.WorldInstanceID+"/migrations", "migrate", req, 202, &receipt)
+	executeKey := content.Identity(s.TenantID, s.ProductID, s.SubjectID, "executeInstanceMigration", "migrate")
+	executeReceipt, e := r.Store.QueryCommitScoped(ctx, s, &scope, s.SubjectID, executeKey)
+	if e != nil || !executeReceipt.Committed || executeReceipt.Key != executeKey {
+		t.Fatal("original migration intake receipt absent", executeReceipt, e)
 	}
 	lease, e := r.Store.ClaimRegistered(ctx, "migrator", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "MIGRATION", Operation: "INSTANCE_MIGRATION"}})
-	if e != nil {
-		t.Fatal(e)
+	if e != nil || lease.TaskID != string(receipt.TaskID) {
+		t.Fatal("wrong original migration leased", e)
 	}
 	r.Store.BeforeCommit = func(context.Context, *sql.Tx) error { return errors.New("synthetic final rollback") }
-	if e = r.World.Process(ctx, lease, "migrator"); e == nil {
+	e = r.World.Process(ctx, lease, "migrator")
+	r.Store.BeforeCommit = nil
+	if e == nil {
 		t.Fatal("rollback ignored")
 	}
-	r.Store.BeforeCommit = nil
 	var active sql.NullString
-	if e = r.Store.DB.QueryRow("SELECT active_migration_task FROM runtime_instances").Scan(&active); e != nil || !active.Valid || active.String != string(receipt.TaskID) {
+	if e = r.Store.DB.QueryRow("SELECT active_migration_task FROM runtime_instances WHERE world_instance_id=?", scope.WorldInstanceID).Scan(&active); e != nil || !active.Valid || active.String != string(receipt.TaskID) {
 		t.Fatal("rollback cleared active marker", active, e)
 	}
-	if _, e = r.World.Control(ctx, scope, world.ControlCommand{Key: "forbidden-end", Request: generated.AdminControlRequest{ProductID: "coffee", Command: "END", ExpectedVersions: i.Versions}}); e == nil {
-		t.Fatal("END entered active migration")
+	var finals int
+	if e = r.Store.DB.QueryRow("SELECT COUNT(*) FROM commit_receipts WHERE task_id=? AND operation='INSTANCE_MIGRATION'", receipt.TaskID).Scan(&finals); e != nil || finals != 0 {
+		t.Fatal("rollback fabricated final commit", finals, e)
+	}
+	if current, e := r.World.GetInstance(ctx, scope); e != nil || current != i || !bytes.Equal(documentsBefore, snapshot()) {
+		t.Fatal("rollback changed release, versions or original history", e)
+	}
+	for _, command := range []string{"RESUME", "END"} {
+		if _, e = r.World.Control(ctx, scope, world.ControlCommand{Key: "forbidden-" + command, Request: generated.AdminControlRequest{ProductID: "coffee", Command: command, ExpectedVersions: i.Versions}}); e == nil {
+			t.Fatal("control entered active migration", command)
+		}
 	}
 	r.Store.Commit = func(_ context.Context, tx *sql.Tx) error {
 		if e := tx.Commit(); e != nil {
@@ -154,30 +264,58 @@ func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
 		}
 		return errors.New("synthetic migration ACK lost")
 	}
-	if e = r.World.Process(ctx, lease, "migrator"); !errors.Is(e, store.ErrCommitUnknown) {
+	e = r.World.Process(ctx, lease, "migrator")
+	r.Store.Commit = nil
+	if !errors.Is(e, store.ErrCommitUnknown) {
+		t.Fatal("actual committed migration did not lose its ACK", e)
+	}
+	finalKey := content.Identity(string(receipt.TaskID), "result")
+	finalReceipt, e := r.Store.QueryCommitScoped(ctx, s, &scope, s.SubjectID, finalKey)
+	if e != nil || !finalReceipt.Committed || finalReceipt.TaskID != string(receipt.TaskID) || finalReceipt.Key != finalKey {
+		t.Fatal("lost ACK lacks exact original final receipt", finalReceipt, e)
+	}
+	var receiptCount int
+	if e = r.Store.DB.QueryRow("SELECT COUNT(*) FROM commit_receipts").Scan(&receiptCount); e != nil {
 		t.Fatal(e)
 	}
-	r.Store.Commit = nil
 	if e = world.New(r.Store).Process(ctx, lease, "migrator"); e != nil {
 		t.Fatal("original final receipt recovery", e)
 	}
 	again, e := r.World.ExecuteInstanceMigration(ctx, scope, req, "migrate")
-	if e != nil || again.TaskID != receipt.TaskID {
-		t.Fatal(again, e)
-	}
-	var itemAfter, actorAfter []byte
-	if e = r.Store.DB.QueryRow("SELECT document FROM items").Scan(&itemAfter); e != nil {
+	if e != nil {
 		t.Fatal(e)
 	}
-	if e = r.Store.DB.QueryRow("SELECT document FROM actors ORDER BY actor_id LIMIT 1").Scan(&actorAfter); e != nil {
+	wantReceipt, e := json.Marshal(receipt)
+	if e != nil {
 		t.Fatal(e)
 	}
-	if string(itemAfter) != string(itemBefore) || string(actorAfter) != string(actorBefore) {
-		t.Fatal("migration reset actor/fact/history")
+	gotReceipt, e := json.Marshal(again)
+	if e != nil || !bytes.Equal(wantReceipt, gotReceipt) {
+		t.Fatal("migration retry changed original returned identity", e)
+	}
+	for key, want := range map[string]store.CommitReceipt{executeKey: executeReceipt, finalKey: finalReceipt, joint.Key: joint} {
+		got, e := r.Store.QueryCommitScoped(ctx, s, &scope, s.SubjectID, key)
+		if e != nil || got != want {
+			t.Fatal("recovery replaced an original receipt", e)
+		}
+	}
+	var tasks, registrations, intakes, commits, receiptsAfter int
+	if e = r.Store.DB.QueryRow("SELECT (SELECT COUNT(*) FROM tasks WHERE task_kind='MIGRATION'),(SELECT COUNT(*) FROM registered_jobs WHERE operation='INSTANCE_MIGRATION'),(SELECT COUNT(*) FROM commit_receipts WHERE operation='executeInstanceMigration'),(SELECT COUNT(*) FROM commit_receipts WHERE operation='INSTANCE_MIGRATION'),(SELECT COUNT(*) FROM commit_receipts)").Scan(&tasks, &registrations, &intakes, &commits, &receiptsAfter); e != nil || tasks != 1 || registrations != 1 || intakes != 1 || commits != 1 || receiptsAfter != receiptCount {
+		t.Fatal("original recovery duplicated migration task/key/commit", tasks, registrations, intakes, commits, receiptsAfter, e)
+	}
+	if !bytes.Equal(documentsBefore, snapshot()) || !bytes.Equal(journalBefore, journalBytes(t, r)) {
+		t.Fatal("migration recovery changed actor/item/memory history or original provider journal")
 	}
 	i, e = r.World.GetInstance(ctx, scope)
-	if e != nil || i.InstanceState != "PAUSED" || i.Versions.WorldRevision != "2" || i.Versions.ControlVersion != "3" || i.Versions.ViewEpoch != "2" {
-		t.Fatal(i, e)
+	if e != nil {
+		t.Fatal(e)
+	}
+	v := runtimeVersions(t, i)
+	if i.InstanceState != "PAUSED" || i.Versions.ReleaseID != string(target.ReleaseID) || v.WorldRevision != versionsBefore.WorldRevision+1 || v.ControlVersion != versionsBefore.ControlVersion+1 || v.ViewEpoch != versionsBefore.ViewEpoch+1 || v.PrivacyEpoch != versionsBefore.PrivacyEpoch {
+		t.Fatal("recovery did not preserve exact managed version progression")
+	}
+	if e = r.Store.DB.QueryRow("SELECT active_migration_task FROM runtime_instances WHERE world_instance_id=?", scope.WorldInstanceID).Scan(&active); e != nil || active.Valid {
+		t.Fatal("committed migration left an active marker", e)
 	}
 	runtimeControl(t, r, i, "RESUME")
 }
@@ -305,12 +443,80 @@ func TestRuntimeControlLeaseTakeoverAndOriginalCommitUnknown(t *testing.T) {
 	}
 }
 func TestMigrationBlocksPendingStateWriters(t *testing.T) {
-	r, s, rel := runtimeFixture(t)
-	i := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "create"), "START")
-	_, _ = actionTask(t, r, s, i, "pending-turn")
+	ctx := context.Background()
+	// Use a real accepted/sent TURN: its reply is lost but its original result
+	// can still resume a world write. An unmanaged legacy TURN proves no closure.
+	r, scope, task, _ := originalResultFixture(t, true)
+	i, e := r.World.GetInstance(ctx, scope)
+	if e != nil {
+		t.Fatal(e)
+	}
 	i = runtimeControl(t, r, i, "PAUSE")
-	target := nextRuntimeRelease(t, r, s, rel, "expression_style", "short")
-	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, 422, nil)
+	target := nextRuntimeRelease(t, r, scope.ProductScope, i.Versions.ReleaseID, "expression_style", "short")
+	if _, e = r.Auth.Authorize(ctx, "Bearer "+runtimeToken, scope.ProductID, "runtime.migrate"); e != nil {
+		t.Fatal("fixture lacks current migration permission", e)
+	}
+	var operation, taskState, envelope, attemptState string
+	var holds int
+	if e = r.Store.DB.QueryRow("SELECT j.operation,t.state,h.state,a.state,(SELECT COUNT(*) FROM reservations WHERE task_id=?) FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) JOIN harness_envelopes h USING(tenant_id,product_id,task_id) JOIN attempts a USING(tenant_id,product_id,task_id) WHERE t.task_id=? AND a.slot=0", task, task).Scan(&operation, &taskState, &envelope, &attemptState, &holds); e != nil || operation != "TURN" || taskState != "RUNNING" || envelope != "ACTIVE" || attemptState != "SENT" || holds != 6 {
+		t.Fatal("fixture is not a registered live original state writer", operation, taskState, envelope, attemptState, holds, e)
+	}
+	snapshot := func() []byte {
+		t.Helper()
+		state := map[string][]string{}
+		for _, table := range []string{"tasks", "registered_jobs", "harness_envelopes", "attempts", "reservations", "commit_receipts", "events", "approved_results", "postings", "outbox", "world_controls", "actors", "items", "runtime_instances", "migration_plans", "harness_world_seals"} {
+			rows, e := r.Store.DB.Query("SELECT * FROM " + table)
+			if e != nil {
+				t.Fatal(e)
+			}
+			columns, e := rows.Columns()
+			if e != nil {
+				rows.Close()
+				t.Fatal(e)
+			}
+			for rows.Next() {
+				values := make([]any, len(columns))
+				pointers := make([]any, len(columns))
+				for n := range values {
+					pointers[n] = &values[n]
+				}
+				if e = rows.Scan(pointers...); e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				b, e := json.Marshal(values)
+				if e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				state[table] = append(state[table], string(b))
+			}
+			e = rows.Err()
+			rows.Close()
+			if e != nil {
+				t.Fatal(e)
+			}
+			sort.Strings(state[table])
+		}
+		b, e := json.Marshal(state)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return b
+	}
+	before, originalJ := snapshot(), journalBytes(t, r)
+	request := generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}
+	if _, e = r.World.PreviewInstanceMigration(ctx, scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
+		t.Fatal("live original state writer must block migration", e)
+	}
+	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", request, 403, nil)
+	if !bytes.Equal(before, snapshot()) || !bytes.Equal(originalJ, journalBytes(t, r)) {
+		t.Fatal("blocked migration changed original world, tasks, holds, receipts or journal")
+	}
+	var plans, migrations, seals int
+	if e = r.Store.DB.QueryRow("SELECT (SELECT COUNT(*) FROM migration_plans),(SELECT COUNT(*) FROM tasks WHERE task_kind='MIGRATION'),(SELECT COUNT(*) FROM harness_world_seals)").Scan(&plans, &migrations, &seals); e != nil || plans != 0 || migrations != 0 || seals != 0 {
+		t.Fatal("live writer admitted migration side effects", plans, migrations, seals, e)
+	}
 }
 func TestMigrationCancelReleasesOnlyOwnedActiveMarker(t *testing.T) {
 	r, s, rel := runtimeFixture(t)

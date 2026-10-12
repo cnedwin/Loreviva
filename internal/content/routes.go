@@ -25,8 +25,6 @@ func EffectiveRoute(in generated.DraftInput, owner, module string, options ...Re
 	return effectiveReferenceRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, module, firstResolved(options))
 }
 func effectiveReferenceRoute(in generated.DraftInput, ownerRef map[string]any, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
-	owner := fmt.Sprint(ownerRef["object_id"])
-
 	maps, e := objects(in)
 	if e != nil {
 		return generated.GenerationSettings{}, false, e
@@ -46,6 +44,30 @@ func effectiveReferenceRoute(in generated.DraftInput, ownerRef map[string]any, m
 		}
 		return generated.GenerationSettings{}, false, ErrBlocked
 	}
+	return resolveOwnerRoute(in, ownerRef, ownerDefinition, maps, module, resolved)
+}
+
+// Fixed editing-only producer selection. It never selects a runtime Skill generator.
+func effectiveDraftCandidateRoute(in generated.DraftInput, owner, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
+	maps, e := objects(in)
+	if e != nil {
+		return generated.GenerationSettings{}, false, e
+	}
+	definition := maps[owner]
+	if definition == nil {
+		return generated.GenerationSettings{}, false, ErrBlocked
+	}
+	if definition["kind"] != "SKILL" {
+		return EffectiveRoute(in, owner, module, resolved)
+	}
+	if definition["implementation_kind"] != "GENERATIVE" || module != "AUTHORING" {
+		return generated.GenerationSettings{}, false, ErrBlocked
+	}
+	return resolveOwnerRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, definition, maps, module, resolved)
+}
+
+func resolveOwnerRoute(in generated.DraftInput, ownerRef, ownerDefinition map[string]any, maps map[string]map[string]any, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
+	owner := fmt.Sprint(ownerRef["object_id"])
 	layers := []generated.GenerationSettings{}
 	var binding *generated.ModuleAgentBinding
 	for _, b := range in.ModuleAgentBindings {

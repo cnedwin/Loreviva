@@ -1,6 +1,7 @@
 package files
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -21,6 +22,40 @@ func (f *Store) Get(ctx context.Context, scope domain.ProductScope, id string) (
 		return out, permitError
 	}
 	defer release()
+	if task, e := f.rehearsalReportAssetTask(ctx, scope, id); e != nil {
+		return out, e
+	} else if task != "" {
+		if e := f.checkResultGovernance(ctx); e != nil {
+			return out, e
+		}
+		v, e := f.DB.InspectCommittedRehearsalReport(ctx, scope, task)
+		if e == nil && string(v.Asset.AssetID) == id {
+			if e := f.checkResultGovernance(ctx); e != nil {
+				return out, e
+			}
+			return v.Asset, nil
+		}
+		return out, ErrNotFound
+	}
+	// Candidate assets require their fixed business-COMMIT/source inspection.
+	// They must never fall through to the ordinary uploaded .blob path.
+	task, e := f.candidateAssetTask(ctx, scope, id)
+	if e != nil {
+		return out, e
+	}
+	if task != "" {
+		if e := f.checkResultGovernance(ctx); e != nil {
+			return out, e
+		}
+		v, e := f.DB.InspectApprovedDraftCandidate(ctx, scope, task)
+		if e == nil && string(v.Asset.AssetID) == id {
+			if e := f.checkResultGovernance(ctx); e != nil {
+				return out, e
+			}
+			return v.Asset, nil
+		}
+		return out, ErrNotFound
+	}
 	if _, e := content.Gate(ctx, f.DB, scope); e != nil {
 		return out, ErrNotFound
 	}
@@ -38,7 +73,7 @@ func (f *Store) Get(ctx context.Context, scope domain.ProductScope, id string) (
 	}
 	var b []byte
 	var state string
-	e := f.DB.DB.QueryRowContext(ctx, "SELECT state,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, id).Scan(&state, &b)
+	e = f.DB.DB.QueryRowContext(ctx, "SELECT state,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, id).Scan(&state, &b)
 	if e != nil {
 		return out, ErrNotFound
 	}
@@ -65,6 +100,26 @@ func (f *Store) OpenAuthorized(ctx context.Context, scope domain.ProductScope, i
 	r, e := f.Get(ctx, scope, id)
 	if e != nil || r.State != "READY" {
 		return nil, ErrNotFound
+	}
+	if task, e := f.rehearsalReportAssetTask(ctx, scope, id); e != nil {
+		return nil, e
+	} else if task != "" {
+		body, e := f.ReadCommittedRehearsalReport(ctx, scope, task)
+		if e != nil {
+			return nil, e
+		}
+		transferred = true
+		return &guardedReader{ReadCloser: io.NopCloser(bytes.NewReader(body)), release: release, check: func() error { _, e := f.ReadCommittedRehearsalReport(ctx, scope, task); return e }}, nil
+	}
+	if task, e := f.candidateAssetTask(ctx, scope, id); e != nil {
+		return nil, e
+	} else if task != "" {
+		body, e := f.ReadApprovedDraftCandidate(ctx, scope, task)
+		if e != nil {
+			return nil, e
+		}
+		transferred = true
+		return &guardedReader{ReadCloser: io.NopCloser(bytes.NewReader(body)), release: release, check: func() error { _, e := f.ReadApprovedDraftCandidate(ctx, scope, task); return e }}, nil
 	}
 	var key string
 	if e = f.DB.DB.QueryRowContext(ctx, "SELECT storage_key FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=? AND state='READY'", scope.TenantID, scope.ProductID, id).Scan(&key); e != nil {

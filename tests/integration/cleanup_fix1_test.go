@@ -63,6 +63,12 @@ func TestFix1CleanupProgressSurvivesRestartAndPreservesReferencedFiles(t *testin
 	}
 	beforeNames := map[string]bool{}
 	for _, entry := range entries {
+		if entry.IsDir() {
+			if entry.Name() != ".memory-locks" {
+				t.Fatal("unexpected storage directory", entry.Name())
+			}
+			continue
+		}
 		beforeNames[entry.Name()] = true
 	}
 	var pendingKey string
@@ -83,6 +89,9 @@ func TestFix1CleanupProgressSurvivesRestartAndPreservesReferencedFiles(t *testin
 	}
 	orphan := ""
 	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
 		if !beforeNames[entry.Name()] {
 			orphan = filepath.Join(root, "demo-local", "coffee", entry.Name())
 		}
@@ -156,8 +165,25 @@ func TestFix1CleanupProgressSurvivesRestartAndPreservesReferencedFiles(t *testin
 	if e != nil {
 		t.Fatal(e)
 	}
-	if len(entries) != len(beforeNames) {
-		t.Fatalf("young/reference files changed: got=%d want=%d", len(entries), len(beforeNames))
+	retained := 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if entry.Name() != ".memory-locks" {
+				t.Fatal("unexpected storage directory", entry.Name())
+			}
+			continue
+		}
+		if !beforeNames[entry.Name()] {
+			t.Fatal("unexpected retained body", entry.Name())
+		}
+		actual, e := os.ReadFile(filepath.Join(root, "demo-local", "coffee", entry.Name()))
+		if e != nil || !bytes.Equal(actual, body) {
+			t.Fatal("retained body changed", entry.Name(), e)
+		}
+		retained++
 	}
-	t.Log(fmt.Sprintf("actual FILE_CLEANUP reached indexed EOF after restart; retained=%d old orphan removed", len(entries)))
+	if retained != len(beforeNames) {
+		t.Fatalf("young/reference bodies changed: got=%d want=%d", retained, len(beforeNames))
+	}
+	t.Log(fmt.Sprintf("actual FILE_CLEANUP reached indexed EOF after restart; retained=%d old orphan removed", retained))
 }

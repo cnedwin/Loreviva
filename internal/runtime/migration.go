@@ -184,6 +184,9 @@ func (r *Runtime) ExecuteInstanceMigration(ctx context.Context, s domain.Scope, 
 		if h != stateHash {
 			return nil, store.ErrConflict
 		}
+		if e = tx.SealWorldAccounting(ctx, s); e != nil {
+			return nil, e
+		}
 		if e = queueTask(ctx, tx, s, id, "MIGRATION", "INSTANCE_MIGRATION", persistedTask{Scope: s, Versions: v, Status: "PAUSED", Action: "MIGRATE", PlanID: string(q.PlanID)}); e != nil {
 			return nil, e
 		}

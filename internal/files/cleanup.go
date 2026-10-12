@@ -85,17 +85,44 @@ func (f *Store) cleanupStage(ctx context.Context, scope domain.ProductScope, key
 		return false, e
 	}
 	lock := content.Key(scope, "asset", "staging."+key)
+	closure, e := f.DB.CandidateStageCleanupLocks(ctx, scope, key)
+	if e != nil {
+		return false, e
+	}
+	closure = append(closure, lock)
+	rehearsalLocks, e := f.DB.RehearsalStageCleanupLocks(ctx, scope, key)
+	if e != nil {
+		return false, e
+	}
+	closure = append(closure, rehearsalLocks...)
 	// A cutoff-qualified claim can be replayed after unknown COMMIT. Upload intake
 	// uses this same key and rejects DELETE_INTENT, so a late writer cannot revive
 	// deleted bytes as a new PENDING asset. Existing PENDING/READY references win.
 	command := "cleanup." + key + "." + strconv.FormatInt(cutoff.UnixMicro(), 10)
 	hash := sha256.Sum256([]byte(command))
-	_, e = f.DB.WithCommandBarrier(ctx, store.CommandBarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, Operation: "CLAIM_STAGE_DELETE", CommandKey: command, CommitKey: content.Identity(scope.TenantID, scope.ProductID, command), GateVersions: g, PayloadHash: hash, Locks: []store.LockKey{lock}}, func(tx store.Tx) error {
+	claim := store.CommandBarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, Operation: "CLAIM_STAGE_DELETE", CommandKey: command, CommitKey: content.Identity(scope.TenantID, scope.ProductID, command), GateVersions: g, PayloadHash: hash, Locks: closure}
+	_, e = f.DB.WithCommandBarrier(ctx, claim, func(tx store.Tx) error {
 		if e := tx.RequireLock(lock); e != nil {
 			return e
 		}
 		var refs int
-		if e := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM assets WHERE tenant_id=? AND product_id=? AND storage_key=? AND state IN ('PENDING','READY')", scope.TenantID, scope.ProductID, key).Scan(&refs); e != nil {
+		// Report stages are bound before IO and share this exact storage lock
+		// with final COMMIT. Their fixed derivation cleanup owns retirement.
+		if live, e := tx.KeepRehearsalStage(ctx, scope, key); e != nil {
+			return e
+		} else if live {
+			return nil
+		}
+		// Product candidate bodies have their own exact source binding, never a
+		// fabricated WORLD memory lineage. A retained source protects the stage;
+		// actual irreversible draft deletion retires its derived reference under
+		// this same storage namespace lock before bytes are removed.
+		if live, e := tx.KeepCandidateStage(ctx, scope, key); e != nil {
+			return e
+		} else if live {
+			return nil
+		}
+		if e := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT storage_key FROM assets WHERE tenant_id=? AND product_id=? AND storage_key=? AND state IN ('PENDING','READY') UNION ALL SELECT storage_key FROM memory_asset_lineage WHERE tenant_id=? AND product_id=? AND storage_key=? AND delete_intent=0) live_refs", scope.TenantID, scope.ProductID, key, scope.TenantID, scope.ProductID, key).Scan(&refs); e != nil {
 			return e
 		}
 		if refs > 0 {
@@ -114,8 +141,23 @@ func (f *Store) cleanupStage(ctx context.Context, scope domain.ProductScope, key
 	if state != "DELETE_INTENT" {
 		return false, nil
 	}
+	// Result evidence may still be held through its local COMMIT attempt. Acquire
+	// its storage lock only after the deletion-intent transaction has ended.
+	done, e := f.lockDerived(ctx, scope, key)
+	if e != nil {
+		return false, e
+	}
+	defer done()
 	if e = f.root.Remove(part); e != nil && !os.IsNotExist(e) {
 		return false, e
+	}
+	if len(rehearsalLocks) > 0 {
+		proof := &rehearsalPurgeEvidence{owner: f, scope: scope, key: key, claim: claim, live: true}
+		defer func() { proof.live = false }()
+		_, e = f.DB.FinishRehearsalStagePurge(ctx, scope, key, proof)
+		if e != nil {
+			return false, e
+		}
 	}
 	// Keep the deletion intent permanently: a stalled pre-intake writer is denied,
 	// and later sweeps can remove its eventual abandoned .part. No blob is removed.

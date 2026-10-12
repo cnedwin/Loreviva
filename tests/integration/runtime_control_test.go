@@ -51,6 +51,9 @@ func TestRuntimeCreationReplayChecksMigratedCurrentRelease(t *testing.T) {
 }
 
 func runtimeFixture(t *testing.T) (*app.Runtime, domain.ProductScope, string) {
+	return runtimeFixtureWithConsent(t, false)
+}
+func runtimeFixtureWithConsent(t *testing.T, optIn bool) (*app.Runtime, domain.ProductScope, string) {
 	t.Helper()
 	ctx := context.Background()
 	s := store.New(dbfixture.Open(t))
@@ -63,7 +66,7 @@ func runtimeFixture(t *testing.T) (*app.Runtime, domain.ProductScope, string) {
 	if e := app.InitializeLocal(ctx, s, independentRoot, privateRoot); e != nil {
 		t.Fatal(e)
 	}
-	if e := maintenance.BootstrapSynthetic(ctx, s, scope, "owner", runtimeToken); e != nil {
+	if e := maintenance.BootstrapSyntheticWithConsent(ctx, s, scope, "owner", runtimeToken, optIn); e != nil {
 		t.Fatal(e)
 	}
 	f, e := files.New(s, privateRoot)
@@ -76,7 +79,7 @@ func runtimeFixture(t *testing.T) (*app.Runtime, domain.ProductScope, string) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	r.Local = local
+	r.BindLocal(local)
 	r.Memory.Ledger = local.Ledger
 	t.Cleanup(func() {
 		if e := local.Participant.Close(context.Background()); e != nil {

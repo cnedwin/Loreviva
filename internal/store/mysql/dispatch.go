@@ -7,11 +7,39 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"loreviva.local/loreviva/internal/domain"
 	"sort"
 )
 
 func prepareDispatch(d DispatchRequest) (DispatchRequest, error) {
+	if d.candidateExecution {
+		a := turnIdentity(d.TaskID, "candidate-attempt", fmt.Sprint(d.Slot))
+		if d.WorldScope != nil || d.Slot > 1 || d.candidateAttempt != a || d.AttemptID != a || d.AuthorizationID != turnIdentity(a, "authorization") || d.RequestKey != turnIdentity(a, "request") {
+			return d, ErrDenied
+		}
+	}
+	if d.candidateExecution {
+		expected := map[string]Reservation{}
+		for _, a := range r0CandidateAccounts(d.ProductScope, "") {
+			if a.Kind == "supplier_global" || a.Kind == "supplier_tenant" {
+				a.ReservationID = turnIdentity(d.AttemptID, "supplier", a.Kind)
+				expected[a.Kind] = a
+			}
+		}
+		if len(d.Reservations) != 2 {
+			return d, ErrDenied
+		}
+		for _, a := range d.Reservations {
+			want, ok := expected[a.Kind]
+			if !ok || a != want {
+				return d, ErrDenied
+			}
+			delete(expected, a.Kind)
+		}
+	}
+	d.harnessDispatchRoute = d.Route
+	d.harnessDispatchHash = d.RequestHash
 	if d.Purpose != ExecutionPurpose {
 		return d, ErrDenied
 	}
@@ -26,11 +54,9 @@ func prepareDispatch(d DispatchRequest) (DispatchRequest, error) {
 	if e := domain.ValidateIdempotencyKey(d.RequestKey); e != nil {
 		return d, e
 	}
-	// The two-call ceiling is not authority to spend the extra slot. Task6
-	// must first supply durable program approval and completed original-result
-	// evidence for a permitted repair/recompute. Until then both authorization
-	// and the final StartSend boundary accept only the original slot.
-	if d.Slot != 0 || len(d.Reservations) == 0 {
+	// The extra slot requires the private owning plan and live original-body
+	// evidence. Both boundaries repeat the program reason and actual input.
+	if d.Slot > 1 || d.Slot == 1 && (d.HarnessQuoteID == "" || d.harnessRecoveryAttempt != d.AttemptID || d.recoveryEvidence == nil) || len(d.Reservations) == 0 {
 		return d, ErrDenied
 	}
 	d.Reservations = append([]Reservation(nil), d.Reservations...)
@@ -68,6 +94,21 @@ func prepareDispatch(d DispatchRequest) (DispatchRequest, error) {
 		a, b := d.Reservations[i], d.Reservations[j]
 		return less(LockKey{Rank: 80, Kind: a.Kind, IDs: []string{a.ScopeKey, a.AccountID, a.ReservationID}}, LockKey{Rank: 80, Kind: b.Kind, IDs: []string{b.ScopeKey, b.AccountID, b.ReservationID}})
 	})
+	hash, e := dispatchFingerprint(d)
+	if e != nil {
+		return d, e
+	}
+	d.PayloadHash = hash
+	return d, nil
+}
+
+// Pure original receipt preimage, with no permission or send capability.
+func dispatchFingerprint(d DispatchRequest) ([32]byte, error) {
+	d.Reservations = append([]Reservation(nil), d.Reservations...)
+	sort.Slice(d.Reservations, func(i, j int) bool {
+		a, b := d.Reservations[i], d.Reservations[j]
+		return less(LockKey{Rank: 80, Kind: a.Kind, IDs: []string{a.ScopeKey, a.AccountID, a.ReservationID}}, LockKey{Rank: 80, Kind: b.Kind, IDs: []string{b.ScopeKey, b.AccountID, b.ReservationID}})
+	})
 	payload, e := json.Marshal(struct {
 		Attempt, Authorization, Route, Request string
 		Hash                                   [32]byte
@@ -75,10 +116,20 @@ func prepareDispatch(d DispatchRequest) (DispatchRequest, error) {
 		Reservations                           []Reservation
 	}{d.AttemptID, d.AuthorizationID, d.Route, d.RequestKey, d.RequestHash, d.Slot, d.Reservations})
 	if e != nil {
-		return d, e
+		return [32]byte{}, e
 	}
-	d.PayloadHash = sha256.Sum256(payload)
-	return d, nil
+	// Preserve the immutable pre-Harness dispatch preimage for existing requests.
+	// Only newly managed envelopes bind the additive quote identity.
+	if d.HarnessQuoteID != "" {
+		payload, e = json.Marshal(struct {
+			Original     json.RawMessage
+			HarnessQuote string
+		}{payload, d.HarnessQuoteID})
+		if e != nil {
+			return [32]byte{}, e
+		}
+	}
+	return sha256.Sum256(payload), nil
 }
 
 type attemptRow struct {
@@ -112,14 +163,36 @@ func validateReservations(ctx context.Context, tx *sql.Tx, d DispatchRequest) er
 	return nil
 }
 func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) (DispatchAuthorization, error) {
+	releaseEvidence, e := s.prepareRecoveryDispatch(ctx, &request)
+	if e != nil {
+		return DispatchAuthorization{}, e
+	}
+	defer releaseEvidence()
 	request.phase = "AUTHORIZE"
 	d, e := prepareDispatch(request)
 	if e != nil {
 		return DispatchAuthorization{}, e
 	}
+	ctx, settlement, settlementRelease, e := s.turnSettlementAdmission(ctx, d)
+	if e != nil {
+		return DispatchAuthorization{}, e
+	}
+	defer settlementRelease()
+	d.originalSettlementService = settlement
+	if d.candidateExecution && d.Slot == 1 {
+		var releaseQuery func()
+		ctx, d.originalQueryService, releaseQuery, e = s.turnQueryAdmission(ctx, d)
+		if e != nil {
+			return DispatchAuthorization{}, e
+		}
+		defer releaseQuery()
+	}
 	result := DispatchAuthorization{AttemptID: d.AttemptID}
 	receipt, replay, e := s.barrier(ctx, d.BarrierRequest, func(port Tx) error {
 		tx := port.(*unit).tx
+		if e := checkSupplierDebt(ctx, tx, d.Reservations); e != nil {
+			return e
+		}
 		t, p := d.ProductScope.TenantID, d.ProductScope.ProductID
 		a, e := readAttempt(ctx, tx, d)
 		if e == nil {
@@ -127,6 +200,9 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 				return ErrConflict
 			}
 			if e = validateReservations(ctx, tx, d); e != nil {
+				return e
+			}
+			if e = checkHarnessAttempt(ctx, tx, d, false); e != nil {
 				return e
 			}
 			result.QueryOriginal = a.started.Valid
@@ -146,6 +222,9 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 			return e
 		}
 		if _, e = tx.ExecContext(ctx, "INSERT INTO dispatch_authorizations(tenant_id,product_id,task_id,attempt_id,authorization_id,fence,owner_subject_id) VALUES(?,?,?,?,?,?,?)", t, p, d.TaskID, d.AttemptID, d.AuthorizationID, d.Fence, d.OwnerSubjectID); e != nil {
+			return e
+		}
+		if e = checkHarnessAttempt(ctx, tx, d, true); e != nil {
 			return e
 		}
 		for _, r := range d.Reservations {
@@ -169,7 +248,10 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 		if e != nil || n != 1 {
 			return ErrDenied
 		}
-		return nil
+		if e = advanceTurn(ctx, port.(*unit), "AUTHORIZED"); e != nil {
+			return e
+		}
+		return s.executeTextSkills(ctx, port.(*unit), d)
 	})
 	if e != nil {
 		return DispatchAuthorization{}, e
@@ -184,6 +266,11 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 	return result, nil
 }
 func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptID string) (DispatchAuthorization, error) {
+	releaseEvidence, e := s.prepareRecoveryDispatch(ctx, &request)
+	if e != nil {
+		return DispatchAuthorization{}, e
+	}
+	defer releaseEvidence()
 	request.phase = "SEND"
 	if request.AttemptID != attemptID {
 		return DispatchAuthorization{}, ErrConflict
@@ -192,9 +279,26 @@ func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptI
 	if e != nil {
 		return DispatchAuthorization{}, e
 	}
+	ctx, queryService, release, e := s.turnQueryAdmission(ctx, d)
+	if e != nil {
+		return DispatchAuthorization{}, e
+	}
+	defer release()
+	d.originalQueryService = queryService
+	ctx, settlement, settlementRelease, e := s.turnSettlementAdmission(ctx, d)
+	if e != nil {
+		return DispatchAuthorization{}, e
+	}
+	defer settlementRelease()
+	d.originalSettlementService = settlement
 	result := DispatchAuthorization{AttemptID: attemptID}
+	var material domain.GenerationMaterial
+	var candidate *domain.DraftCandidateMaterial
 	receipt, replay, e := s.barrier(ctx, d.BarrierRequest, func(port Tx) error {
 		tx := port.(*unit).tx
+		if e := checkSupplierDebt(ctx, tx, d.Reservations); e != nil {
+			return e
+		}
 		a, e := readAttempt(ctx, tx, d)
 		if e != nil {
 			return e
@@ -209,8 +313,56 @@ func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptI
 			result.QueryOriginal = true
 			return nil
 		}
+		if e = checkHarnessAttempt(ctx, tx, d, false); e != nil {
+			return e
+		}
 		if a.state != "AUTHORIZED" {
 			return ErrDenied
+		}
+		if queryService != nil && d.candidateExecution {
+			m, err := s.candidateMaterialTx(ctx, port.(*unit), d.BarrierRequest)
+			if err != nil {
+				return err
+			}
+			candidate = &m
+			frozen := m
+			frozen.Canonical = nil
+			raw, err := s.candidateSnapshotTx(ctx, port.(*unit), d, frozen)
+			if err != nil {
+				return err
+			}
+			if _, err = tx.ExecContext(ctx, "INSERT INTO harness_candidate_attempts(tenant_id,product_id,task_id,attempt_id,document) VALUES(?,?,?,?,?)", d.ProductScope.TenantID, d.ProductScope.ProductID, d.TaskID, d.AttemptID, raw); err != nil {
+				return err
+			}
+		} else if queryService != nil {
+			if s.GenerationContext == nil {
+				return ErrDenied
+			}
+			var snapshot domain.OriginalContextSnapshot
+			if d.Slot == 1 {
+				material, snapshot, e = s.checkRecoveryDispatchTx(ctx, port, d.BarrierRequest)
+			} else {
+				material, e = s.GenerationContext.BuildGenerationRequestTx(ctx, port, *d.WorldScope, d.TaskID)
+				if e == nil {
+					snapshot, e = s.GenerationContext.SnapshotOriginalContextTx(ctx, port, *d.WorldScope, d.TaskID)
+				}
+			}
+			if e != nil {
+				return e
+			}
+			if len(material.Canonical) == 0 {
+				return ErrDenied
+			}
+			if snapshot.Binding != material.Binding {
+				return ErrConflict
+			}
+			raw, e := json.Marshal(snapshot)
+			if e != nil {
+				return e
+			}
+			if _, e = tx.ExecContext(ctx, "INSERT INTO harness_attempt_contexts(tenant_id,product_id,task_id,attempt_id,document) VALUES(?,?,?,?,?)", d.ProductScope.TenantID, d.ProductScope.ProductID, d.TaskID, d.AttemptID, raw); e != nil {
+				return e
+			}
 		}
 		t, p := d.ProductScope.TenantID, d.ProductScope.ProductID
 		res, e := tx.ExecContext(ctx, "UPDATE dispatch_authorizations SET fence=? WHERE tenant_id=? AND product_id=? AND task_id=? AND attempt_id=? AND owner_subject_id=?", d.Fence, t, p, d.TaskID, d.AttemptID, d.OwnerSubjectID)
@@ -228,8 +380,11 @@ func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptI
 		if e != nil || n != 1 {
 			return ErrDenied
 		}
+		if e = bindOriginalQuery(ctx, port.(*unit), d, queryService); e != nil {
+			return e
+		}
 		result.CanSend = true
-		return nil
+		return advanceTurn(ctx, port.(*unit), "SEND_MARKED")
 	})
 	if e != nil {
 		return DispatchAuthorization{}, e
@@ -238,6 +393,9 @@ func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptI
 	if replay {
 		result.CanSend = false
 		result.QueryOriginal = true
+	}
+	if result.CanSend && queryService != nil {
+		result.send = &OriginalSendPermit{store: s, dispatch: cloneOriginalDispatch(d), material: material, candidate: candidate}
 	}
 	return result, nil
 }

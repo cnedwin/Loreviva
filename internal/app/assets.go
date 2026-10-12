@@ -16,18 +16,49 @@ import (
 )
 
 func (r *Runtime) assetRoutes(m *http.ServeMux) {
-	m.HandleFunc("GET /world/v1/admin/assets/{asset_id}", r.admin("", "asset.read", func(ctx context.Context, s domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+	normalAsset := r.admin("", "asset.read", func(ctx context.Context, s domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
 		v, e := r.Files.Get(ctx, s, q.PathValue("asset_id"))
 		return 200, v, e
-	}))
-	m.HandleFunc("GET /world/v1/assets/{asset_id}/content", func(w http.ResponseWriter, q *http.Request) {
-		scope, e := r.Auth.Authorize(q.Context(), q.Header.Get("Authorization"), q.URL.Query().Get("product_id"), "asset.read")
-		if e != nil {
-			failure(w, files.ErrNotFound)
-			return
+	})
+	m.HandleFunc("GET /world/v1/admin/assets/{asset_id}", func(w http.ResponseWriter, q *http.Request) {
+		if candidateHistoryQuery(q) {
+			if s, e := r.Auth.AuthorizeCommittedCandidateAsset(q.Context(), q.Header.Get("Authorization"), q.URL.Query().Get("product_id"), q.PathValue("asset_id")); e == nil {
+				if e = r.committedArtifactReadReady(q.Context()); e != nil {
+					failure(w, e)
+					return
+				}
+				v, e := r.Files.Get(q.Context(), s, q.PathValue("asset_id"))
+				if e != nil {
+					failure(w, e)
+					return
+				}
+				response(w, 200, v)
+				return
+			}
+			if s, e := r.Auth.AuthorizeCommittedRehearsalReportAsset(q.Context(), q.Header.Get("Authorization"), q.URL.Query().Get("product_id"), q.PathValue("asset_id")); e == nil {
+				if e = r.committedArtifactReadReady(q.Context()); e != nil {
+					failure(w, e)
+					return
+				}
+				v, e := r.Files.Get(q.Context(), s, q.PathValue("asset_id"))
+				if e != nil {
+					failure(w, e)
+					return
+				}
+				response(w, 200, v)
+				return
+			}
 		}
-		if e = r.Readiness(q.Context()); e != nil {
-			failure(w, e)
+		normalAsset(w, q)
+	})
+	m.HandleFunc("GET /world/v1/assets/{asset_id}/content", func(w http.ResponseWriter, q *http.Request) {
+		scope, e := r.assetReaderScope(q.Context(), q)
+		if e != nil {
+			if scope.Validate() == nil {
+				failure(w, e)
+			} else {
+				failure(w, files.ErrNotFound)
+			}
 			return
 		}
 		meta, e := r.Files.Get(q.Context(), scope, q.PathValue("asset_id"))
@@ -132,5 +163,24 @@ func (r *finalMultipartReader) Read(p []byte) (int, error) {
 func (r *Runtime) capabilities(ctx context.Context, s domain.ProductScope, _ *http.Request, _ []byte) (int, any, error) {
 	descriptor, _ := content.Hash(struct{ Connection, Model, Price string }{content.MockConnection, content.MockModel, "0"})
 	out := map[string]any{"scope": content.Scope(s), "upload_max_bytes": strconv.Itoa(files.MaxFileBytes), "json_max_bytes": strconv.Itoa(wire.MaxBytes), "json_max_depth": wire.MaxDepth, "registered_primitives": []string{"SIGN_CUSTODY"}, "registered_schema_ids": []string{"DraftInput", "PublishCheckReport", "TurnRequest", "ApprovedPacket"}, "mandatory_duties": content.Duties, "routes": []any{map[string]any{"connection_ref": content.MockConnection, "model_id": content.MockModel, "descriptor_hash": descriptor, "capabilities": []string{"TEXT"}, "price_units": "0", "mode": "MOCK"}}, "supported_jobs": []string{"FILE_CLEANUP", "INSTANCE_CONTROL", "INSTANCE_MIGRATION"}, "unimplemented_jobs": []string{"REHEARSAL", "CANDIDATE", "PACKAGE_PREFLIGHT", "PACKAGE_IMPORT", "PACKAGE_EXPORT", "DOCUMENT_EXTRACTION"}, "mock_only": true}
+	supported := []string{"FILE_CLEANUP", "INSTANCE_CONTROL", "INSTANCE_MIGRATION"}
+	unimplemented := []string{}
+	for _, job := range []string{"REHEARSAL", "CANDIDATE"} {
+		ready := false
+		if r.Worker != nil {
+			if job == "REHEARSAL" {
+				ready = r.Worker.Turns.RehearsalReady()
+			} else {
+				ready = r.Candidates != nil && r.Worker.Turns == r.Candidates.Executor && r.Worker.Turns.CandidateReady()
+			}
+		}
+		if ready {
+			supported = append(supported, job)
+		} else {
+			unimplemented = append(unimplemented, job)
+		}
+	}
+	out["supported_jobs"] = supported
+	out["unimplemented_jobs"] = append(unimplemented, "PACKAGE_PREFLIGHT", "PACKAGE_IMPORT", "PACKAGE_EXPORT", "DOCUMENT_EXTRACTION")
 	return 200, out, nil
 }

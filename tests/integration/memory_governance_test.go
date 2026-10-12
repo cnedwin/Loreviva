@@ -13,6 +13,7 @@ import (
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
 	"loreviva.local/loreviva/internal/localstate"
+	"loreviva.local/loreviva/internal/maintenance"
 	"loreviva.local/loreviva/internal/memory"
 	world "loreviva.local/loreviva/internal/runtime"
 	store "loreviva.local/loreviva/internal/store/mysql"
@@ -227,85 +228,150 @@ func TestPrivateMemoryHTTPMetadataBodyAndLegacyProjection(t *testing.T) {
 }
 
 func TestMemoryInitialAndHistorySurviveActualMigration(t *testing.T) {
-	r, s, release := runtimeFixture(t)
-	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "memory-migrate"), "START")
-	svc := memory.New(r.Store, r.Local.Ledger)
 	ctx := context.Background()
-	ns := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
-	if e := svc.Initialize(ctx, ns, "initialize-original"); e != nil {
+	// Root's FIX5 ruling uses real INITIAL, EXPERIENCE/INFERRED and an unrelated
+	// RecordStatement/TOLD tombstone; it does not claim Mock produced the old trio.
+	r, scope, task, item := actionResultFixture(t)
+	s := scope.ProductScope
+	lease, worker := currentResultLease(t, task, scope, r.Store.DB)
+	if e := r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
 		t.Fatal(e)
 	}
-	br, q := actionTask(t, r, s, i, "history-before-migrate")
-	var initialRaw []byte
-	if e := r.Store.DB.QueryRow("SELECT document FROM memory_aggregates WHERE world_instance_id=?", i.Scope.WorldInstanceID).Scan(&initialRaw); e != nil {
+	joint, e := r.Store.CommitOriginalTurn(ctx, lease, worker)
+	if e != nil || !joint.Committed || joint.TaskID != task || joint.OwnerSubjectID != s.SubjectID {
+		t.Fatal("actual managed joint commit missing", joint, e)
+	}
+	if original, e := r.Store.QueryOriginalTurnCommit(ctx, scope, task); e != nil || original != joint {
+		t.Fatal("joint receipt identity changed", original, e)
+	}
+	var operation, state, envelope string
+	var holds, attempts, validations int
+	if e = r.Store.DB.QueryRow("SELECT j.operation,t.state,h.state,(SELECT COUNT(*) FROM reservations WHERE task_id=?),(SELECT COUNT(*) FROM attempts WHERE task_id=?),(SELECT COUNT(*) FROM harness_original_validations WHERE task_id=?) FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) JOIN harness_envelopes h USING(tenant_id,product_id,task_id) WHERE t.task_id=?", task, task, task, task).Scan(&operation, &state, &envelope, &holds, &attempts, &validations); e != nil || operation != "TURN" || state != "COMMITTED" || envelope != "COMMITTED" || holds != 6 || attempts != 1 || validations != 1 {
+		t.Fatal("history lacks real managed TURN closure", operation, state, envelope, holds, attempts, validations, e)
+	}
+	_, committed, e := r.Files.ReadApprovedTurn(ctx, scope, task)
+	if e != nil || len(committed.MemoryIDs) == 0 || len(committed.EventIDs) == 0 || committed.ReceiptKey != joint.Key {
+		t.Fatal("actual action and memory history absent", e)
+	}
+	svc := r.Memory
+	ns := memory.Namespace{Scope: scope, DataSubjectID: s.SubjectID}
+	const source, statementKey = "unrelated-migration-statement", "migration-statement-intake"
+	if e = svc.RecordStatement(ctx, ns, source, statementKey, item.CustodianID, "Unrelated preference for a quiet table.", []memory.Use{memory.PrivateResponse}); e != nil {
 		t.Fatal(e)
 	}
-	var initial memory.Aggregate
-	if e := json.Unmarshal(initialRaw, &initial); e != nil {
-		t.Fatal(e)
-	}
-	parent := ""
-	for id, v := range initial.Nodes {
-		if v.ActorID == q.Intents[0].ActorID {
-			parent = id
-			break
-		}
-	}
-	br.Locks = append(br.Locks, ns.Locks()...)
-	_, e := r.Store.WithBarrier(ctx, br, func(tx store.Tx) error {
-		if _, e := world.ApplyActions(ctx, tx, q); e != nil {
-			return e
-		}
-		_, e := memory.ApplyUpdates(tx, memory.MemoryUpdateRequest{Namespace: ns, TaskID: q.TaskID, Nodes: []memory.MemoryRecord{{ID: "promise", ActorID: q.Intents[0].ActorID, TargetKind: "PLAYER", TargetID: s.SubjectID, Kind: "PROMISE", Domain: memory.ActorBelief, Audience: memory.Private, Uses: []memory.Use{memory.PrivateResponse}, Parents: []string{parent}, Body: "retained promise", Revision: 1}, {ID: "relationship", ActorID: q.Intents[0].ActorID, TargetKind: "ACTOR", TargetID: q.Intents[0].TargetID, Kind: "RELATIONSHIP", Domain: memory.ActorBelief, Audience: memory.Private, Uses: []memory.Use{memory.PrivateResponse}, Parents: []string{"promise"}, Body: "retained relationship", Revision: 1}, {ID: "obsolete-goal", ActorID: q.Intents[0].ActorID, TargetKind: "PLAYER", TargetID: s.SubjectID, Kind: "GOAL", Domain: memory.ActorBelief, Audience: memory.Private, Uses: []memory.Use{memory.PrivateResponse}, Parents: []string{parent}, Body: "deleted goal", Revision: 1}}})
-		return e
-	})
-	if e != nil {
-		t.Fatal(e)
-	}
+	nodeID := content.Identity(source, item.CustodianID, "statement")
 	if _, e = r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
 		t.Fatal(e)
 	}
 	if _, e = r.Store.DB.Exec("INSERT INTO memory_subject_permissions VALUES('demo-local','coffee','creator','creator','memory.govern','PRIVATE_RESPONSE',DATE_ADD(UTC_TIMESTAMP(6),INTERVAL 1 HOUR),1)"); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = svc.Govern(ctx, domain.RelationshipScope{Scope: ns.Scope, ActorInstanceID: q.Intents[0].ActorID, PlayerID: s.SubjectID}, memory.MemoryGovernanceCommand{Key: "migrate-tombstone", Action: "DELETE", Selector: memory.Selector{Kind: "IDS", TargetKind: "MEMORY_NODE", IDs: []string{"obsolete-goal"}, Expected: map[string]uint64{"obsolete-goal": 1}}}); e != nil {
-		t.Fatal(e)
+	deleted, e := svc.Govern(ctx, domain.RelationshipScope{Scope: scope, ActorInstanceID: item.CustodianID, PlayerID: s.SubjectID}, memory.MemoryGovernanceCommand{Key: "migrate-tombstone", Action: "DELETE", Selector: memory.Selector{Kind: "IDS", TargetKind: "MEMORY_NODE", IDs: []string{nodeID}, Expected: map[string]uint64{nodeID: 1}}})
+	if e != nil || deleted.Preservation != "CONFIRMED" || deleted.Cleanup != "LOCAL_COMPLETE" {
+		t.Fatal("actual governed tombstone not complete", deleted, e)
 	}
-	runtimeHTTP(t, r, "GET", "/instances/"+i.Scope.WorldInstanceID+"?product_id=coffee", "", nil, 200, &i)
 	var before []byte
-	if e := r.Store.DB.QueryRow("SELECT document FROM memory_aggregates WHERE world_instance_id=?", i.Scope.WorldInstanceID).Scan(&before); e != nil {
+	if e = r.Store.DB.QueryRow("SELECT document FROM memory_aggregates WHERE world_instance_id=? AND data_subject_id=?", scope.WorldInstanceID, s.SubjectID).Scan(&before); e != nil {
 		t.Fatal(e)
 	}
 	var aggregate memory.Aggregate
-	if e := json.Unmarshal(before, &aggregate); e != nil {
+	if e = json.Unmarshal(before, &aggregate); e != nil {
 		t.Fatal(e)
 	}
-	if len(aggregate.Acquisitions) == 0 {
-		t.Fatal("original actor initialization produced no INITIAL evidence")
+	tombstone, exists := aggregate.Nodes[nodeID]
+	if !exists || !tombstone.Blocked || tombstone.Body != "" || tombstone.Revision != 2 || tombstone.ActorID != item.CustodianID {
+		t.Fatal("deleted statement lost its actual cleaned tombstone")
 	}
+	initial, told := 0, 0
+	inferred := map[string]bool{}
 	for _, a := range aggregate.Acquisitions {
-		if (a.Kind != memory.Initial && a.Kind != memory.Inferred) || a.EvidenceID == "" {
-			t.Fatal(a)
+		if a.EvidenceID == "" || a.ActorID == "" || a.SourceID == "" {
+			t.Fatal("acquisition lost its exact source or evidence identity")
+		}
+		if a.Kind == memory.Initial {
+			initial++
+		}
+		if a.Kind == memory.Told && a.ActorID == item.CustodianID && a.SourceID == source && a.EvidenceID == content.Identity("statement", statementKey) {
+			told++
+		}
+		if a.Kind == memory.Inferred && a.ActorID == item.CustodianID {
+			inferred[a.EvidenceID] = true
 		}
 	}
+	if initial == 0 || told != 1 {
+		t.Fatal("real INITIAL or independent TOLD evidence absent", initial, told)
+	}
+	for _, id := range committed.MemoryIDs {
+		n, ok := aggregate.Nodes[id]
+		if !ok || n.Kind != "EXPERIENCE" || n.Audience != memory.Private || n.Domain != memory.ActorBelief || n.Body == "" || n.Blocked || len(n.Sources) == 0 || !inferred[id] {
+			t.Fatal("actual committed private inferred history was not retained")
+		}
+	}
+	snapshot := func() []byte {
+		t.Helper()
+		out := map[string][]string{}
+		for _, spec := range []struct{ table, key string }{{"actors", "actor_id"}, {"items", "item_id"}, {"memory_aggregates", "aggregate_id"}} {
+			rows, e := r.Store.DB.Query("SELECT document FROM "+spec.table+" WHERE world_instance_id=? ORDER BY "+spec.key, scope.WorldInstanceID)
+			if e != nil {
+				t.Fatal(e)
+			}
+			for rows.Next() {
+				var raw string
+				if e = rows.Scan(&raw); e != nil {
+					rows.Close()
+					t.Fatal(e)
+				}
+				out[spec.table] = append(out[spec.table], raw)
+			}
+			e = rows.Err()
+			rows.Close()
+			if e != nil || len(out[spec.table]) == 0 {
+				t.Fatal("missing preserved world documents", spec.table, e)
+			}
+		}
+		b, e := json.Marshal(out)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return b
+	}
+	i, e := r.World.GetInstance(ctx, scope)
+	if e != nil {
+		t.Fatal(e)
+	}
 	i = runtimeControl(t, r, i, "PAUSE")
-	target := nextRuntimeRelease(t, r, s, release, "expression_style", "new presentation only")
+	if _, e = r.Auth.Authorize(ctx, "Bearer "+runtimeToken, s.ProductID, "runtime.migrate"); e != nil {
+		t.Fatal("fixture lacks current migration authority", e)
+	}
+	target := nextRuntimeRelease(t, r, s, i.Versions.ReleaseID, "expression_style", "new presentation only")
+	versionsBefore, documentsBefore := runtimeVersions(t, i), snapshot()
 	var plan generated.MigrationPlan
-	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "memory-preview", generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, 201, &plan)
+	runtimeHTTP(t, r, "POST", "/instances/"+scope.WorldInstanceID+"/migration-previews", "memory-preview", generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, 201, &plan)
 	h, e := content.Hash(plan)
 	if e != nil {
 		t.Fatal(e)
 	}
-	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migrations", "memory-migration", generated.MigrationExecuteRequest{ProductID: "coffee", PlanID: plan.PlanID, PlanHash: h, ExpectedVersions: i.Versions, ResolutionMap: plan.ResolutionMap}, 202, nil)
+	var migration generated.AdminTaskReceipt
+	runtimeHTTP(t, r, "POST", "/instances/"+scope.WorldInstanceID+"/migrations", "memory-migration", generated.MigrationExecuteRequest{ProductID: "coffee", PlanID: plan.PlanID, PlanHash: h, ExpectedVersions: i.Versions, ResolutionMap: plan.ResolutionMap}, 202, &migration)
 	if e = r.Worker.Once(ctx); e != nil {
 		t.Fatal(e)
 	}
-	var after []byte
-	if e = r.Store.DB.QueryRow("SELECT document FROM memory_aggregates WHERE world_instance_id=?", i.Scope.WorldInstanceID).Scan(&after); e != nil {
+	if !bytes.Equal(documentsBefore, snapshot()) {
+		t.Fatal("actual compatible migration changed actor/item/memory/acquisition/tombstone bytes")
+	}
+	after, e := r.World.GetInstance(ctx, scope)
+	if e != nil {
 		t.Fatal(e)
 	}
-	if string(before) != string(after) {
-		t.Fatal("actual compatible migration changed original memory/acquisition history")
+	v := runtimeVersions(t, after)
+	if after.InstanceState != "PAUSED" || after.Versions.ReleaseID != string(target.ReleaseID) || v.WorldRevision != versionsBefore.WorldRevision+1 || v.ControlVersion != versionsBefore.ControlVersion+1 || v.ViewEpoch != versionsBefore.ViewEpoch+1 || v.PrivacyEpoch != versionsBefore.PrivacyEpoch {
+		t.Fatal("migration did not switch the real paused release exactly once")
+	}
+	if e = r.Store.DB.QueryRow("SELECT state FROM tasks WHERE task_id=?", migration.TaskID).Scan(&state); e != nil || state != "COMMITTED" {
+		t.Fatal("actual migration worker did not commit", state, e)
+	}
+	if original, e := r.Store.QueryOriginalTurnCommit(ctx, scope, task); e != nil || original != joint {
+		t.Fatal("migration replaced original joint receipt", original, e)
 	}
 }
 
@@ -1418,11 +1484,11 @@ func TestMemoryOldDatabaseAndPrivateFileReplayPurgesBeforeSeal(t *testing.T) {
 	if e = r.Memory.ConfirmGovernanceReady(ctx, p, candidate, receipt); e != nil {
 		t.Fatal(e)
 	}
-	if e = r.Local.Ledger.ReserveOnce(ctx, memory.Reservation{ID: "changed-head", RequestHash: "hash", Scope: []string{s.TenantID, s.ProductID, i.Scope.WorldInstanceID, s.SubjectID, s.SubjectID}}); e != nil {
-		t.Fatal(e)
+	if e = r.Local.Ledger.ReserveOnce(ctx, memory.Reservation{ID: "changed-head", RequestHash: "hash", Scope: []string{s.TenantID, s.ProductID, i.Scope.WorldInstanceID, s.SubjectID, s.SubjectID}}); !errors.Is(e, maintenance.ErrMaintenance) {
+		t.Fatal("ordinary append must reject CLOSED replay admission", e)
 	}
-	if e = r.Memory.ConfirmGovernanceReady(ctx, p, candidate, receipt); e == nil {
-		t.Fatal("old seal confirmed a changed current head")
+	if e = r.Memory.ConfirmGovernanceReady(ctx, p, candidate, receipt); e != nil {
+		t.Fatal("rejected ordinary append changed retained seal", e)
 	}
 }
 

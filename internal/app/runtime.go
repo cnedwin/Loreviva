@@ -2,39 +2,76 @@ package app
 
 import (
 	"context"
+	"crypto/cipher"
 	"errors"
 	"loreviva.local/loreviva/internal/auth"
 	"loreviva.local/loreviva/internal/config"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/files"
+	"loreviva.local/loreviva/internal/harness"
 	"loreviva.local/loreviva/internal/maintenance"
 	"loreviva.local/loreviva/internal/memory"
 	world "loreviva.local/loreviva/internal/runtime"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"net"
 	"net/http"
+	"sync"
 )
 
 type Runtime struct {
-	Local   *Local
-	Memory  *memory.MemoryService
-	World   *world.Runtime
-	Store   *store.Store
-	Files   *files.Store
-	Auth    *auth.Operator
-	Content *content.Service
-	Worker  *Worker
+	adminCursorOnce sync.Once
+	adminCursor     cipher.AEAD
+	adminCursorErr  error
+	Candidates      *harness.CandidateService
+	Turns           *harness.TurnService
+	Local           *Local
+	Memory          *memory.MemoryService
+	World           *world.Runtime
+	Store           *store.Store
+	Files           *files.Store
+	Auth            *auth.Operator
+	Content         *content.Service
+	Worker          *Worker
 }
 
 func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
+	s.RehearsalPurgeOwner = f
+	s.DraftRehearsalOwner = content.New(s)
+	s.DraftRehearsalReader = f
+	s.RehearsalReportReader = f
+	s.DraftCandidateOwner = content.New(s)
+	s.DraftCandidateReader = f
 	m := memory.New(s, nil)
 	m.Files = f
+	s.GenerationContext = m
+	s.TurnOwner = m
 	f.MemoryPolicy = m
+	f.OriginalResultPolicy = m
+	s.OriginalResultReader = f
+	s.ApprovedTurnReader = f
+	s.OriginalResultProgram = harness.OriginalResultProgram{}
+	s.CandidateOwner = &harness.CandidateOwner{Store: s}
 	w := world.New(s)
+	s.TurnSkills = w
 	w.InitialMemory = m
+	w.RehearsalMemory = m
+	s.RehearsalInputOwner = m
+	s.RehearsalInitializer = w
 	worker := NewWorker(s, f)
 	worker.Memory = m
-	return &Runtime{Store: s, Files: f, Auth: a, Content: content.New(s), World: w, Memory: m, Worker: worker}
+	return &Runtime{Turns: harness.NewTurnService(s), Store: s, Files: f, Auth: a, Content: content.New(s), World: w, Memory: m, Worker: worker}
+}
+
+func (r *Runtime) BindLocal(local *Local) {
+	r.Local = local
+	if local == nil {
+		r.Candidates = nil
+		r.Worker.Turns = nil
+		return
+	}
+	r.Memory.Ledger = local.Ledger
+	r.Worker.Turns = &harness.Executor{Turns: r.Turns, Files: r.Files, Journal: local.Mock, Participant: local.Participant}
+	r.Candidates = &harness.CandidateService{Executor: r.Worker.Turns}
 }
 func (r *Runtime) Readiness(ctx context.Context) error { return r.readiness(ctx, false) }
 func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error {
@@ -46,7 +83,13 @@ func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error 
 			return e
 		}
 		if !originalGovernance {
-			if e := r.Local.Ledger.Ready(ctx); e != nil {
+			if r.Local.Mock == nil {
+				return errors.New("original Mock continuity unavailable")
+			}
+			if e := r.Local.Mock.Ready(ctx); e != nil {
+				return e
+			}
+			if e := r.Memory.CheckResultGovernance(ctx); e != nil {
 				return e
 			}
 		}

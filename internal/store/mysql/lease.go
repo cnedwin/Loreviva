@@ -28,7 +28,7 @@ func (s *Store) ClaimTask(ctx context.Context, workerID string, now time.Time, t
 	}
 	defer tx.Rollback()
 	var world sql.NullString
-	e = tx.QueryRowContext(ctx, "SELECT tenant_id,product_id,task_id,owner_subject_id,world_instance_id,fence FROM tasks WHERE state IN ('ACCEPTED','RUNNING') AND cancelled=0 AND next_run_at<=? AND (lease_expires_at IS NULL OR lease_expires_at<=?) ORDER BY next_run_at,tenant_id,product_id,task_id LIMIT 1 FOR UPDATE SKIP LOCKED", now.UTC(), now.UTC()).Scan(&lease.TenantID, &lease.ProductID, &lease.TaskID, &lease.OwnerSubjectID, &world, &lease.Fence)
+	e = tx.QueryRowContext(ctx, "SELECT tenant_id,product_id,task_id,owner_subject_id,world_instance_id,fence FROM tasks WHERE NOT EXISTS(SELECT 1 FROM harness_rehearsal_worlds rw WHERE rw.tenant_id=tasks.tenant_id AND rw.product_id=tasks.product_id AND rw.world_instance_id=tasks.world_instance_id) AND NOT EXISTS(SELECT 1 FROM harness_envelopes h WHERE h.tenant_id=tasks.tenant_id AND h.product_id=tasks.product_id AND h.task_id=tasks.task_id AND h.state IN ('CUTOFF','ACCOUNTING_ONLY')) AND state IN ('ACCEPTED','RUNNING') AND cancelled=0 AND next_run_at<=? AND (lease_expires_at IS NULL OR lease_expires_at<=?) ORDER BY next_run_at,tenant_id,product_id,task_id LIMIT 1 FOR UPDATE SKIP LOCKED", now.UTC(), now.UTC()).Scan(&lease.TenantID, &lease.ProductID, &lease.TaskID, &lease.OwnerSubjectID, &world, &lease.Fence)
 	if errors.Is(e, sql.ErrNoRows) {
 		return lease, ErrNoTask
 	}

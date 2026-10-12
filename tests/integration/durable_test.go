@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"loreviva.local/loreviva/internal/content"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"reflect"
 	"testing"
@@ -20,8 +21,12 @@ func TestCoreDurableUnitOfWorkAndCanonicalTrace(t *testing.T) {
 		{Rank: 60, IDs: []string{"t", "p", "task", "a", "auth"}},
 	}
 	var trace []int
+	var receiptLocks []string
 	s.Trace = func(k store.LockKey) {
 		trace = append(trace, k.Rank)
+		if k.Rank == 110 && k.Kind == "commit_receipts" {
+			receiptLocks = append(receiptLocks, k.IDs[0])
+		}
 		t.Logf("LOCK rank=%d kind=%s ids=%q", k.Rank, k.Kind, k.IDs)
 	}
 	writes := []struct{ kind, id, sql string }{
@@ -61,13 +66,31 @@ func TestCoreDurableUnitOfWorkAndCanonicalTrace(t *testing.T) {
 		}
 	}
 	trace = nil
+	receiptLocks = nil
 	receipt, e := s.WithBarrier(ctx, r, write)
 	if e != nil || !receipt.Committed {
 		t.Fatal(e)
 	}
-	want := []int{10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 90, 90, 90, 100, 110, 110, 110, 110, 110, 110}
+	// Execution preplans both possible Skill capabilities for both immutable
+	// attempt slots, even without a binding. They are locks, not extra receipts.
+	want := []int{10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 90, 90, 90, 100, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110}
 	if !reflect.DeepEqual(trace, want) {
 		t.Fatal("actual SQL lock trace order", trace)
+	}
+	wantReceipt := map[string]bool{r.CommitKey: true}
+	for _, slot := range []string{"0", "1"} {
+		for _, capability := range []string{"TEXT", "SIGN_CUSTODY"} {
+			wantReceipt[content.Identity(r.TaskID, content.Identity(r.TaskID, "attempt", slot), "skill-adapter", capability)] = true
+		}
+	}
+	if len(receiptLocks) != len(wantReceipt) {
+		t.Fatal("exact receipt lock count", receiptLocks)
+	}
+	for _, key := range receiptLocks {
+		if !wantReceipt[key] {
+			t.Fatal("unexpected receipt lock", key)
+		}
+		delete(wantReceipt, key)
 	}
 	for _, table := range []string{"events", "approved_results", "service_events", "postings", "outbox", "commit_receipts"} {
 		var n int

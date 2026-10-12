@@ -9,6 +9,7 @@ import (
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/generated"
+	"loreviva.local/loreviva/internal/harness"
 	"loreviva.local/loreviva/internal/memory"
 	world "loreviva.local/loreviva/internal/runtime"
 	store "loreviva.local/loreviva/internal/store/mysql"
@@ -17,6 +18,7 @@ import (
 )
 
 type Worker struct {
+	Turns  *harness.Executor
 	Memory *memory.MemoryService
 	s      *store.Store
 	files  *files.Store
@@ -46,11 +48,23 @@ func (w *Worker) Start(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				_ = w.QueryOriginalOnce(ctx)
+				_ = w.QueryNecessaryCostOnce(ctx)
+				_, _, _ = w.s.RunHarnessCutoffs(ctx)
+				_, _, _ = w.s.RunOriginalBills(ctx)
+				_, _, _ = w.s.RunOriginalServiceMetering(ctx)
 				_ = w.Once(ctx)
 			}
 		}
 	}()
 	return nil
+}
+
+func (w *Worker) QueryOriginalOnce(ctx context.Context) error {
+	if w.Turns == nil {
+		return store.ErrNoTask
+	}
+	return w.Turns.QueryOnce(ctx)
 }
 func (w *Worker) Stop(ctx context.Context) error {
 	w.mu.Lock()
@@ -78,9 +92,27 @@ func (w *Worker) Once(ctx context.Context) error {
 	if w.Memory != nil {
 		registered = append(registered, store.RegisteredOperation{Kind: "GOVERNANCE", Operation: "MEMORY_GOVERNANCE"})
 	}
+	if w.Turns != nil {
+		registered = append(registered, store.RegisteredOperation{Kind: "TURN", Operation: "TURN"})
+	}
+	if w.Turns.CandidateReady() {
+		registered = append(registered, store.RegisteredOperation{Kind: "ADMIN", Operation: "CANDIDATE"})
+	}
+	if w.Turns.RehearsalReady() {
+		registered = append(registered, store.RegisteredOperation{Kind: "ADMIN", Operation: "REHEARSAL"})
+	}
 	lease, e := w.s.ClaimRegistered(ctx, "m1-file-cleanup", time.Now(), time.Minute, registered)
 	if e != nil {
 		return e
+	}
+	if lease.Kind == "TURN" && lease.Operation == "TURN" {
+		return w.Turns.Execute(ctx, lease.TaskLease, "m1-file-cleanup")
+	}
+	if lease.Kind == "ADMIN" && lease.Operation == "CANDIDATE" {
+		return w.Turns.ExecuteDraftCandidate(ctx, lease.TaskLease, "m1-file-cleanup")
+	}
+	if lease.Kind == "ADMIN" && lease.Operation == "REHEARSAL" {
+		return w.Turns.ExecuteRehearsal(ctx, lease.TaskLease, "m1-file-cleanup")
 	}
 	if lease.Operation == "MEMORY_GOVERNANCE" {
 		return w.Memory.Process(ctx, lease, "m1-file-cleanup")
@@ -129,4 +161,11 @@ func QueueCleanup(ctx context.Context, s *store.Store, scope domain.ProductScope
 		e = generated.Decode("AdminTaskReceipt", raw, &out)
 	}
 	return out, e
+}
+
+func (w *Worker) QueryNecessaryCostOnce(ctx context.Context) error {
+	if w.Turns == nil {
+		return store.ErrNoTask
+	}
+	return w.Turns.QueryNecessaryCostOnce(ctx)
 }

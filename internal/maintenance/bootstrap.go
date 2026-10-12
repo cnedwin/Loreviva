@@ -15,6 +15,12 @@ var OperatorActions = []string{"content.read", "content.edit", "content.copy", "
 // BootstrapSynthetic is an explicit fresh-install maintenance action. A restored
 // installation cannot infer a zero ledger or replace an existing credential.
 func BootstrapSynthetic(ctx context.Context, s *store.Store, scope domain.ProductScope, credentialID, secret string) error {
+	return BootstrapSyntheticWithConsent(ctx, s, scope, credentialID, secret, false)
+}
+
+// BootstrapSyntheticWithConsent records an explicit fresh-owner opt-in once.
+// Repeated bootstrap never reconstructs, renews, or overwrites a current grant.
+func BootstrapSyntheticWithConsent(ctx context.Context, s *store.Store, scope domain.ProductScope, credentialID, secret string, optIn bool) error {
 	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" || scope.SubjectID != "creator" || credentialID != "owner" || len(secret) < 32 || len(secret) > 512 {
 		return errors.New("explicit synthetic owner bootstrap required")
 	}
@@ -40,6 +46,12 @@ func BootstrapSynthetic(ctx context.Context, s *store.Store, scope domain.Produc
 		if e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM governance_watermark WHERE singleton=1").Scan(&n); e != nil || n != 1 {
 			return errors.New("restored installation missing governance watermark; zero bootstrap refused")
 		}
+		if optIn {
+			var original bool
+			if e = tx.QueryRowContext(ctx, "SELECT opted_in FROM r0_generation_consent WHERE tenant_id=? AND product_id=? AND subject_id=? AND credential_id=? AND policy_id='R0_OWNER_PRIVATE_GENERATION_30D'", scope.TenantID, scope.ProductID, scope.SubjectID, credentialID).Scan(&original); e != nil || !original {
+				return errors.New("existing installation cannot add private generation consent through bootstrap")
+			}
+		}
 		return tx.Commit()
 	}
 	var existing int
@@ -56,6 +68,19 @@ func BootstrapSynthetic(ctx context.Context, s *store.Store, scope domain.Produc
 	}
 	for _, action := range OperatorActions {
 		if _, e = tx.ExecContext(ctx, "INSERT INTO operator_actions VALUES(?,?)", credentialID, action); e != nil {
+			return e
+		}
+	}
+	// This independent action is registered only by a genuinely fresh owner
+	// bootstrap. Existing credentials never gain it from a repeated flag.
+	if _, e = tx.ExecContext(ctx, "INSERT INTO operator_actions VALUES(?,'memory.generation.consent')", credentialID); e != nil {
+		return e
+	}
+	if _, e = tx.ExecContext(ctx, "INSERT INTO r0_generation_consent(tenant_id,product_id,subject_id,credential_id,policy_id,opted_in,accepted_at,expires_at) VALUES(?,?,?,?,'R0_OWNER_PRIVATE_GENERATION_30D',?,UTC_TIMESTAMP(6),IF(?,DATE_ADD(UTC_TIMESTAMP(6),INTERVAL 30 DAY),NULL))", scope.TenantID, scope.ProductID, scope.SubjectID, credentialID, optIn, optIn); e != nil {
+		return e
+	}
+	if optIn {
+		if _, e = tx.ExecContext(ctx, "INSERT INTO memory_subject_permissions(tenant_id,product_id,caller_subject_id,data_subject_id,action,allowed_use,expires_at,enabled) SELECT tenant_id,product_id,subject_id,subject_id,'memory.generation.use','PRIVATE_RESPONSE',expires_at,1 FROM r0_generation_consent WHERE tenant_id=? AND product_id=? AND subject_id=? AND credential_id=? AND opted_in=1", scope.TenantID, scope.ProductID, scope.SubjectID, credentialID); e != nil {
 			return e
 		}
 	}

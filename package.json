@@ -9,7 +9,7 @@
   "packageManager": "pnpm@11.25.0",
   "scripts": {
     "generate:contracts": "node scripts/generate-contracts.mjs",
-    "test:contracts": "node scripts/check-generated.mjs && node --test scripts/contracts.test.mjs scripts/review-regressions.test.mjs scripts/memory-contract.test.mjs",
+    "test:contracts": "node scripts/check-generated.mjs && node --test scripts/contracts.test.mjs scripts/review-regressions.test.mjs scripts/memory-contract.test.mjs scripts/admin-read-contract.test.mjs",
     "test:sdk": "node --test scripts/sdk-config.test.mjs && pnpm --filter @loreviva/sdk-ts typecheck",
     "test": "pnpm test:contracts && pnpm test:sdk"
   },

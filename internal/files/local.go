@@ -30,10 +30,11 @@ type MemoryAssetPolicy interface {
 	AuthorizeMemoryAsset(context.Context, domain.ProductScope, string) error
 }
 type Store struct {
-	MemoryPolicy MemoryAssetPolicy
-	DB           *store.Store
-	root         *os.Root
-	RootPath     string
+	OriginalResultPolicy OriginalResultPolicy
+	MemoryPolicy         MemoryAssetPolicy
+	DB                   *store.Store
+	root                 *os.Root
+	RootPath             string
 }
 type StagedFile struct {
 	key, relative string

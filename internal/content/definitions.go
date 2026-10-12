@@ -136,6 +136,12 @@ func trimTags(in []string) []string {
 	return out
 }
 func Findings(in generated.DraftInput, rootKind string, options ...ResolvedDefinitions) ([]generated.FieldError, []string) {
+	return definitionFindings(in, rootKind, true, options...)
+}
+
+// Publication keeps its existing rights gate. The fixed rehearsal owner checks
+// current EDIT/source rights in its locked transaction instead of publishing.
+func definitionFindings(in generated.DraftInput, rootKind string, publishing bool, options ...ResolvedDefinitions) ([]generated.FieldError, []string) {
 	resolved := firstResolved(options)
 	findings := []generated.FieldError{}
 	duties := map[string]bool{}
@@ -257,10 +263,10 @@ func Findings(in generated.DraftInput, rootKind string, options ...ResolvedDefin
 		for _, u := range rights["allowed_uses"].([]any) {
 			uses[u.(string)] = true
 		}
-		if !uses["PUBLISH"] || strings.TrimSpace(rights["license"].(string)) == "" {
+		if publishing && (!uses["PUBLISH"] || strings.TrimSpace(rights["license"].(string)) == "") {
 			add(p+"/rights", "RIGHTS", "Publishing rights and a source license are required.")
 		}
-		if expiry, _ := rights["expires_at"].(string); expiry != "" {
+		if expiry, _ := rights["expires_at"].(string); publishing && expiry != "" {
 			add(p+"/rights", "EXPIRING_SOURCE", "R0 fixed release requires nonexpiring synthetic or owned source rights.")
 		}
 		if slot, ok := m["custodian_slot"].(string); ok && !slots[slot] {

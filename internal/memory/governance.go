@@ -182,7 +182,23 @@ func (a *Aggregate) Clean() {
 	}
 }
 func (a *Aggregate) AddDerived(n MemoryRecord, now time.Time) error {
-	if domain.ValidateID(n.ID) != nil || n.Domain != ActorBelief || n.Revision != 1 || len(a.Nodes) >= MaxNodes || len(n.Body) > 8192 || len(n.Parents) == 0 || len(n.Parents)+len(n.Sources) > MaxReferences || !validUses(n.Uses) || len(n.MediaRefs) != 0 {
+	return a.addDerived(n, now, ActorBelief)
+}
+func (a *Aggregate) addRehearsalDerived(n MemoryRecord, now time.Time) error {
+	for _, source := range a.Sources {
+		if source.Domain != Sandbox {
+			return ErrInvalid
+		}
+	}
+	for _, node := range a.Nodes {
+		if node.Domain != Sandbox {
+			return ErrInvalid
+		}
+	}
+	return a.addDerived(n, now, Sandbox)
+}
+func (a *Aggregate) addDerived(n MemoryRecord, now time.Time, expected EvidenceDomain) error {
+	if domain.ValidateID(n.ID) != nil || n.Domain != expected || n.Revision != 1 || len(a.Nodes) >= MaxNodes || len(n.Body) > 8192 || len(n.Parents) == 0 || len(n.Parents)+len(n.Sources) > MaxReferences || !validUses(n.Uses) || len(n.MediaRefs) != 0 {
 		return ErrInvalid
 	}
 	if _, ok := a.Nodes[n.ID]; ok {

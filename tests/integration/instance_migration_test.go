@@ -91,6 +91,14 @@ func TestCompatiblePausedMigrationPreservesActorsFactsAndHistory(t *testing.T) {
 		t.Fatal(again)
 	}
 	runtimeControl(t, r, after, "RESUME")
+	if _, e = r.Store.DB.Exec("UPDATE subject_governance SET can_execute=0 WHERE subject_id='creator'"); e != nil {
+		t.Fatal(e)
+	}
+	var metadata generated.AdminTaskView
+	runtimeHTTP(t, r, "GET", "/tasks/"+string(task.TaskID)+"?product_id=coffee", "", nil, 200, &metadata)
+	if metadata.TaskKind != "INSTANCE_MIGRATION" || metadata.TaskState != "COMMITTED" {
+		t.Fatal(metadata)
+	}
 }
 func TestMigrationRejectsCorePersonalityChange(t *testing.T) {
 	r, s, release := runtimeFixture(t)
