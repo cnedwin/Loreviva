@@ -19,8 +19,8 @@ import (
 func TestHarnessBoundContextDispatchSendCommit(t *testing.T) {
 	for _, boundary := range []string{"positive", "authorize", "send", "commit", "route", "quoted-route", "restart", "missing-adapter", "missing-binding", "source-authorize", "source-send", "source-commit", "takeover", "send-ack-unknown", "commit-rollback", "expired-authorize", "expired-send", "expired-commit"} {
 		t.Run(boundary, func(t *testing.T) {
-			ctx := context.Background()
 			r, scope, turns, qr, request := actualTurnFixture(t, true)
+			ctx := runtimeContext(t, r)
 			// Real accepted Turn/input/TOLD/quote/holds are essential dependencies of
 			// the current owner. A generic Harness envelope is not a Turn fixture.
 			var raw []byte

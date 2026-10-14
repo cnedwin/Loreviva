@@ -23,11 +23,15 @@ import (
 func candidateHTTPFixture(t *testing.T) (*app.Runtime, string, generated.CandidateRequest) {
 	t.Helper()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
-	p, e := r.Content.GetRelease(context.Background(), scope, release)
+	ctx, _, e := r.Auth.Authenticate(context.Background(), "Bearer "+runtimeToken)
 	if e != nil {
 		t.Fatal(e)
 	}
-	d, e := r.Content.Create(context.Background(), scope, "WORLD", "", p.Input, "http-candidate-draft")
+	p, e := r.Content.GetRelease(ctx, scope, release)
+	if e != nil {
+		t.Fatal(e)
+	}
+	d, e := r.Content.Create(ctx, scope, "WORLD", "", p.Input, "http-candidate-draft")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -37,8 +41,8 @@ func candidateHTTPFixture(t *testing.T) (*app.Runtime, string, generated.Candida
 func TestCandidateHTTPCommittedReadIndependentOfExecution(t *testing.T) {
 	for _, mode := range []string{"READ_ONLY", "TASK_ONLY", "DISABLED", "FAKE_ASSET", "NO_COMMIT", "CLOSING"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, req := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			var receipt generated.AdminTaskReceipt
 			runtimeHTTP(t, r, "POST", "/content-drafts/"+draft+"/candidates", "history", req, 202, &receipt)
 			if e := r.Worker.Once(ctx); e != nil {
@@ -106,8 +110,8 @@ func TestCandidateHTTPCommittedReadIndependentOfExecution(t *testing.T) {
 func TestCandidateHTTPRepairRestartKeepsOriginalDependency(t *testing.T) {
 	for _, mode := range []string{"APPROVAL_ACK", "EXTRA_MARKER_ACK", "ORIGINAL_DELETED", "OLD_FENCE", "REFUSAL"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, req := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 			if mode == "REFUSAL" {
@@ -221,8 +225,8 @@ func TestCandidateHTTPRepairRestartKeepsOriginalDependency(t *testing.T) {
 }
 
 func TestCandidateHTTPRequiredModulesUseRealHandler(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	p, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -291,8 +295,8 @@ func TestCandidateHTTPRequiredModulesUseRealHandler(t *testing.T) {
 func TestCandidateHTTPIntakeAndReadBoundaries(t *testing.T) {
 	for _, mode := range []string{"INTAKE_ACK", "STALE_PENDING", "UNSUPPORTED", "BODY_READ_REVOKED", "FAKE_COMMIT", "SOURCE_DELETE"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, request := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			path := "/content-drafts/" + draft + "/candidates"
 			if mode == "UNSUPPORTED" {
@@ -388,8 +392,8 @@ func TestCandidateHTTPIntakeAndReadBoundaries(t *testing.T) {
 func TestCandidateHTTPOriginalRecoveryAndCancellation(t *testing.T) {
 	for _, mode := range []string{"CANCEL_BEFORE", "CANCEL_MARKER", "REPLY_RESTART", "MARKER_ACK", "BUSINESS_ACK", "BUSINESS_ROLLBACK_ACK", "CUTOFF_VIEW", "ASSIST_WITHDRAW", "HANDLER_MISSING"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, request := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			path := "/content-drafts/" + draft + "/candidates"
 			if mode == "HANDLER_MISSING" {
 				r.Worker.Turns = nil

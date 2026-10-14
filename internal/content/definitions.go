@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
 	"loreviva.local/loreviva/internal/wire"
 	"sort"
@@ -15,8 +16,8 @@ import (
 var Duties = []string{"FACT_VALIDATION", "RIGHTS_CHECK", "AUDIENCE_CHECK", "NARRATIVE", "STATE_COMMIT"}
 var SchemaIDs = map[string]bool{"DraftInput": true, "PublishCheckReport": true, "TurnRequest": true, "ApprovedPacket": true}
 
-const MockConnection = "mock-local"
-const MockModel = "synthetic-text-v1"
+const MockConnection = domain.InstalledMockConnection
+const MockModel = domain.InstalledMockModel
 
 func Hash(value any) (string, error) {
 	b, e := json.Marshal(value)
@@ -49,6 +50,7 @@ func objects(in generated.DraftInput) (map[string]map[string]any, error) {
 	}
 	return out, nil
 }
+// Prepare normalizes a schema-valid draft while rejecting protected originals and conflicting bindings; it does not authorize persistence or publication.
 func Prepare(in generated.DraftInput) (generated.DraftInput, error) {
 	b, e := json.Marshal(in)
 	if e != nil {
@@ -142,7 +144,9 @@ func Findings(in generated.DraftInput, rootKind string, options ...ResolvedDefin
 // Publication keeps its existing rights gate. The fixed rehearsal owner checks
 // current EDIT/source rights in its locked transaction instead of publishing.
 func definitionFindings(in generated.DraftInput, rootKind string, publishing bool, options ...ResolvedDefinitions) ([]generated.FieldError, []string) {
-	resolved := firstResolved(options)
+	return definitionFindingsPolicy(in, rootKind, publishing, firstResolved(options), nil)
+}
+func definitionFindingsPolicy(in generated.DraftInput, rootKind string, publishing bool, resolved ResolvedDefinitions, policy *domain.RoutePolicySnapshot) ([]generated.FieldError, []string) {
 	findings := []generated.FieldError{}
 	duties := map[string]bool{}
 	add := func(p, c, m string) {
@@ -174,7 +178,7 @@ func definitionFindings(in generated.DraftInput, rootKind string, publishing boo
 					declares = true
 				}
 			}
-			active := roleActive(in, ref, role, resolved)
+			active := roleActive(in, ref, role, resolved, policy)
 			if declares && active {
 				duties[duty] = true
 			}

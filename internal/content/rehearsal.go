@@ -17,6 +17,7 @@ import (
 // Transient authoring material, not a published Release or a permission token.
 // Durable owners retain immutable metadata and governed original references.
 type RehearsalDefinition struct {
+	RoutePolicy           *domain.RoutePolicySnapshot
 	Draft                 generated.ContentDraft
 	Resolved              ResolvedDefinitions
 	Settings              generated.GenerationSettings
@@ -54,7 +55,7 @@ func (s *Service) PlanRehearsalLocks(ctx context.Context, scope domain.ProductSc
 	if e != nil {
 		return nil, e
 	}
-	return append(keys, Key(scope, "content_draft", draft)), nil
+	return append(append(keys, Key(scope, "content_draft", draft)), store.RoutePolicyLocks(scope)...), nil
 }
 
 func (s *Service) InspectRehearsal(ctx context.Context, scope domain.ProductScope, draft string, request generated.RehearsalRequest) (out RehearsalDefinition, err error) {
@@ -82,6 +83,7 @@ func (s *Service) InspectRehearsal(ctx context.Context, scope domain.ProductScop
 	return out, nil
 }
 
+// Build the rehearsal binding only after checking the current draft, source graph, route and input actor slots in the owning transaction; the binding carries hashes rather than the original input text.
 func (s *Service) BuildRehearsalDefinitionTx(ctx context.Context, tx store.Tx, scope domain.ProductScope, draft string, request generated.RehearsalRequest) (out RehearsalDefinition, err error) {
 	b, e := json.Marshal(request)
 	if e != nil || generated.Validate("RehearsalRequest", b) != nil || string(request.ProductID) != scope.ProductID || len(request.Inputs) < 1 || len(request.Inputs) > 20 {
@@ -90,13 +92,8 @@ func (s *Service) BuildRehearsalDefinitionTx(ctx context.Context, tx store.Tx, s
 	if _, e = domain.LimitsFor("REHEARSAL", len(request.Inputs)); e != nil {
 		return out, e
 	}
-	var allowed bool
-	e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN operator_actions a ON a.credential_id=c.credential_id WHERE c.credential_id='owner' AND c.tenant_id=? AND c.product_id=? AND c.subject_id=? AND c.enabled=1 AND a.action='content.rehearse')", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&allowed)
-	if e != nil {
+	if e = store.CheckOperatorTx(ctx, tx, scope, "content.rehearse"); e != nil {
 		return out, e
-	}
-	if !allowed {
-		return out, store.ErrDenied
 	}
 	rev, e := strconv.ParseUint(string(request.ExpectedDraftRevision), 10, 64)
 	if e != nil {
@@ -120,7 +117,11 @@ func (s *Service) BuildRehearsalDefinitionTx(ctx context.Context, tx store.Tx, s
 	if e = validateRehearsalSkills(ctx, tx, scope, d.Input, resolved); e != nil {
 		return out, e
 	}
-	findings, _ := definitionFindings(d.Input, "WORLD", false, resolved)
+	policy, e := store.ReadRoutePolicyTx(ctx, tx, scope)
+	if e != nil {
+		return out, e
+	}
+	findings, _ := definitionFindingsPolicy(d.Input, "WORLD", false, resolved, policy)
 	if len(findings) > 0 {
 		return out, &FieldErrors{findings}
 	}
@@ -128,7 +129,7 @@ func (s *Service) BuildRehearsalDefinitionTx(ctx context.Context, tx store.Tx, s
 	if e != nil {
 		return out, fmt.Errorf("rehearsal sources: %w", e)
 	}
-	settings, enabled, e := EffectiveRoute(d.Input, string(d.Input.RootObjectID), "REHEARSAL", resolved)
+	settings, enabled, e := ResolveRoute(d.Input, map[string]any{"kind": "LOCAL_DRAFT", "object_id": string(d.Input.RootObjectID)}, "REHEARSAL", resolved, policy)
 	if e != nil {
 		return out, e
 	}
@@ -170,6 +171,7 @@ func (s *Service) BuildRehearsalDefinitionTx(ctx context.Context, tx store.Tx, s
 	out.Resolved = resolved
 	out.Sources = sources
 	out.Settings = settings
+	out.RoutePolicy = policy
 	return out, nil
 }
 
@@ -182,7 +184,7 @@ func (s *Service) BuildRehearsalTx(ctx context.Context, tx store.Tx, scope domai
 	if e != nil {
 		return out, e
 	}
-	out = domain.RehearsalBinding{DraftID: draft, ProjectID: string(*m.Draft.ProjectID), Revision: revision, DraftHash: m.Draft.ContentHash, SourceHash: m.SourceHash, RouteHash: m.RouteHash, Sources: m.Sources, Settings: m.Settings, Assertions: append([]string{}, request.Assertions...)}
+	out = domain.RehearsalBinding{RoutePolicy: m.RoutePolicy, DraftID: draft, ProjectID: string(*m.Draft.ProjectID), Revision: revision, DraftHash: m.Draft.ContentHash, SourceHash: m.SourceHash, RouteHash: m.RouteHash, Sources: m.Sources, Settings: m.Settings, Assertions: append([]string{}, request.Assertions...)}
 	for _, input := range request.Inputs {
 		h, e := Hash(input)
 		if e != nil {

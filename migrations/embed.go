@@ -20,3 +20,6 @@ var MemoryGovernance string
 
 //go:embed 0006_turn_attempt.sql
 var TurnAttempt string
+
+//go:embed 0007_studio_settings.sql
+var StudioSettings string

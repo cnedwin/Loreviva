@@ -23,8 +23,8 @@ func candidateDispatchFixture(t *testing.T) (*app.Runtime, domain.TaskLease) {
 }
 func candidateDispatchInputFixture(t *testing.T, prepare func(*app.Runtime, domain.ProductScope, *generated.DraftInput)) (*app.Runtime, domain.TaskLease) {
 	t.Helper()
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -48,8 +48,8 @@ func candidateDispatchInputFixture(t *testing.T, prepare func(*app.Runtime, doma
 	return r, l.TaskLease
 }
 func TestProductCandidateRealAuthorizeAndOriginalMarker(t *testing.T) {
-	ctx := context.Background()
 	r, l := candidateDispatchFixture(t)
+	ctx := runtimeContext(t, r)
 	d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 	if e != nil {
 		t.Fatal("legitimate fixed Product dispatch unavailable", e)
@@ -77,8 +77,8 @@ func TestProductCandidateRealAuthorizeAndOriginalMarker(t *testing.T) {
 }
 
 func TestProductCandidateActualGenerateUsesIndependentJournal(t *testing.T) {
-	ctx := context.Background()
 	r, l := candidateDispatchFixture(t)
+	ctx := runtimeContext(t, r)
 	d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 	if e != nil {
 		t.Fatal(e)
@@ -109,8 +109,8 @@ func TestProductCandidateActualGenerateUsesIndependentJournal(t *testing.T) {
 
 func productSent(t *testing.T) (*app.Runtime, domain.TaskLease, store.DispatchRequest, store.DispatchAuthorization) {
 	t.Helper()
-	ctx := context.Background()
 	r, l := candidateDispatchFixture(t)
+	ctx := runtimeContext(t, r)
 	d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 	if e != nil {
 		t.Fatal(e)
@@ -129,8 +129,8 @@ func productSent(t *testing.T) (*app.Runtime, domain.TaskLease, store.DispatchRe
 func TestProductCandidateRestartMarkerAndUnknownNeverRegenerate(t *testing.T) {
 	for _, mode := range []string{"LOST_REPLY", "KNOWN_UNSENT", "MARKER_ACK_UNKNOWN"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l := candidateDispatchFixture(t)
+			ctx := runtimeContext(t, r)
 			d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 			if e != nil {
 				t.Fatal(e)
@@ -219,8 +219,8 @@ func TestProductCandidateRestartMarkerAndUnknownNeverRegenerate(t *testing.T) {
 	}
 }
 func TestProductCandidatePermissionAndActualBodyDeletion(t *testing.T) {
-	ctx := context.Background()
 	r, _, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}
@@ -254,8 +254,8 @@ func TestProductCandidatePermissionAndActualBodyDeletion(t *testing.T) {
 	}
 }
 func TestProductCandidateNecessaryCostAfterDeadlineAndAssistWithdrawal(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}
@@ -289,8 +289,8 @@ func TestProductCandidateNecessaryCostAfterDeadlineAndAssistWithdrawal(t *testin
 }
 
 func TestProductCandidateCleanupKeepsLiveAndPurgesActualDeletedSource(t *testing.T) {
-	ctx := context.Background()
 	r, l, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}
@@ -345,8 +345,8 @@ func TestProductCandidateBothSendBoundariesAndConsumedPermit(t *testing.T) {
 		for _, change := range []string{"ASSIST", "REVISION", "CANCEL", "QUERY_SERVICE"} {
 			t.Run(phase+"/"+change, func(t *testing.T) {
 
-				ctx := context.Background()
 				r, l := candidateDispatchFixture(t)
+				ctx := runtimeContext(t, r)
 				d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 				if e != nil {
 					t.Fatal(e)
@@ -412,8 +412,8 @@ func TestProductCandidateBothSendBoundariesAndConsumedPermit(t *testing.T) {
 }
 
 func TestProductCandidateCanonicalLimitRejectsBeforeIntake(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	p, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -452,8 +452,8 @@ func TestProductCandidateCanonicalLimitRejectsBeforeIntake(t *testing.T) {
 func TestProductCandidatePendingReadRequiresCompleteFrozenBindings(t *testing.T) {
 	for _, table := range []string{"harness_candidate_attempts", "harness_candidate_results"} {
 		t.Run(table, func(t *testing.T) {
-			ctx := context.Background()
 			r, _, d, permit := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, permit.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}

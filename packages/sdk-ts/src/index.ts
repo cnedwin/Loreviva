@@ -1,4 +1,6 @@
 export type * from './generated/contracts.ts';
+export {createAdminClient,AdminTransportError,validateContract} from './admin.ts';
+export type {AdminClient,AdminOperation,AdminSuccess} from './admin.ts';
 
 export interface LorevivaClientConfig {
   baseUrl: string;

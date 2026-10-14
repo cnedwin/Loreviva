@@ -206,8 +206,8 @@ func restoreOwnedFiles(t *testing.T, root string, files map[string][]byte) {
 }
 
 func TestCurrentParticipantsPairedRowsFilesCannotReopenClosedInstallation(t *testing.T) {
-	ctx := context.Background()
 	r, _, asset, _, sources := currentParticipantFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	read := func() []byte {
 		t.Helper()
@@ -299,8 +299,8 @@ func TestCurrentParticipantsPairedRowsFilesCannotReopenClosedInstallation(t *tes
 }
 
 func TestCurrentParticipantsIndependentMissingWrongProofs(t *testing.T) {
-	ctx := context.Background()
 	r, _, asset, pending, _ := currentParticipantFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	root := filepath.Dir(r.Local.Coordinator.Directory())
 	counters := func() [4]int {

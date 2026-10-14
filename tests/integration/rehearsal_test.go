@@ -18,8 +18,8 @@ import (
 func TestRehearsalIsolatedInitialization(t *testing.T) {
 	for _, mode := range []string{"NORMAL", "ROLLBACK", "COMMIT_ACK", "OLD_FENCE", "INPUT_TAMPER", "FINISH_REVOKE", "EXPIRED"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":"Mia is the explicit synthetic responder."}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -159,8 +159,8 @@ func TestRehearsalIsolatedInitialization(t *testing.T) {
 func TestRehearsalRootIntake(t *testing.T) {
 	for _, mode := range []string{"NORMAL20", "ROLLBACK", "COMMIT_ACK", "SOURCE_DELETE"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":"synthetic source only"}],"max_cost_units":"0","assertions":["ISOLATED","SIGN_CUSTODY"]}`), &req); e != nil {
@@ -248,8 +248,8 @@ func TestRehearsalRootIntake(t *testing.T) {
 }
 
 func TestRehearsalCurrentDraftQualification(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -322,8 +322,8 @@ func TestRehearsalCurrentDraftQualification(t *testing.T) {
 func TestRehearsalAuthoringBasisAndRights(t *testing.T) {
 	for _, mode := range []string{"EDIT_ONLY", "EXPIRED_SOURCE", "SOURCE_CYCLE", "ROUTE_NONE", "NO_REHEARSE", "CURRENT_BASIS"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			d, e := r.Content.GetDraft(ctx, scope, draft, "")
 			if e != nil {
@@ -398,7 +398,7 @@ func TestRehearsalAuthoringBasisAndRights(t *testing.T) {
 func TestRehearsalHTTPFrozenIsolation(t *testing.T) {
 	r, draft, _ := candidateHTTPFixture(t) // real owner consent remains false
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
-	d, e := r.Content.GetDraft(context.Background(), scope, draft, "")
+	d, e := r.Content.GetDraft(runtimeContext(t, r), scope, draft, "")
 	if e != nil {
 		t.Fatal(e)
 	}

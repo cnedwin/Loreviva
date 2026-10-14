@@ -103,7 +103,7 @@ func TestMigrationRejectsCommittedTaskWithUnclosedSentAttempt(t *testing.T) {
 	before, originalJ := snapshot(), journalBytes(t, r)
 	request := generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}
 	scope := domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}
-	if _, e := r.World.PreviewInstanceMigration(ctx, scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
+	if _, e := r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
 		t.Fatal("incomplete original accounting proof must be denied", e)
 	}
 	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", request, 403, nil)
@@ -133,7 +133,7 @@ func TestRuntimeWorkerCrashRollsBackAndRecovers(t *testing.T) {
 	ctx := context.Background()
 	i := createRuntimeWorld(t, r, rel, "create")
 	scope := domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}
-	_, e := r.World.Control(ctx, scope, world.ControlCommand{Key: "start", Request: generated.AdminControlRequest{ProductID: "coffee", Command: "START", ExpectedVersions: i.Versions}})
+	_, e := r.World.Control(runtimeContextWithParent(t, r, ctx), scope, world.ControlCommand{Key: "start", Request: generated.AdminControlRequest{ProductID: "coffee", Command: "START", ExpectedVersions: i.Versions}})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -149,14 +149,14 @@ func TestRuntimeWorkerCrashRollsBackAndRecovers(t *testing.T) {
 		t.Fatalf("crash child did not reach transactional hook: %v %s", e, b)
 	}
 	time.Sleep(1100 * time.Millisecond)
-	after, e := r.World.GetInstance(ctx, scope)
+	after, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil || after.InstanceState != "CREATED" {
 		t.Fatal("crashed writes survived", after, e)
 	}
 	if e = r.Worker.Once(ctx); e != nil {
 		t.Fatal(e)
 	}
-	after, e = r.World.GetInstance(ctx, scope)
+	after, e = r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil || after.Versions.ControlVersion != "1" {
 		t.Fatal("restart duplicated/lost control", after, e)
 	}
@@ -179,7 +179,7 @@ func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
 	if e = r.Store.DB.QueryRow("SELECT j.operation,t.state,h.state,(SELECT COUNT(*) FROM reservations WHERE task_id=?),(SELECT COUNT(*) FROM attempts WHERE task_id=?),(SELECT COUNT(*) FROM harness_original_validations WHERE task_id=?) FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) JOIN harness_envelopes h USING(tenant_id,product_id,task_id) WHERE t.task_id=?", task, task, task, task).Scan(&operation, &taskState, &envelope, &holds, &attempts, &validations); e != nil || operation != "TURN" || taskState != "COMMITTED" || envelope != "COMMITTED" || holds != 6 || attempts != 1 || validations != 1 {
 		t.Fatal("fixture lacks managed original closure", operation, taskState, envelope, holds, attempts, validations, e)
 	}
-	i, e := r.World.GetInstance(ctx, scope)
+	i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -250,11 +250,11 @@ func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
 	if e = r.Store.DB.QueryRow("SELECT COUNT(*) FROM commit_receipts WHERE task_id=? AND operation='INSTANCE_MIGRATION'", receipt.TaskID).Scan(&finals); e != nil || finals != 0 {
 		t.Fatal("rollback fabricated final commit", finals, e)
 	}
-	if current, e := r.World.GetInstance(ctx, scope); e != nil || current != i || !bytes.Equal(documentsBefore, snapshot()) {
+	if current, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope); e != nil || current != i || !bytes.Equal(documentsBefore, snapshot()) {
 		t.Fatal("rollback changed release, versions or original history", e)
 	}
 	for _, command := range []string{"RESUME", "END"} {
-		if _, e = r.World.Control(ctx, scope, world.ControlCommand{Key: "forbidden-" + command, Request: generated.AdminControlRequest{ProductID: "coffee", Command: command, ExpectedVersions: i.Versions}}); e == nil {
+		if _, e = r.World.Control(runtimeContextWithParent(t, r, ctx), scope, world.ControlCommand{Key: "forbidden-" + command, Request: generated.AdminControlRequest{ProductID: "coffee", Command: command, ExpectedVersions: i.Versions}}); e == nil {
 			t.Fatal("control entered active migration", command)
 		}
 	}
@@ -281,7 +281,7 @@ func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
 	if e = world.New(r.Store).Process(ctx, lease, "migrator"); e != nil {
 		t.Fatal("original final receipt recovery", e)
 	}
-	again, e := r.World.ExecuteInstanceMigration(ctx, scope, req, "migrate")
+	again, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), scope, req, "migrate")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -306,7 +306,7 @@ func TestMigrationPreventsResumeAndUnknownUsesOriginalReceipt(t *testing.T) {
 	if !bytes.Equal(documentsBefore, snapshot()) || !bytes.Equal(journalBefore, journalBytes(t, r)) {
 		t.Fatal("migration recovery changed actor/item/memory history or original provider journal")
 	}
-	i, e = r.World.GetInstance(ctx, scope)
+	i, e = r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -334,7 +334,7 @@ func TestRuntimeCreationLostACKConcurrentReplayAndClosedMissingWorld(t *testing.
 	r, s, rel := runtimeFixture(t)
 	ctx := context.Background()
 	cmd := world.CreateInstanceCommand{Key: "unknown-create", Request: generated.AdminCreateInstanceRequest{ProductID: "coffee", ReleaseID: rel, Mode: "PRIVATE", InitialParticipants: []string{}, ClientCapabilities: []string{"TEXT"}}}
-	if _, e := world.New(r.Store).CreateInstance(ctx, s, cmd); !errors.Is(e, store.ErrDenied) {
+	if _, e := world.New(r.Store).CreateInstance(runtimeContextWithParent(t, r, ctx), s, cmd); !errors.Is(e, store.ErrDenied) {
 		t.Fatal("incomplete production assembly accepted new creation", e)
 	}
 	r.Store.Commit = func(_ context.Context, tx *sql.Tx) error {
@@ -343,11 +343,11 @@ func TestRuntimeCreationLostACKConcurrentReplayAndClosedMissingWorld(t *testing.
 		}
 		return errors.New("synthetic lost ACK")
 	}
-	if _, e := r.World.CreateInstance(ctx, s, cmd); !errors.Is(e, store.ErrCommitUnknown) {
+	if _, e := r.World.CreateInstance(runtimeContextWithParent(t, r, ctx), s, cmd); !errors.Is(e, store.ErrCommitUnknown) {
 		t.Fatal(e)
 	}
 	r.Store.Commit = nil
-	if _, e := world.New(r.Store).CreateInstance(ctx, s, cmd); !errors.Is(e, store.ErrDenied) {
+	if _, e := world.New(r.Store).CreateInstance(runtimeContextWithParent(t, r, ctx), s, cmd); !errors.Is(e, store.ErrDenied) {
 		t.Fatal("incomplete production assembly accepted original replay", e)
 	}
 	// Reconstruct the production adapter assembly before starting either replay.
@@ -366,9 +366,10 @@ func TestRuntimeCreationLostACKConcurrentReplayAndClosedMissingWorld(t *testing.
 		i generated.Instance
 		e error
 	}
+	userCtx := runtimeContextWithParent(t, r, ctx)
 	done := make(chan result, 2)
 	for _, runtime := range recovered {
-		go func() { i, e := runtime.World.CreateInstance(ctx, s, cmd); done <- result{i, e} }()
+		go func() { i, e := runtime.World.CreateInstance(userCtx, s, cmd); done <- result{i, e} }()
 	}
 	a, b := <-done, <-done
 	if a.e != nil || b.e != nil || a.i != b.i {
@@ -384,7 +385,7 @@ func TestRuntimeCreationLostACKConcurrentReplayAndClosedMissingWorld(t *testing.
 		t.Fatal("concurrent replay did not preserve the one original creation receipt", receipts, e)
 	}
 	cmd.Request.Mode = "SHARED"
-	if _, e := r.World.CreateInstance(ctx, s, cmd); e == nil {
+	if _, e := r.World.CreateInstance(runtimeContextWithParent(t, r, ctx), s, cmd); e == nil {
 		t.Fatal("shared silently downgraded")
 	}
 	v := runtimeVersions(t, a.i)
@@ -404,7 +405,7 @@ func TestRuntimeControlLeaseTakeoverAndOriginalCommitUnknown(t *testing.T) {
 	i := createRuntimeWorld(t, r, rel, "create")
 	scope := domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}
 	cmd := world.ControlCommand{Key: "start", Request: generated.AdminControlRequest{ProductID: "coffee", Command: "START", ExpectedVersions: i.Versions}}
-	task, e := r.World.Control(ctx, scope, cmd)
+	task, e := r.World.Control(runtimeContextWithParent(t, r, ctx), scope, cmd)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -433,11 +434,11 @@ func TestRuntimeControlLeaseTakeoverAndOriginalCommitUnknown(t *testing.T) {
 	if e = world.New(r.Store).Process(ctx, current, "new-worker"); e != nil {
 		t.Fatal("original execution recovery", e)
 	}
-	replay, e := r.World.Control(ctx, scope, cmd)
+	replay, e := r.World.Control(runtimeContextWithParent(t, r, ctx), scope, cmd)
 	if e != nil || replay.TaskID != task.TaskID {
 		t.Fatal(replay, e)
 	}
-	after, e := r.World.GetInstance(ctx, scope)
+	after, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil || after.Versions.ControlVersion != "1" {
 		t.Fatal(after, e)
 	}
@@ -447,7 +448,7 @@ func TestMigrationBlocksPendingStateWriters(t *testing.T) {
 	// Use a real accepted/sent TURN: its reply is lost but its original result
 	// can still resume a world write. An unmanaged legacy TURN proves no closure.
 	r, scope, task, _ := originalResultFixture(t, true)
-	i, e := r.World.GetInstance(ctx, scope)
+	i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -506,7 +507,7 @@ func TestMigrationBlocksPendingStateWriters(t *testing.T) {
 	}
 	before, originalJ := snapshot(), journalBytes(t, r)
 	request := generated.MigrationPreviewRequest{ProductID: "coffee", TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}
-	if _, e = r.World.PreviewInstanceMigration(ctx, scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
+	if _, e = r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), scope, request, "preview"); !errors.Is(e, store.ErrDenied) {
 		t.Fatal("live original state writer must block migration", e)
 	}
 	runtimeHTTP(t, r, "POST", "/instances/"+i.Scope.WorldInstanceID+"/migration-previews", "preview", request, 403, nil)

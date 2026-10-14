@@ -19,6 +19,23 @@ import (
 
 const runtimeToken = "synthetic-runtime-test-token-at-least32"
 
+// Test-only adaptation for direct service callers. It uses the same actual
+// persisted synthetic credential and verifier as HTTP, and grants no rights.
+func runtimeContext(t *testing.T, r *app.Runtime) context.Context {
+	t.Helper()
+	return runtimeContextWithParent(t, r, context.Background())
+}
+
+// Deadline-bearing test operations retain the original cancellation boundary.
+func runtimeContextWithParent(t *testing.T, r *app.Runtime, parent context.Context) context.Context {
+	t.Helper()
+	ctx, _, e := r.Auth.Authenticate(parent, "Bearer "+runtimeToken)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return ctx
+}
+
 func TestRuntimeCreationReplayChecksMigratedCurrentRelease(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	original := createRuntimeWorld(t, r, release, "create")
@@ -81,6 +98,10 @@ func runtimeFixtureWithConsent(t *testing.T, optIn bool) (*app.Runtime, domain.P
 	}
 	r.BindLocal(local)
 	r.Memory.Ledger = local.Ledger
+	ctx, _, e = r.Auth.Authenticate(ctx, "Bearer "+runtimeToken)
+	if e != nil {
+		t.Fatal(e)
+	}
 	t.Cleanup(func() {
 		if e := local.Participant.Close(context.Background()); e != nil {
 			t.Error(e)

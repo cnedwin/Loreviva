@@ -1,18 +1,49 @@
-# Deterministic sources and generated outputs must survive Windows checkouts.
-/contracts/source/** text eol=lf
-/contracts/generated/** text eol=lf
-/internal/generated/** text eol=lf
-/packages/sdk-ts/src/generated/** text eol=lf
-/scripts/** text eol=lf
-/migrations/** text eol=lf
-# Preserve raw console and upstream license bytes, including original whitespace.
-/evidence/r0/task02/** -text whitespace=-blank-at-eol
-/evidence/r0/task03/** -text whitespace=-blank-at-eol
-/evidence/r0/task04/** -text whitespace=-blank-at-eol,-blank-at-eof
-/evidence/r0/task05/** -text whitespace=-blank-at-eol,-blank-at-eof
+# Default/raw bytes are not transformed. Project text is explicit UTF-8 LF.
+* -text
 *.go text eol=lf
-/README.md text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.cts text eol=lf
+*.mts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+*.svg text eol=lf
+*.xml text eol=lf
+*.toml text eol=lf
 /.env.example text eol=lf
-/examples/coffee/** text eol=lf
 /.gitattributes text eol=lf
-/package.json text eol=lf
+/.gitignore text eol=lf
+/.editorconfig text eol=lf
+/LICENSE text eol=lf
+/NOTICE text eol=lf
+# Upstream license originals and binary classes keep their exact raw bytes.
+/LICENSES/** -text
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.webp -text
+*.ico -text
+*.woff -text
+*.woff2 -text
+*.ttf -text
+*.otf -text
+*.pdf -text
+*.zip -text
+*.wasm -text
+*.exe -text
+*.dll -text

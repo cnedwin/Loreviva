@@ -6,6 +6,7 @@ import "loreviva.local/loreviva/internal/generated"
 // rehearsal input source, never in this binding, an accounting row or the J.
 type RehearsalInputBinding struct{ ActorSlot, Hash string }
 type RehearsalBinding struct {
+	RoutePolicy                                          *RoutePolicySnapshot `json:",omitempty"`
 	DraftID, ProjectID, DraftHash, SourceHash, RouteHash string
 	Revision                                             uint64
 	Settings                                             generated.GenerationSettings

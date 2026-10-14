@@ -15,8 +15,8 @@ import (
 )
 
 func TestRehearsalUnknownUsageOriginalMetadata(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -164,8 +164,8 @@ func TestOriginalUnknownUsageHasIndependentMeasuredEvidence(t *testing.T) {
 }
 
 func TestCandidateUnknownUsageBindsPendingService(t *testing.T) {
-	ctx := context.Background()
 	r, draft, request := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	var accepted generated.AdminTaskReceipt
 	runtimeHTTP(t, r, "POST", "/content-drafts/"+draft+"/candidates", "pending-meter", request, 202, &accepted)
 	r.Worker.Turns.Fault = harness.MockUsagePendingRepair
@@ -205,8 +205,8 @@ func TestCandidateUnknownUsageBindsPendingService(t *testing.T) {
 func TestOriginalMeteringRepairFamiliesAndAtomicRecovery(t *testing.T) {
 	for _, mode := range []string{"CANDIDATE", "REHEARSAL", "FINISH_SERVICE", "ACK_COMMIT", "ACK_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, request := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var task string
 			if mode == "REHEARSAL" {
@@ -514,8 +514,8 @@ func TestFinalSupplierDoesNotSettleUnknownCustomerUnits(t *testing.T) {
 func TestCommittedProductMeterCutoffAndLateUnits(t *testing.T) {
 	for _, mode := range []string{"CANDIDATE", "REHEARSAL", "FINISH_SERVICE", "ACK_COMMIT", "ACK_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, request := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var task string
 			if mode == "CANDIDATE" {
@@ -646,8 +646,8 @@ func TestCommittedProductMeterCutoffAndLateUnits(t *testing.T) {
 func TestPendingMeterReportAtomicOutcomes(t *testing.T) {
 	for _, mode := range []string{"FINISH_METER", "FINISH_HOLD", "ACK_COMMIT", "ACK_ROLLBACK", "MIXED"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -769,8 +769,8 @@ func TestPendingMeterReportAtomicOutcomes(t *testing.T) {
 }
 
 func TestRehearsalUnknownUsageStillCommitsKnownReport(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {

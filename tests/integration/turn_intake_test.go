@@ -179,8 +179,8 @@ func TestTurnActualIntakeOriginalReplay(t *testing.T) {
 }
 
 func TestTurnDeletedInputCannotBind(t *testing.T) {
-	ctx := context.Background()
 	r, s, rel := runtimeFixtureWithConsent(t, true)
+	ctx := runtimeContext(t, r)
 	instance := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "deleted-input-world"), "START")
 	scope := domain.Scope{ProductScope: s, WorldInstanceID: instance.Scope.WorldInstanceID}
 	var raw []byte

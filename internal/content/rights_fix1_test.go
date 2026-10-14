@@ -2,20 +2,19 @@ package content_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/generated"
+	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"testing"
 )
 
 func TestFix1PersistedUploadRightsConstrainPublish(t *testing.T) {
 	for _, limitation := range []string{"EDIT_ONLY", "EXPIRED", "EXPIRING", "NO_LICENSE", "EDITORS", "ALLOWED", "REVOKED_AFTER_CHECK"} {
 		t.Run(limitation, func(t *testing.T) {
-			s, scope := fixture(t)
-			ctx := context.Background()
+			s, scope, ctx := fixture(t)
 			f, e := files.New(s.Store, t.TempDir())
 			if e != nil {
 				t.Fatal(e)
@@ -85,8 +84,7 @@ func TestFix1PersistedUploadRightsConstrainPublish(t *testing.T) {
 func TestFix1PersistedAudienceEligibilityForDifferentCreator(t *testing.T) {
 	for _, audience := range []string{"PRODUCT_EDITORS", "PRODUCT_READERS"} {
 		t.Run(audience, func(t *testing.T) {
-			s, scope := fixture(t)
-			ctx := context.Background()
+			s, scope, ctx := fixture(t)
 			f, e := files.New(s.Store, t.TempDir())
 			if e != nil {
 				t.Fatal(e)
@@ -109,15 +107,16 @@ func TestFix1PersistedAudienceEligibilityForDifferentCreator(t *testing.T) {
 			raw, _ := json.Marshal(asset)
 			in := coffee(t)
 			in.Objects = append(in.Objects, raw)
-			d, e := s.Create(ctx, other, "WORLD", "", in, "different-owner-create")
+			otherCtx := testprincipal.Register(t, s.Store, other)
+			d, e := s.Create(otherCtx, other, "WORLD", "", in, "different-owner-create")
 			if e != nil {
 				t.Fatal(e)
 			}
-			check, e := s.CheckPublish(ctx, other, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "different-owner-check")
+			check, e := s.CheckPublish(otherCtx, other, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "different-owner-check")
 			if e != nil || check.Passed != (audience == "PRODUCT_READERS") {
 				t.Fatalf("actual source audience eligibility=%s findings=%v error=%v", audience, check.Findings, e)
 			}
-			_, e = s.Publish(ctx, other, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "different-owner-publish")
+			_, e = s.Publish(otherCtx, other, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "different-owner-publish")
 			if (e == nil) != (audience == "PRODUCT_READERS") {
 				t.Fatalf("same-label different-creator publication=%s error=%v", audience, e)
 			}

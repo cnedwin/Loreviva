@@ -18,7 +18,12 @@ func foregroundReceiptFixture(t *testing.T, kind string) (*app.Runtime, domain.M
 	ctx := context.Background()
 	if kind == "PRODUCT" {
 		r, l, _, a := productSent(t)
-		if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
+		// Only setup generation enters the existing leased issuer; original query recovery below retains its necessary program context.
+		issuer, e := r.Store.EnterDraftTaskIssuer(ctx, l, "candidate-worker")
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e := r.Worker.Turns.GenerateDraftCandidate(issuer, a.OriginalSend()); e != nil {
 			t.Fatal(e)
 		}
 		id, e := r.Store.CandidateMockIdentity(ctx, l.ProductScope, l.TaskID)
@@ -217,8 +222,8 @@ func TestForegroundOriginalQueryCommitACKUsesExactReceipt(t *testing.T) {
 func TestOriginalReplyReceiptHasIndependentOrdinalZero(t *testing.T) {
 	for _, lostAt := range []int{1, 2} {
 		t.Run([]string{"", "BEGIN", "RECORD"}[lostAt], func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}

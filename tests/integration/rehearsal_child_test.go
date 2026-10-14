@@ -45,8 +45,8 @@ type rehearsalChildResultReader interface {
 }
 
 func TestRehearsalFixedClaimIsolation(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -106,8 +106,8 @@ func TestRehearsalChildContext(t *testing.T) { runRehearsalChildContext(t, "NORM
 func TestRehearsalClaimOutcomes(t *testing.T) {
 	for _, mode := range []string{"ROLLBACK", "COMMIT_ACK", "FINISH_REVOKE", "FINISH_BINDING", "TAKEOVER", "REPLAY_CANCEL"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -284,8 +284,8 @@ func runRehearsalChildContext(t *testing.T, mode string) {
 	repair := mode == "REPAIR" || mode == "READ_REPAIR" || (mode == "REPORT_REPAIR" || mode == "REPORT_HISTORY_REPAIR")
 	rollback := mode == "ROLLBACK" || mode == "ACTION_ROLLBACK"
 	revoke := mode == "FINISH_REVOKE" || mode == "ACTION_FINISH_REVOKE" || mode == "ACTION_FINISH_SOURCE" || mode == "ACTION_FINISH_GRANT" || mode == "ACTION_FINISH_ACQUISITION" || mode == "ACTION_FINISH_PRIVACY"
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -1471,8 +1471,8 @@ func runRehearsalChildContext(t *testing.T, mode string) {
 }
 
 func TestRehearsalChildOriginalInput(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":"next input must wait"}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {

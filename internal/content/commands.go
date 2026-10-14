@@ -71,6 +71,17 @@ func Command(ctx context.Context, s *store.Store, scope domain.ProductScope, ope
 // BoundCommand shares the exact original-payload normalizer and durable result
 // protocol with content commands; the Store validates closed runtime bindings.
 func BoundCommand(ctx context.Context, s *store.Store, scope domain.ProductScope, operation, key, target, schema string, payload any, locks []store.LockKey, binding store.CommandBarrierRequest, body func(store.Tx) (any, error)) (json.RawMessage, error) {
+	if operation == "commandContentDraft" {
+		b, e := json.Marshal(payload)
+		if e != nil {
+			return nil, e
+		}
+		var v struct{ Action string }
+		if e = json.Unmarshal(b, &v); e != nil {
+			return nil, e
+		}
+		binding.ContentAction = v.Action
+	}
 	if original, ok := ctx.Value(originalPayloadKey{}).(json.RawMessage); ok {
 		payload = original
 	}

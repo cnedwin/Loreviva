@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -65,8 +66,24 @@ func TestM1Startup(t *testing.T) {
 		t.Fatal(e)
 	}
 	emptyAuth := auth.New(s, scope, "owner", "")
-	if app.NewRuntime(s, f, emptyAuth).Readiness(ctx) == nil {
-		t.Fatal("missing explicit operator reference ready")
+	if emptyAuth.Check(ctx) == nil {
+		t.Fatal("empty configured credential authenticated")
+	}
+	registryRuntime := app.NewRuntime(s, f, emptyAuth)
+	if e = registryRuntime.Readiness(ctx); e != nil {
+		t.Fatal("actual registered credential did not make registry ready", e)
+	}
+	if _, e = s.DB.Exec("UPDATE operator_credentials SET enabled=0"); e != nil {
+		t.Fatal(e)
+	}
+	if registryRuntime.Readiness(ctx) == nil {
+		t.Fatal("registry with all credentials disabled ready")
+	}
+	if _, e = s.DB.Exec("UPDATE operator_credentials SET enabled=1 WHERE credential_id='owner'"); e != nil {
+		t.Fatal(e)
+	}
+	if e = registryRuntime.Readiness(ctx); e != nil {
+		t.Fatal("restored registered credential unready", e)
 	}
 	f.Close()
 	if r.Readiness(ctx) == nil {
@@ -74,26 +91,47 @@ func TestM1Startup(t *testing.T) {
 	}
 }
 func TestRegisteredOnlyWorkerDoesNotClaimFutureTurn(t *testing.T) {
-	s, db, r := fixture(t, false)
+	r, scope, _ := runtimeFixture(t)
+	s, db := r.Store, r.Store.DB
 	ctx := context.Background()
-	if _, e := db.Exec("INSERT INTO tasks(tenant_id,product_id,task_id,owner_subject_id,scope_kind,state,next_run_at,task_kind) VALUES('t','p','future','owner','PRODUCT','ACCEPTED',UTC_TIMESTAMP(6),'ADMIN')"); e != nil {
+	if _, e := db.Exec("INSERT INTO tasks(tenant_id,product_id,task_id,owner_subject_id,scope_kind,state,next_run_at,task_kind) VALUES(?,?,'future',?,'PRODUCT','ACCEPTED',UTC_TIMESTAMP(6),'ADMIN')", scope.TenantID, scope.ProductID, scope.SubjectID); e != nil {
 		t.Fatal(e)
 	}
 	if _, e := s.ClaimRegistered(ctx, "m1", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "FILE_CLEANUP"}}); !errors.Is(e, store.ErrNoTask) {
 		t.Fatal("unsupported future job claimed", e)
 	}
-	c := command(r)
-	c.CommandKey = "cleanup"
-	c.CommitKey = "cleanup"
-	c.Locks = []store.LockKey{{Rank: 50, IDs: []string{"t", "p", "cleanup"}}}
-	_, e := s.WithCommandBarrier(ctx, c, func(tx store.Tx) error {
-		return tx.CreateRegisteredTask(ctx, domain.TaskIntake{TaskScope: domain.TaskScope{ProductScope: r.ProductScope, OwnerSubjectID: "owner"}, TaskID: "cleanup", NextRunAt: time.Now().UTC(), Kind: "ADMIN"}, "FILE_CLEANUP")
-	})
+	owner := runtimeContext(t, r)
+	const secret = "synthetic-cleanup-only-credential-at-least32"
+	if e := maintenance.RegisterLocalCredential(owner, s, scope, "cleanup-only", secret); e != nil {
+		t.Fatal(e)
+	}
+	grant := generated.StudioMemberCommandRequest(`{"scope":{"scope_type":"PRODUCT","tenant_id":"demo-local","product_id":"coffee"},"kind":"SET_SCOPE_GRANT","expected_revision":"0","credential_id":"cleanup-only","subject_id":"creator","grant":{"scope":{"scope_type":"PRODUCT","tenant_id":"demo-local","product_id":"coffee"},"action":"asset.upload","use":"PRODUCT_ADMIN","effect":"ALLOW","enabled":true,"expires_at":null}}`)
+	if _, e := s.ApplyMember(owner, "cleanup-only-grant", grant); e != nil {
+		t.Fatal(e)
+	}
+	caller, _, e := r.Auth.Authenticate(ctx, "Bearer "+secret)
 	if e != nil {
 		t.Fatal(e)
 	}
+	if e = s.CheckOperator(caller, scope, "content.edit"); e == nil {
+		t.Fatal("cleanup-only credential acquired unrelated content authority")
+	}
+	receipt, e := app.QueueCleanup(caller, s, scope, "cleanup")
+	if e != nil {
+		t.Fatal(e)
+	}
+	var provenance string
+	var issuer sql.NullString
+	if e = db.QueryRow("SELECT issuer_provenance,issuer_credential_id FROM registered_jobs WHERE task_id=? AND operation='FILE_CLEANUP'", receipt.TaskID).Scan(&provenance, &issuer); e != nil || provenance != "PROGRAM_OWNED" || issuer.Valid {
+		t.Fatal("cleanup program provenance", provenance, issuer.Valid, e)
+	}
+	key := content.Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "queueFileCleanup", "cleanup")
+	intake, e := s.QueryCommitScoped(ctx, scope, nil, scope.SubjectID, key)
+	if e != nil || !intake.Committed || intake.Key != key {
+		t.Fatal("exact cleanup intake receipt missing", e)
+	}
 	lease, e := s.ClaimRegistered(ctx, "m1", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "FILE_CLEANUP"}})
-	if e != nil || lease.TaskID != "cleanup" || lease.Operation != "FILE_CLEANUP" {
+	if e != nil || lease.TaskID != string(receipt.TaskID) || lease.Operation != "FILE_CLEANUP" {
 		t.Fatal("supported job not claimed", lease, e)
 	}
 }
@@ -117,7 +155,11 @@ func TestActualAdminHTTPOriginalWireScopeAndUnavailableJobs(t *testing.T) {
 	r := app.NewRuntime(s, f, a)
 	server := httptest.NewServer(r.Handler())
 	defer server.Close()
-	seed, e := content.New(s).SeedCoffee(ctx, scope, "coffee-v1")
+	userCtx, _, e := a.Authenticate(ctx, "Bearer "+token)
+	if e != nil {
+		t.Fatal(e)
+	}
+	seed, e := content.New(s).SeedCoffee(userCtx, scope, "coffee-v1")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -168,7 +210,7 @@ func TestActualAdminHTTPOriginalWireScopeAndUnavailableJobs(t *testing.T) {
 		t.Fatal("server owned credential", e)
 	}
 	var docs []byte
-	d, e := content.New(s).GetDraft(ctx, scope, seed.DraftID, "")
+	d, e := content.New(s).GetDraft(userCtx, scope, seed.DraftID, "")
 	if e != nil {
 		t.Fatal(e)
 	}

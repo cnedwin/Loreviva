@@ -114,6 +114,9 @@ func baseLocks(r BarrierRequest) []LockKey {
 	t, p, sub := r.ProductScope.TenantID, r.ProductScope.ProductID, r.ProductScope.SubjectID
 	kind, _, w := scopeOf(r)
 	keys := []LockKey{{Rank: 10, IDs: []string{t}}, {Rank: 20, IDs: []string{t, p}}, {Rank: 30, IDs: []string{t, p, sub}}, {Rank: 45, IDs: []string{t, p, sub, r.Operation, kind, w, r.CommandKey}}, {Rank: 110, Kind: "commit_receipts", IDs: []string{r.CommitKey}}}
+	if r.operator != nil {
+		keys = append(keys, operatorKeys(r.operator.principal)...)
+	}
 	if !r.commandOnly {
 		keys = append(keys, LockKey{Rank: 50, IDs: []string{t, p, r.TaskID}})
 	}
@@ -213,6 +216,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	if e := s.planBoundGeneration(ctx, &r); e != nil {
 		return receipt, false, e
 	}
+	if e := s.prepareOperatorBarrier(ctx, &r); e != nil {
+		return receipt, false, e
+	}
 	plan, e := PlanLocks(append(baseLocks(r), r.Locks...))
 	if e != nil {
 		return receipt, false, e
@@ -231,6 +237,8 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		}
 	}()
 	u := &unit{tx: tx, plan: map[string]bool{}, scope: r.ProductScope, taskID: r.TaskID, commandOnly: r.commandOnly, fence: r.Fence, purpose: r.Purpose, world: worldKey(r)}
+	u.operatorStore = s
+	u.operation = r.Operation
 	u.runtime = r.Runtime
 	u.rehearsalInitialization = r.rehearsalInitialization
 	u.rehearsalChildStart = r.rehearsalChildStart
@@ -257,6 +265,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		if s.Trace != nil {
 			s.Trace(k)
 		}
+	}
+	if e = s.checkOperatorBarrier(ctx, tx, r); e != nil {
+		return receipt, false, e
 	}
 	if r.rehearsalExecution != nil {
 		if r.rehearsalReportRead {
@@ -299,6 +310,7 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	if !errors.Is(e, sql.ErrNoRows) {
 		return receipt, false, e
 	}
+	// For a new receipt, the local body and receipt share this transaction; lease checks bracket the body, and finish performs the final applicable checks before commit.
 	if e = checkCurrentLease(ctx, tx, r); e != nil {
 		return receipt, false, e
 	}
@@ -337,6 +349,7 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}
 	return CommitReceipt{Key: r.CommitKey, TaskID: r.TaskID, OwnerSubjectID: r.OwnerSubjectID, Committed: true}, false, nil
 }
+// Task-backed requests use the current database fence, worker, cancellation and expiry; command-only requests have no task lease check here.
 func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error {
 	if r.commandOnly {
 		return nil
@@ -366,7 +379,24 @@ func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error 
 	}
 	return nil
 }
+// Planned keys do not replace current row checks: base gates and task locks validate their owned identities, while specialized branches retain their own validators.
 func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
+	if k.Rank == 35 || k.Rank == 90 && (k.Kind == domain.StudioSettingsLock || k.Kind == domain.StudioConnectionLock) {
+		found := false
+		for _, want := range RoutePolicyLocks(r.ProductScope) {
+			if reflect.DeepEqual(k, want) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return ErrDenied
+		}
+		if e := marker(ctx, tx, k); e != nil {
+			return e
+		}
+		return lockStudioRows(ctx, tx, k)
+	}
 	if r.worldAccounting != nil && k.Rank >= 60 && k.Rank <= 80 {
 		return acquireAccountingKey(ctx, tx, r.worldAccounting, k)
 	}
@@ -395,6 +425,8 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 	var enabled bool
 	var version uint64
 	switch k.Rank {
+	case 15, 25:
+		return s.acquireOperatorKey(ctx, tx, r, k)
 	case 10:
 		if e := tx.QueryRowContext(ctx, "SELECT permission_version,enabled FROM tenant_gates WHERE tenant_id=? FOR UPDATE", t).Scan(&version, &enabled); e != nil {
 			return e
@@ -458,11 +490,11 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 			switch r.Purpose {
 			case ExecutionPurpose:
 				if r.draftResolution {
-					if e := draftResolutionReadTx(ctx, tx, r.ProductScope); e != nil {
+					if e := s.draftResolutionReadTx(ctx, tx, r.ProductScope); e != nil {
 						return e
 					}
 				} else if r.candidateHistoryRead != nil || r.rehearsalHistory != nil {
-					if e := candidateReadActionsTx(ctx, tx, r.ProductScope); e != nil {
+					if e := s.candidateReadActionsTx(ctx, tx, r.ProductScope); e != nil {
 						return e
 					}
 				} else if !execute {

@@ -9,7 +9,7 @@ import {checkGenerated} from './check-generated.mjs';
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = path.resolve(repo,'contracts/source');
 test('original18 operations permit only explicit memory protocol deltas; original43 DTOs remain immutable',async()=>{
- const old=JSON.parse(await readFile(path.join(repo,'tests/fixtures/original-public-contract.json'),'utf8'));
+ const old=JSON.parse(await readFile(path.join(repo,'scripts/fixtures/original-public-contract.json'),'utf8'));
  const {openapi}=await loadSources(sourceRoot);
  for(const [route,item]of Object.entries(old.paths)){
   const current=structuredClone(openapi.paths[route]);
@@ -30,11 +30,11 @@ test('original18 operations permit only explicit memory protocol deltas; origina
  }
  for(const [name,schema]of Object.entries(old.schemas))assert.deepEqual(openapi.components.schemas[name],schema,name);
 });
-test('1.3 retains content/runtime/memory and adds two fixed Operator reads',async()=>{
+test('1.4 retains content/runtime/memory and fixed Operator reads with seven settings operations',async()=>{
  const {openapi}=await loadSources(sourceRoot);
- assert.equal(openapi.info.version,'1.3.0');
+ assert.equal(openapi.info.version,'1.4.0');
  const ids=Object.values(openapi.paths).flatMap(x=>Object.values(x).filter(v=>v.operationId).map(v=>v.operationId));
- assert.equal(ids.length,51);
+ assert.equal(ids.length,58);
  for(const id of ['createContentDraft','saveContentDraft','publishContentDraft','readAuthorizedAsset','previewInstanceMigration','executeInstanceMigration','createAdminInstance','listAdminInstances','getAdminInstance','controlAdminInstance','listAdminActorInstances'])assert.ok(ids.includes(id),id);
  for(const name of ['DraftInput','ContentDraft','Release','PublishCheckReport','AdminTaskReceipt','MigrationPlan','CharacterDefinition','InitialActorSetup'])assert.ok(openapi.components.schemas[name],name);
  assert.deepEqual(openapi.components.schemas.TaskReceipt.properties.task_kind.enum,['TURN','CONTROL','MEMORY_GOVERNANCE','MEDIA','MEMORY_MAINTENANCE']);

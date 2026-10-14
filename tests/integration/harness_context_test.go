@@ -82,7 +82,7 @@ func TestGenerationContextDirectionalDerivedAndDeletedInitial(t *testing.T) {
 	r, s, rel := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "direction-context"), "START")
 	br, q := actionTask(t, r, s, i, "direction-turn")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	request := memory.ActorGenerationRequest{Scope: q.Scope, TaskID: q.TaskID, ActorID: q.Intents[0].ActorID, DataSubjectID: s.SubjectID, TargetKind: "ACTOR", TargetID: q.Intents[0].TargetID, Audience: memory.Private, Use: memory.PrivateResponse}
 	br.Locks = append(br.Locks, memory.GenerationContextLocks(request)...)
 	for _, action := range []string{"memory.generation.use", "memory.govern", "memory.source.govern"} {

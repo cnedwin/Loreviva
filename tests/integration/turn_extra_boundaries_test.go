@@ -262,7 +262,7 @@ func TestRecoveryRejectsIncompleteOrUnknownOriginal(t *testing.T) {
 				}
 			}
 			if mode != "refusal" {
-				instance, e := r.World.GetInstance(ctx, scope)
+				instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 				if e != nil {
 					t.Fatal(e)
 				}
@@ -531,7 +531,7 @@ func TestRecoveryRetiresOriginalCandidateBeforeExtraSend(t *testing.T) {
 	if e := r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
 		t.Fatal(e)
 	}
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}

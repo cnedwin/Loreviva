@@ -79,7 +79,7 @@ func TestCandidateTransactionKnownRollbackEvidence(t *testing.T) {
 					t.Fatal(e)
 				}
 			}
-			instance, e := r.World.GetInstance(ctx, scope)
+			instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -133,7 +133,7 @@ func TestOriginalCommitUnknownNeverBecomesRollbackFromMissingReceipt(t *testing.
 	if !errors.Is(e, store.ErrCommitUnknown) {
 		t.Fatal("world outcome was not uncertain", e)
 	}
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -285,7 +285,7 @@ func TestLaterPendingRoundSupersedesOldKnownRollback(t *testing.T) {
 	ctx := context.Background()
 	r, scope, task, _ := actionResultFixture(t)
 	lease, worker := currentResultLease(t, task, scope, r.Store.DB)
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}

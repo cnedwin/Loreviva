@@ -70,6 +70,9 @@ func (s *Store) InspectCandidateSourceMaterial(ctx context.Context, scope domain
 	inspected := errors.New("candidate sources inspected without mutation")
 	var out []CandidateSourceAsset
 	_, _, e = s.barrier(ctx, r, func(tx Tx) error {
+		u := tx.(*unit)
+		u.routePolicyFrozen = true
+		u.routePolicy = m.RoutePolicy
 		current, e := s.DraftCandidateOwner.BuildCandidateTx(ctx, tx, scope, m.Selection)
 		if e != nil {
 			return e

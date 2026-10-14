@@ -44,6 +44,10 @@ func (x *Executor) ExecuteDraftCandidate(ctx context.Context, lease domain.TaskL
 	}
 	defer release()
 	s := x.Turns.Store
+	ctx, e = s.EnterDraftTaskIssuer(ctx, lease, worker)
+	if e != nil {
+		return e
+	}
 	if _, e = s.QueryDraftCandidateCommit(ctx, lease.ProductScope, lease.TaskID); e == nil {
 		return nil
 	} else if !errors.Is(e, sql.ErrNoRows) {

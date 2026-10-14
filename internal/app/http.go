@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func response(w http.ResponseWriter, status int, value any) {
@@ -26,6 +27,7 @@ func response(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+// Commit uncertainty directs recovery to the original key; this response does not establish rollback or authorize a replacement request.
 func failure(w http.ResponseWriter, e error) {
 	status := 503
 	code := "DEPENDENCY_UNAVAILABLE"
@@ -111,6 +113,7 @@ func failure(w http.ResponseWriter, e error) {
 
 type adminWork func(context.Context, domain.ProductScope, *http.Request, []byte) (int, any, error)
 
+// After decoding the request, the entry action is checked and bound to a private HTTP proof; owning operations still enforce their transaction and source gates.
 func (r *Runtime) admin(schema, action string, work adminWork) http.HandlerFunc {
 	return func(w http.ResponseWriter, q *http.Request) {
 		requestedAction := action
@@ -150,6 +153,8 @@ func (r *Runtime) admin(schema, action string, work adminWork) http.HandlerFunc 
 				var command string
 				_ = json.Unmarshal(data["action"], &command)
 				switch command {
+				case "REMOVE_BINDING":
+					requestedAction = "content.edit"
 				case "COPY":
 					requestedAction = "content.copy"
 				case "ARCHIVE":
@@ -182,6 +187,11 @@ func (r *Runtime) admin(schema, action string, work adminWork) http.HandlerFunc 
 			return
 		}
 		ctx := q.Context()
+		ctx, e = r.Store.AuthorizeHTTPAction(ctx, scope, requestedAction)
+		if e != nil {
+			failure(w, e)
+			return
+		}
 		if raw != nil {
 			ctx = content.WithOriginalPayload(ctx, raw)
 		}
@@ -219,7 +229,7 @@ func (r *Runtime) Handler() http.Handler {
 		response(w, 200, map[string]any{"status": "ready", "gate": "M1_FRESH_SYNTHETIC", "mock_only": true})
 	})
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, q *http.Request) {
-		response(w, 200, map[string]any{"name": "Loreviva", "version": "0.0.0-r0", "contract_version": "1.3.0", "source_hash": generated.SourceHash, "mock_only": true})
+		response(w, 200, map[string]any{"name": "Loreviva", "version": "0.0.0-r0", "contract_version": "1.4.0", "source_hash": generated.SourceHash, "mock_only": true})
 	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, q *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -323,12 +333,19 @@ func (r *Runtime) Handler() http.Handler {
 	}))
 	r.taskRoutes(mux)
 	r.adminReadRoutes(mux)
+	r.settingsRoutes(mux)
 	r.assetRoutes(mux)
 	mux.HandleFunc("GET "+root+"/capabilities", r.admin("", "content.read", r.capabilities))
 	r.instanceRoutes(mux)
 	r.memoryRoutes(mux)
 	r.unsupportedRoutes(mux)
+	studio := studioHandler()
+	// Static Studio and health/version routes bypass this operation wrapper. Other requests enter the runtime guard, and admin requests attach the authenticated principal before dispatch.
 	return http.HandlerFunc(func(w http.ResponseWriter, q *http.Request) {
+		if q.URL.Path == "/studio" || strings.HasPrefix(q.URL.Path, "/studio/") {
+			studio.ServeHTTP(w, q)
+			return
+		}
 		if q.URL.Path == "/health" || q.URL.Path == "/version" {
 			mux.ServeHTTP(w, q)
 			return
@@ -339,6 +356,18 @@ func (r *Runtime) Handler() http.Handler {
 			return
 		}
 		defer release()
+		if strings.HasPrefix(q.URL.Path, "/world/v1/admin/") {
+			ctx, _, e = r.Auth.Authenticate(ctx, q.Header.Get("Authorization"))
+			if e != nil {
+				failure(w, e)
+				return
+			}
+		}
+		if strings.HasPrefix(q.URL.Path, "/world/v1/assets/") {
+			if next, _, authErr := r.Auth.Authenticate(ctx, q.Header.Get("Authorization")); authErr == nil {
+				ctx = next
+			}
+		}
 		mux.ServeHTTP(w, q.WithContext(ctx))
 	})
 }

@@ -32,8 +32,8 @@ func (w *heldParticipantResponse) Write(p []byte) (int, error) {
 
 func currentParticipantFixture(t *testing.T) (*app.Runtime, string, string, domain.MockRequestIdentity, []string) {
 	t.Helper()
-	ctx := context.Background()
 	r, draft, sources, req := physicalRehearsalDraft(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	req.ExpectedDraftRevision = attachOnlineTextSkill(t, r, draft, "GenerationMaterial")
 	root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "current-c-repair", req)
@@ -70,8 +70,8 @@ func currentParticipantFixture(t *testing.T) (*app.Runtime, string, string, doma
 }
 
 func TestCurrentParticipantsCombinedReadersAndStreamDrain(t *testing.T) {
-	ctx := context.Background()
 	r, draft, asset, pending, _ := currentParticipantFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {

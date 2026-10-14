@@ -127,9 +127,10 @@ func testEvidenceGovernanceLocks(t *testing.T, extra bool) {
 			t.Fatal(e)
 		}
 	}
+	governCtx := runtimeContextWithParent(t, r, ctx)
 	done := make(chan error, 1)
 	go func() {
-		_, e := r.Memory.Govern(ctx, domain.RelationshipScope{Scope: scope, ActorInstanceID: actor, PlayerID: scope.SubjectID}, memory.MemoryGovernanceCommand{Key: "held-result-delete", Action: "DELETE", Selector: memory.Selector{Kind: "IDS", TargetKind: "SOURCE", IDs: []string{source}, Expected: map[string]uint64{source: a.Sources[source].Revision}}})
+		_, e := r.Memory.Govern(governCtx, domain.RelationshipScope{Scope: scope, ActorInstanceID: actor, PlayerID: scope.SubjectID}, memory.MemoryGovernanceCommand{Key: "held-result-delete", Action: "DELETE", Selector: memory.Selector{Kind: "IDS", TargetKind: "SOURCE", IDs: []string{source}, Expected: map[string]uint64{source: a.Sources[source].Revision}}})
 		done <- e
 	}()
 	finished := false
@@ -142,6 +143,12 @@ func testEvidenceGovernanceLocks(t *testing.T, extra bool) {
 	}()
 	deadline := time.Now().Add(3 * time.Second)
 	for {
+		select {
+		case early := <-done:
+			finished = true
+			t.Fatalf("governance returned before metadata intent: type=%T error=%v ctx=%v denied=%v deadline=%v", early, early, ctx.Err(), errors.Is(early, store.ErrDenied), errors.Is(early, context.DeadlineExceeded))
+		default:
+		}
 		var intent bool
 		if e = r.Store.DB.QueryRow("SELECT delete_intent FROM memory_asset_lineage WHERE storage_key=?", evidence.Metadata().BodyStorage).Scan(&intent); e != nil {
 			t.Fatal(e)
@@ -256,7 +263,7 @@ func TestActualCommittedTurnHasGovernedReadableBody(t *testing.T) {
 	if e = r.Store.DB.QueryRow("SELECT actor_id FROM harness_turns WHERE task_id=?", task).Scan(&actor); e != nil {
 		t.Fatal(e)
 	}
-	if e = r.Memory.RecordStatement(context.Background(), memory.Namespace{Scope: scope, DataSubjectID: scope.SubjectID}, "later-source", "later-statement", actor, "another private statement", []memory.Use{memory.PrivateResponse}); e != nil {
+	if e = r.Memory.RecordStatement(runtimeContext(t, r), memory.Namespace{Scope: scope, DataSubjectID: scope.SubjectID}, "later-source", "later-statement", actor, "another private statement", []memory.Use{memory.PrivateResponse}); e != nil {
 		t.Fatal("legitimate later memory", e)
 	}
 	after, _, e := r.Files.ReadApprovedTurn(context.Background(), scope, task)

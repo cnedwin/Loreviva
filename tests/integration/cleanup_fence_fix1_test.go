@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -11,14 +10,15 @@ import (
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/generated"
 	store "loreviva.local/loreviva/internal/store/mysql"
+	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"testing"
 	"time"
 )
 
 func TestFix1CleanupAcceptedContinuationRejectsOldFence(t *testing.T) {
 	s, _, request := fixture(t, false)
-	ctx := context.Background()
 	scope := request.ProductScope
+	ctx := testprincipal.RegisterActions(t, s, scope, []string{"asset.upload", "asset.read"})
 	f, e := files.New(s, t.TempDir())
 	if e != nil {
 		t.Fatal(e)

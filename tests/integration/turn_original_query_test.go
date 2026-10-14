@@ -349,8 +349,8 @@ func TestOriginalCostQuerySurvivesNarrativeWithdrawal(t *testing.T) {
 func TestOriginalMockResultFollowsEverySourceDeletion(t *testing.T) {
 	for _, kind := range []string{"input", "initial"} {
 		t.Run(kind, func(t *testing.T) {
-			ctx := context.Background()
 			r, scope, task, actor := originalResultFixture(t, false)
+			ctx := runtimeContext(t, r)
 			var storage string
 			var raw []byte
 			if e := r.Store.DB.QueryRow("SELECT storage_key,document FROM harness_result_sources WHERE task_id=?", task).Scan(&storage, &raw); e != nil {
@@ -555,7 +555,7 @@ func TestLiveResultStagingSurvivesOrdinaryCleanup(t *testing.T) {
 	if _, e := r.Store.DB.Exec("UPDATE file_staging SET created_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 2 HOUR) WHERE storage_key=?", storage); e != nil {
 		t.Fatal(e)
 	}
-	if _, e := app.QueueCleanup(ctx, r.Store, scope.ProductScope, "live-result-cleanup"); e != nil {
+	if _, e := app.QueueCleanup(runtimeContextWithParent(t, r, ctx), r.Store, scope.ProductScope, "live-result-cleanup"); e != nil {
 		t.Fatal(e)
 	}
 	if e := r.Worker.Once(ctx); e != nil {

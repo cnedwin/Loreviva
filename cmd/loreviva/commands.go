@@ -14,6 +14,7 @@ import (
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/maintenance"
 	store "loreviva.local/loreviva/internal/store/mysql"
+	"os"
 )
 
 func operator(cfg config.Config, s *store.Store) *auth.Operator {
@@ -30,6 +31,44 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		return errors.New("maintenance command required")
 	}
 	switch args[0] {
+	// Local admin registration authenticates the configured bearer against the current registry; constructing the runtime does not authorize later requests.
+	case "initialize-local-administration", "register-local-credential":
+		local, e := app.OpenLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot)
+		if e != nil {
+			return e
+		}
+		defer local.Participant.Close(context.WithoutCancel(ctx))
+		ctx, _, e = operator(cfg, s).Authenticate(ctx, "Bearer "+cfg.OperatorSecret.Reveal())
+		if e != nil {
+			return errors.New("current local operator authentication required")
+		}
+		if args[0] == "initialize-local-administration" {
+			if len(args) != 1 {
+				return errors.New("unexpected initialization arguments")
+			}
+			if e = maintenance.InitializeLocalAdministration(ctx, s); e != nil {
+				return errors.New("explicit original local administration initialization refused")
+			}
+			return emit(map[string]any{"local_administration": "initialized"})
+		}
+		flags := flag.NewFlagSet("register-local-credential", flag.ContinueOnError)
+		flags.SetOutput(io.Discard)
+		id := flags.String("credential-id", "", "new local credential identity")
+		product := flags.String("product-id", "", "existing registered home product")
+		subject := flags.String("subject-id", "", "existing registered subject")
+		ref := flags.String("secret-ref", "", "fixed local registration secret reference")
+		if e = flags.Parse(args[1:]); e != nil || flags.NArg() != 0 || *ref != "env:LOREVIVA_REGISTER_OPERATOR_SECRET" {
+			return errors.New("registration requires identity, existing subject/product and fixed secret reference")
+		}
+		secret, ok := os.LookupEnv("LOREVIVA_REGISTER_OPERATOR_SECRET")
+		if !ok {
+			return errors.New("local registration reference unresolved")
+		}
+		if e = maintenance.RegisterLocalCredential(ctx, s, domain.ProductScope{TenantID: cfg.OperatorTenant, ProductID: *product, SubjectID: *subject}, *id, secret); e != nil {
+			return errors.New("local credential registration refused")
+		}
+		return emit(map[string]any{"credential_id": *id, "registered": true, "grants_added": false})
+	// Migration, synthetic bootstrap, seed and cleanup are explicit command branches; normal runtime construction does not run these actions.
 	case "migrate":
 		if len(args) < 2 {
 			return errors.New("migrate status/plan/up required")
@@ -107,6 +146,10 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		if e = a.Check(ctx); e != nil {
 			return errors.New("configured owner authentication required for seed")
 		}
+		ctx, _, e = a.Authenticate(ctx, "Bearer "+cfg.OperatorSecret.Reveal())
+		if e != nil {
+			return e
+		}
 		receipt, e := content.New(s).SeedCoffee(ctx, a.Scope(), "coffee-v1")
 		if e != nil {
 			return errors.New("synthetic seed unavailable")
@@ -130,6 +173,10 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		a := operator(cfg, s)
 		if e = a.Check(ctx); e != nil {
 			return errors.New("configured owner authentication required")
+		}
+		ctx, _, e = a.Authenticate(ctx, "Bearer "+cfg.OperatorSecret.Reveal())
+		if e != nil {
+			return e
 		}
 		receipt, e := app.QueueCleanup(ctx, s, a.Scope(), *key)
 		if e != nil {

@@ -103,7 +103,7 @@ func (s *Service) RehearsalHistoryDefinitionTx(ctx context.Context, tx store.Tx,
 		return out, e
 	}
 	// Frozen route is verified against the frozen definition, never the latest.
-	settings, on, e := EffectiveRoute(old.Input, string(old.Input.RootObjectID), "REHEARSAL", resolved)
+	settings, on, e := ResolveRoute(old.Input, map[string]any{"kind": "LOCAL_DRAFT", "object_id": string(old.Input.RootObjectID)}, "REHEARSAL", resolved, b.RoutePolicy)
 	if e != nil || !on || !reflect.DeepEqual(settings, b.Settings) {
 		return out, ErrBlocked
 	}

@@ -24,8 +24,8 @@ import (
 
 func physicalRehearsalDraft(t *testing.T) (*app.Runtime, string, []string, generated.RehearsalRequest) {
 	t.Helper()
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -69,8 +69,8 @@ func physicalRehearsalDraft(t *testing.T) (*app.Runtime, string, []string, gener
 }
 
 func TestRehearsalPhysicalSourceRepairAndPartialCleanup(t *testing.T) {
-	ctx := context.Background()
 	r, draft, assets, req := physicalRehearsalDraft(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "physical-rehearsal", req)
 	if e != nil {
@@ -131,8 +131,8 @@ func TestRehearsalPhysicalSourceRepairAndPartialCleanup(t *testing.T) {
 func TestRehearsalCleanupAtomicClosure(t *testing.T) {
 	for _, mode := range []string{"FINISH_LINEAGE", "FINISH_BINDING", "FINISH_INIT", "FINISH_PURGED", "ACK_COMMIT", "ACK_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, assets, req := physicalRehearsalDraft(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "cleanup-atomic", req)
 			if e != nil {
@@ -229,6 +229,7 @@ func TestRehearsalPhysicalCleanupWaitsForActualPair(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 	r, draft, assets, req := physicalRehearsalDraft(t)
+	ctx = runtimeContextWithParent(t, r, ctx)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	worker := "physical-held"
 	root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "physical-held", req)
@@ -332,8 +333,8 @@ func TestRehearsalPhysicalCleanupWaitsForActualPair(t *testing.T) {
 func TestRehearsalPhysicalSourceSendBoundaries(t *testing.T) {
 	for _, mode := range []string{"AUTHORIZE", "START_SEND", "CONSUME", "CONSUME_CORRUPT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, assets, req := physicalRehearsalDraft(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			worker := "physical-send"
 			root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "physical-send", req)
@@ -416,8 +417,8 @@ func TestRehearsalPhysicalSourceSendBoundaries(t *testing.T) {
 }
 
 func TestProductLateBillAppendedAfterRuntimeReopen(t *testing.T) {
-	ctx := context.Background()
 	r, l, _ := validCandidateBusiness(t, false)
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 		t.Fatal(e)
 	}

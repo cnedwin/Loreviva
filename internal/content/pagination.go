@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -105,11 +104,11 @@ func (s *Service) page(ctx context.Context, scope domain.ProductScope, kind stri
 			return nil, nil, wire.ErrJSON
 		}
 	}
-	tx, e := s.Store.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	tx, e := s.Store.BeginOperatorRead(ctx, scope, "content.read")
 	if e != nil {
 		return nil, nil, e
 	}
-	defer tx.Rollback()
+	defer tx.Close()
 	rows, e := tx.QueryContext(ctx, query, args...)
 	if e != nil {
 		return nil, nil, e
@@ -170,7 +169,7 @@ func (s *Service) page(ctx context.Context, scope domain.ProductScope, kind stri
 		}
 		next = &token
 	}
-	if e = tx.Commit(); e != nil {
+	if e = tx.Finish(ctx); e != nil {
 		return nil, nil, e
 	}
 	return documents, next, nil

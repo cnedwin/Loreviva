@@ -9,7 +9,6 @@ import (
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/domain"
 	store "loreviva.local/loreviva/internal/store/mysql"
-	"strings"
 )
 
 var ErrUnauthenticated = errors.New("operator authentication required")
@@ -51,25 +50,18 @@ func (o *Operator) Check(ctx context.Context) error {
 	}
 	return nil
 }
+// Authorize resolves the request bearer through the current registry and checks the requested action; the configured-owner Check is not a substitute for this request identity.
 func (o *Operator) Authorize(ctx context.Context, authorization, product, action string) (domain.ProductScope, error) {
-	if o == nil || !o.resolved || !strings.HasPrefix(authorization, "Bearer ") {
+	ctx, current, e := o.committedReadOperator(ctx, authorization, product)
+	if e != nil {
+		return domain.ProductScope{}, e
+	}
+	if _, e = content.Gate(ctx, current.store, current.scope); e != nil {
 		return domain.ProductScope{}, ErrUnauthenticated
 	}
-	provided := strings.TrimPrefix(authorization, "Bearer ")
-	h := sha256.Sum256([]byte(provided))
-	if subtle.ConstantTimeCompare(h[:], o.configured[:]) != 1 {
-		return domain.ProductScope{}, ErrUnauthenticated
-	}
-	if e := o.Check(ctx); e != nil {
-		return domain.ProductScope{}, ErrUnauthenticated
-	}
-	if product != o.scope.ProductID {
-		return domain.ProductScope{}, ErrNotFound
-	}
-	var n int
-	if e := o.store.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM operator_actions WHERE credential_id=? AND action=?", o.credentialID, action).Scan(&n); e != nil || n != 1 {
+	if e = current.store.CheckOperator(ctx, current.scope, action); e != nil {
 		return domain.ProductScope{}, ErrForbidden
 	}
-	return o.scope, nil
+	return current.scope, nil
 }
 func (o *Operator) Scope() domain.ProductScope { return o.scope }

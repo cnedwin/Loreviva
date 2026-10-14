@@ -73,7 +73,12 @@ func (f *Store) Get(ctx context.Context, scope domain.ProductScope, id string) (
 	}
 	var b []byte
 	var state string
-	e = f.DB.DB.QueryRowContext(ctx, "SELECT state,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, id).Scan(&state, &b)
+	read, e := f.DB.BeginOperatorRead(ctx, scope, "asset.read")
+	if e != nil {
+		return out, ErrNotFound
+	}
+	defer read.Close()
+	e = read.QueryRowContext(ctx, "SELECT state,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, id).Scan(&state, &b)
 	if e != nil {
 		return out, ErrNotFound
 	}
@@ -84,8 +89,12 @@ func (f *Store) Get(ctx context.Context, scope domain.ProductScope, id string) (
 		return generated.FileRecord{}, ErrNotFound
 	}
 	out.State = state
+	if e = read.Finish(ctx); e != nil {
+		return generated.FileRecord{}, ErrNotFound
+	}
 	return out, nil
 }
+// READY metadata alone does not open result bytes. Report and candidate paths use their dedicated body readers; each guarded Read repeats its check before reading, and Close releases the operation permit.
 func (f *Store) OpenAuthorized(ctx context.Context, scope domain.ProductScope, id string) (io.ReadCloser, error) {
 	ctx, release, permitError := f.DB.EnterOperation(ctx)
 	if permitError != nil {
@@ -154,6 +163,7 @@ func (r *guardedReader) Read(b []byte) (int, error) {
 	return r.ReadCloser.Read(b)
 }
 func (r *guardedReader) Close() error { e := r.ReadCloser.Close(); r.release(); return e }
+// Upload uses a stable asset identity across the PENDING record, file finalization and READY transition; staging a body is not the completed READY result.
 func (f *Store) Upload(ctx context.Context, scope domain.ProductScope, input io.Reader, m generated.AssetUploadMetadata, key string) (generated.FileRecord, error) {
 	ctx, release, permitError := f.DB.EnterOperation(ctx)
 	if permitError != nil {
@@ -252,6 +262,7 @@ func (f *Store) DerivedStageLock(scope domain.ProductScope, stage StagedFile) st
 	return content.Key(scope, "asset", "staging."+stage.key)
 }
 
+// This step finalizes the stored file only after taking the derived lock and checking a PENDING asset with lineage and no delete intent; it does not mark the asset READY.
 func (f *Store) FinalizeDerived(ctx context.Context, scope domain.ProductScope, id string, stage StagedFile) error {
 	ctx, release, e := f.DB.EnterOperation(ctx)
 	if e != nil {

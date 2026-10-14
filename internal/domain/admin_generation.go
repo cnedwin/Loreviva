@@ -15,6 +15,7 @@ type DraftCandidatePrompt struct {
 	Settings                         json.RawMessage
 }
 type DraftCandidateMaterial struct {
+	RoutePolicy                                  *RoutePolicySnapshot `json:",omitempty"`
 	Selection                                    DraftCandidateSelection
 	DraftHash, RouteHash, RequestHash, ProjectID string
 	Connection, Model                            string

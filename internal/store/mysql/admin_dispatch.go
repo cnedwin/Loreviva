@@ -89,6 +89,7 @@ func (s *Store) planCandidateExecution(ctx context.Context, r *BarrierRequest) e
 	r.Locks = append(r.Locks, keys...)
 	return nil
 }
+// Keep the original route policy and attempt identity, but rebuild current source material before use; returning a dispatch does not grant a new send permit.
 func (s *Store) candidateMaterialTx(ctx context.Context, u *unit, r BarrierRequest) (domain.DraftCandidateMaterial, error) {
 	var out domain.DraftCandidateMaterial
 	if !r.candidateExecution || r.WorldScope != nil || r.commandOnly || s.DraftCandidateOwner == nil {
@@ -103,6 +104,8 @@ func (s *Store) candidateMaterialTx(ctx context.Context, u *unit, r BarrierReque
 	if json.Unmarshal(raw, &original) != nil || json.Unmarshal(selected, &selection) != nil {
 		return out, ErrDenied
 	}
+	u.routePolicyFrozen = true
+	u.routePolicy = original.RoutePolicy
 	out, e := s.DraftCandidateOwner.BuildCandidateTx(ctx, u, r.ProductScope, selection)
 	if e != nil {
 		return out, e

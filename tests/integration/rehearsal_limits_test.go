@@ -14,8 +14,8 @@ import (
 )
 
 func TestRehearsalTwentyInputsFortyActualSends(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	inputs := make([]map[string]string, 20)
 	for n := range inputs {
@@ -51,6 +51,14 @@ func TestRehearsalTwentyInputsFortyActualSends(t *testing.T) {
 		if q := r.Store.DB.QueryRow("SELECT t.lease_expires_at<=UTC_TIMESTAMP(6),e.execute_by>UTC_TIMESTAMP(6),t.fence,e.calls_allocated,a.next_input,e.execute_by,e.settle_by FROM tasks t JOIN harness_envelopes e USING(tenant_id,product_id,task_id) JOIN harness_admin_rehearsals a USING(tenant_id,product_id,task_id) WHERE t.task_id=?", root.TaskID).Scan(&expired, &eligible, &fence, &allocated, &next, &originalExecute, &originalSettle); q != nil {
 			t.Fatal(q)
 		}
+
+		// Post-error observations only; do not renew or mutate either lease.
+		t.Logf("worker failure pass=%d error_type=%T ctx=%v", pass, e, ctx.Err())
+		var clockSnapshot, attemptSnapshot []byte
+		q := r.Store.DB.QueryRow("SELECT JSON_OBJECT('clock',UTC_TIMESTAMP(6),'root_fence',rt.fence,'root_expiry',rt.lease_expires_at,'root_execute',re.execute_by,'next',a.next_input,'child',c.child_task_id,'child_state',ct.state,'child_fence',ct.fence,'child_expiry',ct.lease_expires_at,'child_execute',c.execute_by,'child_started',c.started_at) FROM tasks rt JOIN harness_envelopes re USING(tenant_id,product_id,task_id) JOIN harness_admin_rehearsals a USING(tenant_id,product_id,task_id) LEFT JOIN harness_rehearsal_children c ON c.tenant_id=a.tenant_id AND c.product_id=a.product_id AND c.root_task_id=a.task_id AND c.input_index=a.next_input LEFT JOIN tasks ct ON ct.tenant_id=c.tenant_id AND ct.product_id=c.product_id AND ct.task_id=c.child_task_id WHERE rt.task_id=?", root.TaskID).Scan(&clockSnapshot)
+		t.Logf("worker failure post-error clocks=%s query_error=%v", clockSnapshot, q)
+		q = r.Store.DB.QueryRow("SELECT JSON_ARRAYAGG(JSON_OBJECT('slot',p.slot,'state',p.state,'attempt',p.attempt_id,'send_started',p.send_started_at,'body_bindings',(SELECT COUNT(*) FROM harness_result_sources b WHERE b.task_id=p.task_id AND b.attempt_id=p.attempt_id),'validations',(SELECT COUNT(*) FROM harness_original_validations v WHERE v.task_id=p.task_id AND v.attempt_id=p.attempt_id))) FROM harness_admin_rehearsals a JOIN harness_rehearsal_children c ON c.tenant_id=a.tenant_id AND c.product_id=a.product_id AND c.root_task_id=a.task_id AND c.input_index=a.next_input JOIN attempts p ON p.tenant_id=c.tenant_id AND p.product_id=c.product_id AND p.task_id=c.child_task_id WHERE a.task_id=?", root.TaskID).Scan(&attemptSnapshot)
+		t.Logf("worker failure post-error attempts=%s query_error=%v", attemptSnapshot, q)
 		if !expired || !eligible || originalExecute != execute || originalSettle != settle {
 			t.Fatal("actual worker failed without a safely resumable expired lease", e, expired, eligible, allocated, next)
 		}
@@ -146,7 +154,7 @@ func TestOriginalTurnRebasesAfterUnrelatedActualTask4Action(t *testing.T) {
 		t.Fatal(e)
 	}
 	before := journalBytes(t, r)
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}

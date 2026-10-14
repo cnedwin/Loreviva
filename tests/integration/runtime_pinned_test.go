@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/generated"
@@ -11,7 +10,7 @@ import (
 
 func TestRuntimePinnedVersionsKeepQualifiedActorOwners(t *testing.T) {
 	r, s, seed := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	base, e := r.Content.GetRelease(ctx, s, seed)
 	if e != nil {
 		t.Fatal(e)
@@ -117,7 +116,7 @@ func TestRuntimePinnedVersionsKeepQualifiedActorOwners(t *testing.T) {
 
 func TestRuntimePinnedPropsMaterializeQualifiedVersions(t *testing.T) {
 	r, s, seed := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	base, e := r.Content.GetRelease(ctx, s, seed)
 	if e != nil {
 		t.Fatal(e)

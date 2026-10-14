@@ -21,7 +21,7 @@ func runtimeControl(t *testing.T, r *app.Runtime, i generated.Instance, action s
 }
 func nextRuntimeRelease(t *testing.T, r *app.Runtime, s domain.ProductScope, id, field string, value any) generated.Release {
 	t.Helper()
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	old, e := r.Content.GetRelease(ctx, s, id)
 	if e != nil {
 		t.Fatal(e)
@@ -111,7 +111,7 @@ func TestMigrationRejectsCorePersonalityChange(t *testing.T) {
 
 func TestMigrationResumeRequiresDurableCompletionProof(t *testing.T) {
 	r, s, rel := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "create"), "START")
 	i = runtimeControl(t, r, i, "PAUSE")
 	target := nextRuntimeRelease(t, r, s, rel, "expression_style", "quiet")
@@ -144,7 +144,7 @@ func TestMigrationResumeRequiresDurableCompletionProof(t *testing.T) {
 
 func TestMigrationRejectsCrossProjectWithMatchingContentHash(t *testing.T) {
 	r, s, rel := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, rel, "create"), "START")
 	i = runtimeControl(t, r, i, "PAUSE")
 	old, e := r.Content.GetRelease(ctx, s, rel)

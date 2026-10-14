@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
@@ -9,8 +8,8 @@ import (
 )
 
 func TestGenerationResolutionProgramOwnersAreUnsupported(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -37,8 +36,8 @@ func TestGenerationResolutionProgramOwnersAreUnsupported(t *testing.T) {
 }
 
 func TestGenerationResolutionIsCurrentReadNotProcurement(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -79,8 +78,8 @@ func TestGenerationResolutionIsCurrentReadNotProcurement(t *testing.T) {
 }
 
 func TestGenerationResolutionAndTaskListActualHTTP(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	s := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	accepted, e := r.Store.AcceptDraftCandidate(ctx, s, draft, "http-metadata", req)
 	if e != nil {

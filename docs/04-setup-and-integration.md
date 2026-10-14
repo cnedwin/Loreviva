@@ -1,8 +1,10 @@
+本地已批准 Tasks 1–7 源码的阅读稿草案。公开分发与权益审查仍待完成；本文不构成发行验收。
+
 # 搭建和接入指南
 
 Loreviva — The AI Platform for Living Worlds。
 
-本指南适用于已批准 Tasks 1–6 的本地合成Mock基线，介绍现有 CLI 与行政 API。它不是完整 Studio、真实 AI、客户玩家接入或生产托管安装教程。公开文档是现行规范的整理分发视图。
+本指南适用于本地已批准 Tasks 1–7 的合成 Mock 基线，介绍 CLI、原生 Studio 与行政 API。它不是实际公开副本的安装验收，也不是完整客户玩家接入、真实 AI 或生产托管教程。公开文档是现行规范的整理分发视图。
 
 ## 准备环境
 
@@ -10,7 +12,7 @@ Loreviva — The AI Platform for Living Worlds。
 - Node.js 24、pnpm 11.25.0，用于契约生成与 TypeScript 开发检查。
 - 一个受限的本地开发数据库账户，以及独立的私有文件目录和治理记录目录。
 
-Kratos 3 已由 [go.mod](../go.mod)固定。Vue Studio 尚待实现；当前应用根页只是最小启动页。容器部署与完整恢复流程未纳入本批已完成范围。
+Kratos 3 已由 [go.mod](../go.mod)固定。Go 应用在 `/studio/` 提供原生 Vue Studio，`/` 保留启动检查用途。修改前端后须先重建真实嵌入产物，再构建 Go 应用；容器部署与完整恢复仍未纳入已完成范围。
 
 ## 配置
 
@@ -33,6 +35,14 @@ Kratos 3 已由 [go.mod](../go.mod)固定。Vue Studio 尚待实现；当前应�
 
 ## 新合成安装
 
+如需从源码重建 Studio，先在仓库根目录执行：
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm build:studio
+go build ./cmd/loreviva
+```
+
 在仓库根目录执行：
 
 ```powershell
@@ -52,6 +62,12 @@ go run ./cmd/loreviva --mode all
 
 可访问 `/health`、`/version`、`/ready` 与 `/` 查看启动状态。就绪不证明完整创作流程、真实模型质量或生产容量。`--mode api` 与 `--mode worker` 可分进程运行，共用同一数据库与领域代码。
 
+## Studio 与本地设置
+
+打开 `/studio/`，使用私下提供且已登记的 Operator 凭据。Studio 只在页面内存保留当前 bearer，刷新后需重新登录；没有默认管理员密码。保存与取消、关联影响确认、可选 Mock 助手、检查和发布复用实际行政服务；采纳候选后仍须显式保存。
+
+`/studio/settings` 提供本地设置、成员与独立自同意入口，七个接口见[设置路由](03-architecture.md#契约与扩展)。这些动作仍检查当前资格；普通设置不依赖模型供应商就绪。成员操作不授予私人正文或模型使用权，通知偏好不会外发消息。已有安装的本地管理初始化必须使用已配置的拥有凭据显式进行，不能据此新造 owner；完整升级/恢复发行仍待验收。
+
 ## 现有行政 API
 
 请求使用 `Authorization: Bearer <私下解析的Operator token>`，按契约提供 `product_id`，由服务端检查当前登记身份和动作资格。修改请求使用 `Idempotency-Key`，相关保存/控制/迁移还需要原契约中的预期版本或预览绑定。
@@ -64,7 +80,7 @@ go run ./cmd/loreviva --mode all
 4. 查询原已登记任务和实例，按获准范围读取演员及记忆元数据。
 5. 必要时执行兼容迁移、记忆纠正/删除或用途政策治理，查询各自完成状态。
 
-方法、请求体和响应以 [OpenAPI](../contracts/source/openapi.yaml)及[实际路由拥有者](03-architecture.md#http-实际接入范围)为准。草稿`generation-resolution`读取当前解析结果；`rehearsals`和`candidates`在对应Mock拥有者/依赖就绪且资格、来源、路由和输入校验通过时返回202并开始持久任务，缺依赖仍拒绝。202不等于生成或排练完成；按原任务查询结果、费用核验和清理进度。候选不自动保存草稿，排练不改写正式世界。安全任务列表与结果正文有独立资格；其他预留客户端契约不代表已有处理器。
+方法、请求体和响应以 [OpenAPI](../contracts/source/openapi.yaml)及[实际路由拥有者](03-architecture.md#http-实际接入范围)为准。草稿`generation-resolution`读取当前解析结果；`rehearsals`和`candidates`在对应Mock拥有者/依赖就绪且资格、来源、路由和输入校验通过时返回 202 并开始持久任务，缺依赖仍拒绝。202 不等于生成或排练完成；按原任务查询结果、费用核验和清理进度。候选不自动保存草稿，排练不改写正式世界。安全任务列表与结果正文有独立资格；其他预留客户端契约不代表已有处理器。
 
 私有上传使用 multipart，顺序为完整 `metadata` 再 `file`；大小、哈希、类型和内容会检查。下载走鉴权内容接口，不返回存储路径。已有清理命令：
 
@@ -74,7 +90,7 @@ go run ./cmd/loreviva maintenance cleanup-files --key <稳定幂等键>
 
 此任务只处理合格的已登记 staging 文件，不是通用文件删除器。Worker还处理世界控制、实例迁移、记忆治理，以及对应拥有者就绪的Mock TURN、候选和隔离排练。
 
-## 重试、分页与治理
+## 重试,分页与治理
 
 提交结果不明时用原键、原输入查询/重放；同键不同输入冲突，当前授权仍重新检查。202 表示受理，不表示世界动作、迁移或全部清理已经完成；取消任务不承诺回滚已成立事实或撤回已交付内容。
 
@@ -84,7 +100,7 @@ go run ./cmd/loreviva maintenance cleanup-files --key <稳定幂等键>
 
 ## 客户接入的下一步
 
-现有 [TypeScript 包](../packages/sdk-ts/src/index.ts)导出生成类型，并校验/冻结 `baseUrl` 与 `sessionToken` 配置；它尚无请求方法、SSE、重试或身份适配器，不是完整可用客户端 SDK。
+现有 [TypeScript 包](../packages/sdk-ts/src/index.ts)保留生成类型及 `baseUrl`、`sessionToken` 配置校验/冻结。[行政客户端](../packages/sdk-ts/src/admin.ts)的 `createAdminClient` 使用 `getOperatorBearer` 提供的当前凭据，支持行政契约调用、鉴权资产读取和上传；请求/响应按生成契约校验。它不是完整客户 SDK，不提供玩家会话/互动/SSE或客户身份适配器；不能把行政 Operator 凭据发给玩家客户端。
 
 计划中的 Integration Kit 将提供受限会话、互动、快照与事件恢复、媒体更新、参考客户端和薄后端适配器。客户后端仍负责玩家身份、业务资格、行业规则、钱包/订单/支付/退款及原业务服务回执；客户端不持 Operator 或模型秘密。
 
@@ -99,8 +115,20 @@ pnpm test
 go test ./...
 ```
 
-契约源维护在`contracts/source/`，本批为1.3.0 / 51 operations / 131 schemas；生成文件不可手工改成第二源。公开测试的两份历史基准位于`tests/fixtures/`，保持original18操作/43 DTO及1.2的49操作/123 Schema比较语义。Node检查实际包含行政读契约检查，共13项；严格SDK typecheck另执行。嵌入迁移为0001–0006，完整产品安装/升级发行仍未验收。
+契约源维护在 `contracts/source/`，本批为 1.4.0 / 58 operations / 156 schemas；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0007，完整产品安装/升级发行仍未验收。
+
+```powershell
+pnpm --dir apps/studio test
+pnpm --dir apps/studio typecheck
+pnpm build:studio
+```
+
+`go test ./...` 本身不会自动启用浏览器夹具。`TestStudioBrowser` 与 `TestStudioSettingsEntryBrowser` 需要显式 `LOREVIVA_STUDIO_BROWSER=1`，以及核验过的 `LOREVIVA_TEST_NODE`、`LOREVIVA_TEST_PNPM` 和私有 `LOREVIVA_STUDIO_EVIDENCE` 输出位置；未启用时为 SKIP，不能算浏览器通过。夹具启动真实本机服务并提供合成数据，按固定 Playwright 项目执行；直接 `pnpm test:e2e` 不能替代这些服务和凭据前置。受控浏览器通过也不是真人或真实模型验收。
+
+这些是源码中的开发入口，不是新公开候选的执行回执。新候选的完整安装、构建、功能与公开门均为 NOT_RUN；既有本地批准不能填作本候选通过。实际执行须另安排唯一受限测试数据库窗口，保留前置失败与未运行结果。
 
 数据库集成测试强制使用 TCP `127.0.0.1:33267` 和非 root 账户，通过私下提供的 `LOREVIVA_TEST_DSN` 创建并清理 `loreviva_test_<24位小写十六进制>` 测试库。未设置该变量时测试失败，不会自动跳过；账户应只拥有此受限测试范围的权限。实际 CLI 测试另使用 `LOREVIVA_TEST_GO_EXE` 指定执行器。这是测试夹具的限制，服务本身的 `LOREVIVA_DB_ADDR` 按配置指定。检查结果以具体发布副本为准。
 
 返回[首页](../README.md) · 查看[需求与状态](02-requirements.md)
+
+Task8–12 不在本批已批准交付范围内，且尚未验收；LC、真实模型、真人体验、完整发行、收费与部署仍待完成。

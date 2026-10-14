@@ -44,7 +44,7 @@ func TestPermissionWithoutAcquisitionCannotRecall(t *testing.T) {
 	}
 	ns := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 	svc := memory.New(r.Store, nil)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	if e := svc.RecordStatement(ctx, ns, "statement", "intake", alex, "player likes tea", []memory.Use{memory.PrivateResponse, memory.Relationship}); e != nil {
 		t.Fatal(e)
 	}
@@ -93,7 +93,7 @@ func TestDeleteBlocksAllAcquiredCopiesActualGovernanceTask(t *testing.T) {
 			mia = string(a.ActorInstanceID)
 		}
 	}
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	l, e := memory.CreateLedger(t.TempDir(), "installation", "ledger", "anchor")
 	if e != nil {
 		t.Fatal(e)
@@ -166,7 +166,7 @@ func TestPrivateMemoryHTTPMetadataBodyAndLegacyProjection(t *testing.T) {
 	runtimeHTTP(t, r, "GET", "/instances/"+i.Scope.WorldInstanceID+"/actors?product_id=coffee", "", nil, 200, &actors)
 	actor := string(actors.Items[0].ActorInstanceID)
 	ns := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
-	if e := r.Memory.RecordStatement(context.Background(), ns, "private-source", "statement", actor, "private projection text", []memory.Use{memory.PrivateResponse}); e != nil {
+	if e := r.Memory.RecordStatement(runtimeContext(t, r), ns, "private-source", "statement", actor, "private projection text", []memory.Use{memory.PrivateResponse}); e != nil {
 		t.Fatal(e)
 	}
 	for _, action := range []string{"memory.metadata.read", "memory.private_body.read"} {
@@ -228,10 +228,10 @@ func TestPrivateMemoryHTTPMetadataBodyAndLegacyProjection(t *testing.T) {
 }
 
 func TestMemoryInitialAndHistorySurviveActualMigration(t *testing.T) {
-	ctx := context.Background()
 	// Root's FIX5 ruling uses real INITIAL, EXPERIENCE/INFERRED and an unrelated
 	// RecordStatement/TOLD tombstone; it does not claim Mock produced the old trio.
 	r, scope, task, item := actionResultFixture(t)
+	ctx := runtimeContext(t, r)
 	s := scope.ProductScope
 	lease, worker := currentResultLease(t, task, scope, r.Store.DB)
 	if e := r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
@@ -418,7 +418,7 @@ func (f failingInitialMemory) CreateInitial(ctx context.Context, tx store.Tx, s 
 }
 func TestMemoryCreationFailureRollsBackAndReplayPreserves(t *testing.T) {
 	r, s, release := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	real := r.World.InitialMemory
 	r.World.InitialMemory = failingInitialMemory{real}
 	command := world.CreateInstanceCommand{Key: "atomic-fail", Request: generated.AdminCreateInstanceRequest{ProductID: "coffee", ReleaseID: release, Mode: "PRIVATE", InitialParticipants: []string{}, ClientCapabilities: []string{"TEXT"}}}
@@ -479,7 +479,7 @@ func TestMemoryGovernanceFreshRejectionUnknownAndRestoredReservation(t *testing.
 		t.Run(mode, func(t *testing.T) {
 			r, s, release := runtimeFixture(t)
 			i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "govern-proof"), "START")
-			ctx := context.Background()
+			ctx := runtimeContext(t, r)
 			svc := memory.New(r.Store, r.Local.Ledger)
 			n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 			scope := domain.RelationshipScope{Scope: n.Scope, ActorInstanceID: "alex", PlayerID: s.SubjectID}
@@ -561,7 +561,7 @@ func TestMemoryDenyReplayRequiresDrainAndMissingReplacementStaysClosed(t *testin
 		t.Run(action, func(t *testing.T) {
 			r, s, release := runtimeFixture(t)
 			i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "replay-world"), "START")
-			ctx := context.Background()
+			ctx := runtimeContext(t, r)
 			svc := memory.New(r.Store, r.Local.Ledger)
 			n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 			if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
@@ -661,7 +661,7 @@ func TestMemoryDenyReplayRequiresDrainAndMissingReplacementStaysClosed(t *testin
 func TestDeleteBlocksActualDerivedBytesAndPreservesIndependentAsset(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "actual-media"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	svc := r.Memory
 	n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 	if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
@@ -790,7 +790,7 @@ func TestMemoryCleanupReplansWhenAnotherGovernanceAddsIntent(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			r, s, release := runtimeFixture(t)
 			i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "cleanup-overlap"), "START")
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(runtimeContext(t, r), 30*time.Second)
 			defer cancel()
 			n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 			if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
@@ -946,7 +946,7 @@ func TestMemoryCleanupReplansWhenAnotherGovernanceAddsIntent(t *testing.T) {
 func TestMemoryDerivedFinalizePurgeOSInterleaving(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "file-interleave"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.DB.Exec("INSERT INTO memory_subject_permissions VALUES('demo-local','coffee','creator','creator','memory.private_body.read','PRIVATE_RESPONSE',DATE_ADD(UTC_TIMESTAMP(6),INTERVAL 1 HOUR),1)"); e != nil {
 		t.Fatal(e)
 	}
@@ -1029,7 +1029,7 @@ func TestMemoryDerivedFinalizePurgeOSInterleaving(t *testing.T) {
 func TestMemoryWitnessAndActorRelationshipUseActualCommittedScope(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "actor-pair"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 	br, q := actionTask(t, r, s, i, "pair-turn")
 	actor, target := q.Intents[0].ActorID, q.Intents[0].TargetID
@@ -1109,7 +1109,7 @@ func TestMemoryHTTPUnknownReturnsOriginalRecoveryAndNeverNewKey(t *testing.T) {
 		t.Run(strconv.FormatBool(policy), func(t *testing.T) {
 			r, s, release := runtimeFixture(t)
 			i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "http-unknown"), "START")
-			ctx := context.Background()
+			ctx := runtimeContext(t, r)
 			for _, right := range []string{"memory.govern", "memory.policy"} {
 				if _, e := r.Store.DB.Exec("INSERT INTO operator_actions VALUES('owner',?)", right); e != nil {
 					t.Fatal(e)
@@ -1198,7 +1198,7 @@ func TestMemoryHTTPUnknownReturnsOriginalRecoveryAndNeverNewKey(t *testing.T) {
 func TestMemoryPauseAndGovernanceRaceAdmittedWorker(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "concurrent-worker"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	br, q := actionTask(t, r, s, i, "waiting-worker")
 	admitted, releasePermit, e := r.Store.EnterOperation(ctx)
 	if e != nil {
@@ -1243,7 +1243,7 @@ func TestMemoryPauseAndGovernanceRaceAdmittedWorker(t *testing.T) {
 
 func TestMemoryInitialKnowledgeUsesQualifiedCharacterAndSetupReleases(t *testing.T) {
 	r, s, seed := runtimeFixture(t)
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	base, e := r.Content.GetRelease(ctx, s, seed)
 	if e != nil {
 		t.Fatal(e)
@@ -1397,7 +1397,7 @@ func TestMemoryInitialKnowledgeUsesQualifiedCharacterAndSetupReleases(t *testing
 func TestMemoryOldDatabaseAndPrivateFileReplayPurgesBeforeSeal(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "file-restore"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	n := memory.Namespace{Scope: domain.Scope{ProductScope: s, WorldInstanceID: i.Scope.WorldInstanceID}, DataSubjectID: s.SubjectID}
 	if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
 		t.Fatal(e)
@@ -1495,7 +1495,7 @@ func TestMemoryOldDatabaseAndPrivateFileReplayPurgesBeforeSeal(t *testing.T) {
 func TestMemorySameOriginalIdentityOverlapAcceptsOnce(t *testing.T) {
 	r, s, release := runtimeFixture(t)
 	i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "overlap"), "START")
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
 		t.Fatal(e)
 	}

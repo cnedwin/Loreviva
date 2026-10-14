@@ -88,6 +88,7 @@ func prepareDispatch(d DispatchRequest) (DispatchRequest, error) {
 		d.Locks = append(d.Locks, LockKey{Rank: 70, Kind: r.Kind, IDs: []string{r.ScopeKey, r.AccountID}}, LockKey{Rank: 80, Kind: r.Kind, IDs: []string{r.ScopeKey, r.AccountID, r.ReservationID}})
 	}
 	d.Locks = append(d.Locks, LockKey{Rank: 60, IDs: []string{t, p, d.TaskID, d.AttemptID, d.AuthorizationID}})
+	d.Locks = append(d.Locks, NewRouteAdmissionLocks(d.ProductScope)...)
 	// Every retry uses the same frozen request fingerprint, independent of worker
 	// fence, lease or commit response. Exact amounts and account addresses included.
 	sort.Slice(d.Reservations, func(i, j int) bool {
@@ -162,6 +163,7 @@ func validateReservations(ctx context.Context, tx *sql.Tx, d DispatchRequest) er
 	}
 	return nil
 }
+// Authorization records the attempt, supplier holds and slot use in one transaction. It does not grant CanSend; receipt replay conservatively directs the caller to query the original attempt.
 func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) (DispatchAuthorization, error) {
 	releaseEvidence, e := s.prepareRecoveryDispatch(ctx, &request)
 	if e != nil {
@@ -209,6 +211,9 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 			return nil
 		}
 		if !errors.Is(e, sql.ErrNoRows) {
+			return e
+		}
+		if e = CheckNewRouteAdmissionTx(ctx, port, d.ProductScope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
 			return e
 		}
 		var used uint8
@@ -265,6 +270,7 @@ func (s *Store) AuthorizeDispatch(ctx context.Context, request DispatchRequest) 
 	}
 	return result, nil
 }
+// Only a newly committed send marker can return CanSend here. An existing marker or receipt replay returns QueryOriginal, preserving the original attempt instead of authorizing another send.
 func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptID string) (DispatchAuthorization, error) {
 	releaseEvidence, e := s.prepareRecoveryDispatch(ctx, &request)
 	if e != nil {
@@ -312,6 +318,9 @@ func (s *Store) StartSend(ctx context.Context, request DispatchRequest, attemptI
 		if a.started.Valid {
 			result.QueryOriginal = true
 			return nil
+		}
+		if e = CheckNewRouteAdmissionTx(ctx, port, d.ProductScope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
+			return e
 		}
 		if e = checkHarnessAttempt(ctx, tx, d, false); e != nil {
 			return e

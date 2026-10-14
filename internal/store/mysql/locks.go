@@ -12,11 +12,12 @@ import (
 )
 
 var rankKinds = map[int][]string{
-	10: {""}, 20: {""}, 30: {""}, 40: {""}, 45: {""}, 50: {""}, 60: {""},
+	15: {domain.StudioCredentialLock}, 25: {domain.StudioGrantsLock}, 35: {domain.StudioScopeLock},
+	10: {""}, 20: {""}, 30: {""}, 40: {""}, 45: {"", "studio_command"}, 50: {""}, 60: {""},
 	70: {"supplier_global", "supplier_tenant", "platform_risk", "customer", "project", "world"},
 	80: {"supplier_global", "supplier_tenant", "platform_risk", "customer", "project", "world"},
-	90: {"item", "actor", "relationship", "memory", "content_project", "content_draft", "content_release", "asset", "content_check"}, 100: {""},
-	110: {"events", "approved_results", "service_events", "postings", "outbox", "commit_receipts"},
+	90: {"item", "actor", "relationship", "memory", "content_project", "content_draft", "content_release", "asset", "content_check", domain.StudioSettingsLock, domain.StudioConnectionLock, domain.StudioConsentLock}, 100: {""},
+	110: {"events", "approved_results", "service_events", "postings", "outbox", "commit_receipts", "studio_receipt"},
 }
 
 func kindOrder(k LockKey) int {
@@ -52,6 +53,7 @@ func lockBytes(k LockKey) []byte {
 	}
 	return b
 }
+// Freeze one validated, sorted and deduplicated lock plan before the transaction; length-prefixed identity bytes are not the ordering relation.
 func PlanLocks(input []LockKey) ([]LockKey, error) {
 	p := make([]LockKey, len(input))
 	for i, k := range input {
@@ -90,6 +92,12 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 }
 
 type unit struct {
+	routePolicy             *domain.RoutePolicySnapshot
+	routePolicyFrozen       bool
+	newRouteAdmission       bool
+	memoryHTTPActions       []string
+	operatorStore           *Store
+	operation               string
 	skillProofs             []skillInvocationProof
 	serviceMetering         *originalServiceMetering
 	rehearsalHistory        *rehearsalHistoryPlan
@@ -141,6 +149,10 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 	}
 	rank, kind := 0, ""
 	switch table {
+	case "memory_subject_permissions", "subject_governance":
+		if u.operation == "STUDIO_SELF_CONSENT" {
+			rank = 30
+		}
 	case "runtime_instances":
 		rank = 40
 	case "runtime_tasks", "migration_plans":

@@ -26,13 +26,13 @@ func TestAccountingOnlyMigrationKeepsUnknownSupplier(t *testing.T) {
 	if _, e := r.Store.CutoffHarnessTask(ctx, s, task); e != nil {
 		t.Fatal(e)
 	}
-	i, e := r.World.GetInstance(ctx, s)
+	i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 	if e != nil {
 		t.Fatal(e)
 	}
 	i = runtimeControl(t, r, i, "PAUSE")
 	target := nextRuntimeRelease(t, r, s.ProductScope, i.Versions.ReleaseID, "expression_style", "migration retains unknown costs")
-	if _, e = r.World.PreviewInstanceMigration(ctx, s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "direct-preview"); e != nil {
+	if _, e = r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "direct-preview"); e != nil {
 		t.Fatalf("owning preview diagnostic: %T %v", e, e)
 	}
 	var plan generated.MigrationPlan
@@ -50,7 +50,7 @@ func TestAccountingOnlyMigrationKeepsUnknownSupplier(t *testing.T) {
 	if e = r.Worker.Once(ctx); e != nil {
 		t.Fatal(e)
 	}
-	after, e := r.World.GetInstance(ctx, s)
+	after, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 	if e != nil || after.Versions.ReleaseID != string(target.ReleaseID) {
 		t.Fatal(after, e)
 	}
@@ -75,7 +75,7 @@ func TestAccountingOnlyMigrationKeepsUnknownSupplier(t *testing.T) {
 func accountingMigration(t *testing.T, r *app.Runtime, s domain.Scope, key string) (generated.Instance, generated.MigrationExecuteRequest) {
 	t.Helper()
 	ctx := context.Background()
-	i, e := r.World.GetInstance(ctx, s)
+	i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -109,7 +109,7 @@ func TestAccountingSealAndMigrationQueueAreOneOriginalCommit(t *testing.T) {
 			} else {
 				r.Store.BeforeCommit = func(context.Context, *sql.Tx) error { return errors.New("synthetic seal rollback") }
 			}
-			_, e := r.World.ExecuteInstanceMigration(ctx, s, req, "atomic-execute")
+			_, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "atomic-execute")
 			if e == nil {
 				t.Fatal("fault not observed")
 			}
@@ -128,11 +128,11 @@ func TestAccountingSealAndMigrationQueueAreOneOriginalCommit(t *testing.T) {
 			if e != nil || seals != want || retired != want || jobs != want || active != ack {
 				t.Fatal(seals, retired, jobs, active, e)
 			}
-			receipt, e := r.World.ExecuteInstanceMigration(ctx, s, req, "atomic-execute")
+			receipt, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "atomic-execute")
 			if e != nil {
 				t.Fatal("original execution recovery", e)
 			}
-			again, e := r.World.ExecuteInstanceMigration(ctx, s, req, "atomic-execute")
+			again, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "atomic-execute")
 			if e != nil || again.TaskID != receipt.TaskID {
 				t.Fatal(again, e)
 			}
@@ -180,7 +180,7 @@ func TestAccountingMigrationRequiresAllWorldTasksAndOwningWriters(t *testing.T) 
 					t.Fatal(e)
 				}
 			}
-			i, e := r.World.GetInstance(ctx, s)
+			i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -194,7 +194,7 @@ func TestAccountingMigrationRequiresAllWorldTasksAndOwningWriters(t *testing.T) 
 					t.Fatal(e)
 				}
 			}
-			if _, e = r.World.PreviewInstanceMigration(ctx, s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "blocked"); e == nil {
+			if _, e = r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "blocked"); e == nil {
 				t.Fatal("incomplete closure accepted")
 			}
 			var n int
@@ -205,8 +205,8 @@ func TestAccountingMigrationRequiresAllWorldTasksAndOwningWriters(t *testing.T) 
 	}
 }
 func TestCommittedPacketSurvivesAccountingSealAndActualMigration(t *testing.T) {
-	ctx := context.Background()
 	r, s, task, _ := originalResultFixture(t, false)
+	ctx := runtimeContext(t, r)
 	lease, worker := currentResultLease(t, task, s, r.Store.DB)
 	if e := r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
 		t.Fatal(e)
@@ -222,7 +222,7 @@ func TestCommittedPacketSurvivesAccountingSealAndActualMigration(t *testing.T) {
 	if paused, _, e := r.Files.ReadApprovedTurn(ctx, s, task); e != nil || !bytes.Equal(before, paused) {
 		t.Fatal("paused actual history", e)
 	}
-	if _, e = r.World.ExecuteInstanceMigration(ctx, s, req, "history-execute"); e != nil {
+	if _, e = r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "history-execute"); e != nil {
 		t.Fatal(e)
 	}
 	if e = r.Worker.Once(ctx); e != nil {
@@ -237,7 +237,7 @@ func TestCommittedPacketSurvivesAccountingSealAndActualMigration(t *testing.T) {
 		t.Fatal(view, e)
 	}
 	// A second real migration must traverse both original migration receipts.
-	i, e := r.World.GetInstance(ctx, s)
+	i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -271,7 +271,7 @@ func TestCommittedPacketSurvivesAccountingSealAndActualMigration(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	plan, e := r.World.PreviewInstanceMigration(ctx, s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "second-preview")
+	plan, e := r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "second-preview")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -279,7 +279,7 @@ func TestCommittedPacketSurvivesAccountingSealAndActualMigration(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	second, e := r.World.ExecuteInstanceMigration(ctx, s, generated.MigrationExecuteRequest{ProductID: generated.Identity(s.ProductID), PlanID: plan.PlanID, PlanHash: hash, ExpectedVersions: i.Versions, ResolutionMap: plan.ResolutionMap}, "second-execute")
+	second, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, generated.MigrationExecuteRequest{ProductID: generated.Identity(s.ProductID), PlanID: plan.PlanID, PlanHash: hash, ExpectedVersions: i.Versions, ResolutionMap: plan.ResolutionMap}, "second-execute")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -427,7 +427,7 @@ func TestAccountingWorldSealRejectsSecondLiveTurnAndMissingRegisteredWriter(t *t
 					t.Fatal(e)
 				}
 			}
-			i, e := r.World.GetInstance(ctx, s)
+			i, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), s)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -441,7 +441,7 @@ func TestAccountingWorldSealRejectsSecondLiveTurnAndMissingRegisteredWriter(t *t
 				defer p.Close(ctx)
 				r.Store.WorldAccountingAuthority = p
 			}
-			_, e = r.World.PreviewInstanceMigration(ctx, s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "must-block")
+			_, e = r.World.PreviewInstanceMigration(runtimeContextWithParent(t, r, ctx), s, generated.MigrationPreviewRequest{ProductID: generated.Identity(s.ProductID), TargetReleaseID: target.ReleaseID, ExpectedVersions: i.Versions}, "must-block")
 			if e == nil {
 				t.Fatal("incomplete world/writer set sealed")
 			}
@@ -460,7 +460,7 @@ func TestAccountingSealRejectsAllOriginalCandidateWriters(t *testing.T) {
 		t.Fatal(e)
 	}
 	_, req := accountingMigration(t, r, s, "retire")
-	if _, e := r.World.ExecuteInstanceMigration(ctx, s, req, "retire-execute"); e != nil {
+	if _, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "retire-execute"); e != nil {
 		t.Fatal(e)
 	}
 	if e := r.Worker.Once(ctx); e != nil {
@@ -518,7 +518,7 @@ func TestAccountingMigrationPreservesActualActionMemoryAndLedger(t *testing.T) {
 	}
 	before := snapshot()
 	_, req := accountingMigration(t, r, s, "preserve")
-	if _, e := r.World.ExecuteInstanceMigration(ctx, s, req, "preserve-execute"); e != nil {
+	if _, e := r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "preserve-execute"); e != nil {
 		t.Fatal(e)
 	}
 	if e := r.Worker.Once(ctx); e != nil {
@@ -570,6 +570,7 @@ func TestAccountingExecuteWaitsForRealWorldLockAndRetiresOriginalSend(t *testing
 		t.Fatal(e)
 	}
 	_, migration := accountingMigration(t, r, s, "locked")
+	userCtx := runtimeContextWithParent(t, r, ctx)
 	blocker, e := r.Store.DB.BeginTx(ctx, nil)
 	if e != nil {
 		t.Fatal(e)
@@ -580,7 +581,7 @@ func TestAccountingExecuteWaitsForRealWorldLockAndRetiresOriginalSend(t *testing
 		t.Fatal(e)
 	}
 	done := make(chan error, 1)
-	go func() { _, e := r.World.ExecuteInstanceMigration(ctx, s, migration, "locked-execute"); done <- e }()
+	go func() { _, e := r.World.ExecuteInstanceMigration(userCtx, s, migration, "locked-execute"); done <- e }()
 	select {
 	case e := <-done:
 		t.Fatal("world lock bypassed", e)
@@ -623,7 +624,7 @@ func TestAccountingMigrationRetainsRealExtraOriginalBodyDependency(t *testing.T)
 		t.Fatal(e)
 	}
 	_, req := accountingMigration(t, r, s, "extra-history")
-	if _, e = r.World.ExecuteInstanceMigration(ctx, s, req, "extra-history-execute"); e != nil {
+	if _, e = r.World.ExecuteInstanceMigration(runtimeContextWithParent(t, r, ctx), s, req, "extra-history-execute"); e != nil {
 		t.Fatal(e)
 	}
 	if e = r.Worker.Once(ctx); e != nil {

@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"fmt"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/harness"
@@ -12,8 +11,8 @@ import (
 func TestAdminTaskListWorldAccountingIndependentAxes(t *testing.T) {
 	for _, mode := range []string{"KNOWN", "USAGE_UNKNOWN", "COST_NONFINAL", "LATE_CONTRADICTION"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, s, turns, qr, req := actualTurnFixture(t, true)
+			ctx := runtimeContext(t, r)
 			quote, e := turns.QuoteTurn(ctx, s, qr, "axes-quote")
 			if e != nil {
 				t.Fatal(e)
@@ -83,8 +82,8 @@ func TestAdminTaskListWorldAccountingIndependentAxes(t *testing.T) {
 }
 
 func TestAdminTaskListHiddenPredecessorsAndBadPageProgress(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	s := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	accepted, e := r.Store.AcceptDraftCandidate(ctx, s, draft, "visible-after-hidden", req)
 	if e != nil {
@@ -96,7 +95,7 @@ func TestAdminTaskListHiddenPredecessorsAndBadPageProgress(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		_, e = r.Store.DB.Exec("INSERT INTO registered_jobs VALUES('demo-local','coffee',?,?)", id, op)
+		_, e = r.Store.DB.Exec("INSERT INTO registered_jobs (tenant_id,product_id,task_id,operation) VALUES('demo-local','coffee',?,?)", id, op)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -129,8 +128,8 @@ func TestAdminTaskListHiddenPredecessorsAndBadPageProgress(t *testing.T) {
 }
 
 func TestAdminTaskListRealWorldIntakeMetadata(t *testing.T) {
-	ctx := context.Background()
 	r, s, turns, q, req := actualTurnFixture(t, true)
+	ctx := runtimeContext(t, r)
 	quote, e := turns.QuoteTurn(ctx, s, q, "list-world-quote")
 	if e != nil {
 		t.Fatal(e)
@@ -158,8 +157,8 @@ func TestAdminTaskListRealWorldIntakeMetadata(t *testing.T) {
 }
 
 func TestAdminTaskListOwnMetadataWithoutBodyOrProcurement(t *testing.T) {
-	ctx := context.Background()
 	r, draft, request := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	receipt, e := r.Store.AcceptDraftCandidate(ctx, scope, draft, "listed-candidate", request)
 	if e != nil {

@@ -42,6 +42,7 @@ func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
 	s.DraftCandidateOwner = content.New(s)
 	s.DraftCandidateReader = f
 	m := memory.New(s, nil)
+	s.StudioConsentOwner = m
 	m.Files = f
 	s.GenerationContext = m
 	s.TurnOwner = m
@@ -74,6 +75,7 @@ func (r *Runtime) BindLocal(local *Local) {
 	r.Candidates = &harness.CandidateService{Executor: r.Worker.Turns}
 }
 func (r *Runtime) Readiness(ctx context.Context) error { return r.readiness(ctx, false) }
+// Readiness verifies the registered prerequisites; the original-governance path skips only the selected Mock continuity/result-governance checks, not request authorization.
 func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error {
 	if r == nil || r.Store == nil || r.Files == nil || r.Auth == nil || r.Worker == nil {
 		return errors.New("M1 dependencies unavailable")
@@ -94,7 +96,7 @@ func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error 
 			}
 		}
 	}
-	for _, check := range []func(context.Context) error{func(ctx context.Context) error { return maintenance.Compatible(ctx, r.Store) }, r.Files.Check, func(ctx context.Context) error { return maintenance.GovernanceReady(ctx, r.Store) }, r.Auth.Check, r.Worker.Check} {
+	for _, check := range []func(context.Context) error{func(ctx context.Context) error { return maintenance.Compatible(ctx, r.Store) }, r.Files.Check, func(ctx context.Context) error { return maintenance.GovernanceReady(ctx, r.Store) }, r.Auth.RegistryReady, r.Worker.Check} {
 		if e := check(ctx); e != nil {
 			return errors.New("M1 prerequisites unavailable; no business accepted")
 		}

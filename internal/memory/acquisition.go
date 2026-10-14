@@ -108,6 +108,12 @@ func authorizeTx(ctx context.Context, tx store.Tx, n Namespace, action string) e
 	}
 	return nil
 }
+func authorizeUserTx(ctx context.Context, tx store.Tx, n Namespace, action string) error {
+	if e := store.CheckMemoryCallerTx(ctx, tx, n.ProductScope, action); e != nil {
+		return e
+	}
+	return authorizeTx(ctx, tx, n, action)
+}
 func (s *MemoryService) mutate(ctx context.Context, n Namespace, key, operation string, payload any, fn func(store.Tx, *Aggregate) error) error {
 	return s.mutateLocks(ctx, n, key, operation, payload, nil, fn)
 }
@@ -126,7 +132,7 @@ func (s *MemoryService) mutateLocks(ctx context.Context, n Namespace, key, opera
 	}
 	b, _ := json.Marshal(payload)
 	_, e = s.Store.WithCommandBarrier(ctx, store.CommandBarrierRequest{ProductScope: n.ProductScope, WorldScope: &n.Scope, Versions: &v, OwnerSubjectID: n.SubjectID, Operation: operation, CommandKey: key, CommitKey: content.Identity(n.TenantID, n.ProductID, n.SubjectID, n.WorldInstanceID, operation, key), PayloadHash: sha256.Sum256(b), GateVersions: g, Locks: append(n.Locks(), extra...)}, func(tx store.Tx) error {
-		if e := authorizeTx(ctx, tx, n, "memory.intake"); e != nil {
+		if e := authorizeUserTx(ctx, tx, n, "memory.intake"); e != nil {
 			return e
 		}
 		a, e := loadTx(ctx, tx, n)
@@ -246,6 +252,7 @@ func (s *MemoryService) Tell(ctx context.Context, n Namespace, id, from, to, key
 		return nil
 	})
 }
+// Current body-read authority is only the outer gate: return records for this relationship only when the actor has acquired every source and still has the required audience/use permissions.
 func (s *MemoryService) AllowedContext(ctx context.Context, scope domain.RelationshipScope, actor string, audience Audience) (ContextBundle, error) {
 	out := ContextBundle{Records: []MemoryRecord{}}
 	ctx, release, e := s.Store.EnterOperation(ctx)
@@ -260,12 +267,20 @@ func (s *MemoryService) AllowedContext(ctx context.Context, scope domain.Relatio
 	if _, e := content.Gate(ctx, s.Store, n.ProductScope); e != nil {
 		return out, e
 	}
+	read, e := s.Store.BeginMemoryRead(ctx, n.ProductScope, "memory.private_body.read", n.DataSubjectID)
+	if e != nil {
+		return out, e
+	}
+	defer read.Close()
 	var b []byte
-	e = s.Store.DB.QueryRowContext(ctx, "SELECT m.document FROM memory_aggregates m JOIN runtime_instances i ON i.tenant_id=m.tenant_id AND i.product_id=m.product_id AND i.world_instance_id=m.world_instance_id JOIN world_controls w ON w.tenant_id=i.tenant_id AND w.product_id=i.product_id AND w.world_instance_id=i.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id JOIN subject_governance g ON g.tenant_id=m.tenant_id AND g.product_id=m.product_id AND g.subject_id=m.data_subject_id WHERE m.tenant_id=? AND m.product_id=? AND m.world_instance_id=? AND m.data_subject_id=? AND i.owner_subject_id=? AND r.available=1 AND g.enabled=1", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID).Scan(&b)
+	e = read.QueryRowContext(ctx, "SELECT m.document FROM memory_aggregates m JOIN runtime_instances i ON i.tenant_id=m.tenant_id AND i.product_id=m.product_id AND i.world_instance_id=m.world_instance_id JOIN world_controls w ON w.tenant_id=i.tenant_id AND w.product_id=i.product_id AND w.world_instance_id=i.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id JOIN subject_governance g ON g.tenant_id=m.tenant_id AND g.product_id=m.product_id AND g.subject_id=m.data_subject_id WHERE m.tenant_id=? AND m.product_id=? AND m.world_instance_id=? AND m.data_subject_id=? AND i.owner_subject_id=? AND r.available=1 AND g.enabled=1", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID).Scan(&b)
 	if errors.Is(e, sql.ErrNoRows) {
 		return out, store.ErrDenied
 	}
 	if e != nil {
+		return out, e
+	}
+	if e = read.Finish(ctx); e != nil {
 		return out, e
 	}
 	var a Aggregate

@@ -20,6 +20,11 @@ func (s *Service) GetDraft(ctx context.Context, scope domain.ProductScope, id, r
 	if _, e := Gate(ctx, s.Store, scope); e != nil {
 		return d, ErrNotFound
 	}
+	read, e := s.Store.BeginOperatorRead(ctx, scope, "content.read")
+	if e != nil {
+		return d, e
+	}
+	defer read.Close()
 	q := "SELECT r.document FROM content_drafts d JOIN content_revisions r ON r.tenant_id=d.tenant_id AND r.product_id=d.product_id AND r.draft_id=d.draft_id AND r.revision="
 	if revision == "" {
 		q += "d.current_revision"
@@ -36,11 +41,14 @@ func (s *Service) GetDraft(ctx context.Context, scope domain.ProductScope, id, r
 	}
 	args = append(args, scope.TenantID, scope.ProductID, id, scope.SubjectID)
 	var b []byte
-	if e := s.Store.DB.QueryRowContext(ctx, q, args...).Scan(&b); e != nil {
+	if e := read.QueryRowContext(ctx, q, args...).Scan(&b); e != nil {
 		return d, ErrNotFound
 	}
 	if e := generated.Decode("ContentDraft", b, &d); e != nil {
 		return d, e
+	}
+	if e = read.Finish(ctx); e != nil {
+		return generated.ContentDraft{}, e
 	}
 	return d, nil
 }
@@ -166,6 +174,7 @@ func (s *Service) Create(ctx context.Context, scope domain.ProductScope, kind, p
 	}
 	return out, e
 }
+// Under the planned draft lock, a new save checks the expected revision before advancing the pointer and inserting the immutable revision; receipt replay returns the original result.
 func (s *Service) SaveDraft(ctx context.Context, scope domain.ProductScope, id string, in generated.DraftInput, expected uint64, key string) (generated.ContentDraft, error) {
 	var out generated.ContentDraft
 	in, e := Prepare(in)

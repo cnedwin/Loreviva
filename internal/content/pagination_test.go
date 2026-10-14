@@ -1,7 +1,6 @@
 package content_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"loreviva.local/loreviva/internal/content"
@@ -10,8 +9,7 @@ import (
 )
 
 func TestOpaquePaginationScopeFilterAndRevisionBound(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	for i := 0; i < 5; i++ {
 		if _, e := s.Create(ctx, scope, "WORLD", "", coffee(t), fmt.Sprintf("page-%d", i)); e != nil {
 			t.Fatal(e)

@@ -21,8 +21,8 @@ type candidateBusinessCommitter interface {
 }
 
 func TestProductCandidateCommittedAssetGovernedCleanup(t *testing.T) {
-	ctx := context.Background()
 	r, l, _ := validCandidateBusiness(t, true)
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 		t.Fatal(e)
 	}
@@ -90,8 +90,8 @@ func TestProductCandidateCommittedAssetGovernedCleanup(t *testing.T) {
 
 func validCandidateBusiness(t *testing.T, repair bool) (*app.Runtime, domain.TaskLease, store.DispatchRequest) {
 	t.Helper()
-	ctx := context.Background()
 	r, l, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if repair {
 		r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 	}
@@ -135,8 +135,8 @@ func validCandidateBusiness(t *testing.T, repair bool) (*app.Runtime, domain.Tas
 }
 
 func TestProductCandidateRepairBusinessAccounting(t *testing.T) {
-	ctx := context.Background()
 	r, l, d := validCandidateBusiness(t, true)
+	ctx := runtimeContext(t, r)
 	var original, accepted, execute, settle string
 	if e := r.Store.DB.QueryRow("SELECT CAST(a.document AS CHAR),CAST(e.accepted_at AS CHAR),CAST(e.execute_by AS CHAR),CAST(e.settle_by AS CHAR) FROM harness_candidate_attempts a JOIN attempts b USING(tenant_id,product_id,task_id,attempt_id) JOIN harness_envelopes e USING(tenant_id,product_id,task_id) WHERE a.task_id=? AND b.slot=0", l.TaskID).Scan(&original, &accepted, &execute, &settle); e != nil {
 		t.Fatal(e)
@@ -224,8 +224,8 @@ func assertCandidateNotCommitted(t *testing.T, r *app.Runtime, l domain.TaskLeas
 func TestProductCandidateBusinessAtomicBoundaries(t *testing.T) {
 	for _, mode := range []string{"service_events", "harness_service_lines", "postings", "assets", "harness_candidate_results", "harness_candidate_commits", "harness_turn_steps", "WITHDRAW", "VALIDATION_REMOVED", "DELETE_INTENT", "COST_EVIDENCE", "OLD_FENCE", "ACK_UNKNOWN", "ACK_UNKNOWN_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, d := validCandidateBusiness(t, true)
+			ctx := runtimeContext(t, r)
 			if mode == "ACK_UNKNOWN" || mode == "ACK_UNKNOWN_ROLLBACK" {
 				r.Store.Commit = func(_ context.Context, tx *sql.Tx) error {
 					if mode == "ACK_UNKNOWN_ROLLBACK" {
@@ -327,8 +327,8 @@ func TestProductCandidateBusinessAtomicBoundaries(t *testing.T) {
 }
 
 func TestProductCandidateActualBusinessCommit(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}

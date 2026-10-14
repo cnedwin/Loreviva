@@ -14,6 +14,7 @@ import (
 	"loreviva.local/loreviva/internal/generated"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/tests/integration/dbfixture"
+	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -35,6 +36,7 @@ func TestPrivateFilesNeverStaticAndInterruptedStageCleaned(t *testing.T) {
 		}
 	}
 	scope := domain.ProductScope{TenantID: "t", ProductID: "p", SubjectID: "owner"}
+	ctx = testprincipal.Register(t, s, scope)
 	root := t.TempDir()
 	f, e := files.New(s, root)
 	if e != nil {

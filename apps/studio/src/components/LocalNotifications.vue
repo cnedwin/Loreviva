@@ -1,0 +1,10 @@
+<script setup lang="ts">
+import {onMounted,onBeforeUnmount,ref,watch} from 'vue';
+import {useRoute} from 'vue-router';
+import {useProjectStore} from '../stores/project';
+const s=useProjectStore();const route=useRoute();const lines=ref<string[]>([]);let sequence=0;
+// Read only the enabled in-page notices through the captured client. Publish the collected lines only for the latest request and current client; disabled preferences and failed reads may clear the display.
+async function load(onOpen:boolean){const request=++sequence;const active=s.client;const next:string[]=[];try{const current=await active.call('getAdminSettings',{query:{scope_type:'PRODUCT',tenant_id:s.tenantId,product_id:s.productId}});const preference=current.local_notifications;if(!preference.enabled){lines.value=[];return}if(!onOpen&&preference.frequency!=='IMMEDIATE')return;if(preference.events.some(e=>e==='TASK_STATUS')){try{const page=await active.call('listAdminTasks',{query:{product_id:s.productId,limit:20}});for(const item of page.items)next.push(item.task_kind+' · '+item.task_state+' · '+item.task_id)}catch{next.push('任务状态当前不可读取，请检查当前权限。')}}if(preference.events.some(e=>e==='CONSENT_EXPIRY')){try{const consent=await active.call('getAdminSelfConsent',{query:{scope_type:'PRODUCT',tenant_id:s.tenantId,product_id:s.productId}});next.push('本人许可 '+consent.state+' · '+(consent.expires_at?'到期 '+consent.expires_at:'尚未同意'))}catch{next.push('本人许可状态当前不可读取。')}}if(request===sequence&&active===s.client)lines.value=next}catch{if(request===sequence)lines.value=[]}}
+const update=()=>{void load(false)};watch(()=>route.path,()=>{void load(true)});onMounted(()=>{void load(true);window.addEventListener('studio-current-state',update)});onBeforeUnmount(()=>{sequence++;window.removeEventListener('studio-current-state',update)});
+</script>
+<template><details v-if="lines.length" class="panel local-notices"><summary>本页状态提示 · 当前获权数据</summary><ul aria-live="polite"><li v-for="(line,index) in lines" :key="index">{{line}}</li></ul><p class="muted">只在打开页面或本页操作更新时读取，不发送外部通知。</p></details></template>
