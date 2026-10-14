@@ -8,11 +8,11 @@ import (
 // Fixed S59 readers authenticate against the same current credential registry.
 // Neither method mints execution, asset/body, or cost authority.
 func (o *Operator) AuthorizeDraftGenerationResolution(ctx context.Context, bearer, product string) (domain.ProductScope, error) {
-	if e := o.committedReadIdentity(ctx, bearer, product); e != nil {
+	ctx, o, e := o.committedReadOperator(ctx, bearer, product)
+	if e != nil {
 		return domain.ProductScope{}, e
 	}
-	var allowed bool
-	if e := o.store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_actions WHERE credential_id=? AND action='content.read')", o.credentialID).Scan(&allowed); e != nil || !allowed {
+	if e := o.store.CheckOperator(ctx, o.scope, "content.read"); e != nil {
 		return domain.ProductScope{}, ErrForbidden
 	}
 	return o.scope, nil
@@ -27,14 +27,11 @@ func (o *Operator) AuthorizeRegisteredAdminTaskRead(ctx context.Context, bearer,
 	return o.adminTaskReadIdentity(ctx, bearer, product)
 }
 func (o *Operator) adminTaskReadIdentity(ctx context.Context, bearer, product string) (domain.ProductScope, error) {
-	if e := o.committedReadIdentity(ctx, bearer, product); e != nil {
+	ctx, o, e := o.committedReadOperator(ctx, bearer, product)
+	if e != nil {
 		return domain.ProductScope{}, e
 	}
-	var allowed bool
-	if e := o.store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_actions WHERE credential_id=? AND action='task.read')", o.credentialID).Scan(&allowed); e != nil {
-		return domain.ProductScope{}, e
-	}
-	if !allowed {
+	if e := o.store.CheckOperator(ctx, o.scope, "task.read"); e != nil {
 		return domain.ProductScope{}, ErrForbidden
 	}
 	return o.scope, nil

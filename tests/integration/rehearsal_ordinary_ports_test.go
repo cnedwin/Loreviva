@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 
 	"encoding/json"
 	"errors"
@@ -15,8 +14,8 @@ import (
 )
 
 func TestRehearsalOrdinaryPortsUseActualIsolation(t *testing.T) {
-	ctx := context.Background()
 	r, scope, turns, q, request := actualTurnFixture(t, true)
+	ctx := runtimeContext(t, r)
 	instance, e := r.World.GetInstance(ctx, scope)
 	if e != nil {
 		t.Fatal(e)

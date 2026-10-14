@@ -6,11 +6,11 @@ import (
 )
 
 func (o *Operator) AuthorizeCommittedRehearsalTask(ctx context.Context, bearer, product, task string) (domain.ProductScope, error) {
-	if e := o.committedReadIdentity(ctx, bearer, product); e != nil {
+	ctx, o, e := o.committedReadOperator(ctx, bearer, product)
+	if e != nil {
 		return domain.ProductScope{}, e
 	}
-	var allowed bool
-	if e := o.store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_actions WHERE credential_id=? AND action='task.read')", o.credentialID).Scan(&allowed); e != nil || !allowed {
+	if e := o.store.CheckOperator(ctx, o.scope, "task.read"); e != nil {
 		return domain.ProductScope{}, ErrForbidden
 	}
 	v, e := o.store.ReadDraftRehearsalTask(ctx, o.scope, task)
@@ -24,18 +24,18 @@ func (o *Operator) AuthorizeCommittedRehearsalTask(ctx context.Context, bearer, 
 // Authentication is current, and the actual root COMMIT/source proof is
 // independent of the old purchase permission and execution lease.
 func (o *Operator) AuthorizeCommittedRehearsalReportAsset(ctx context.Context, bearer, product, asset string) (domain.ProductScope, error) {
-	if e := o.committedReadIdentity(ctx, bearer, product); e != nil {
+	ctx, o, e := o.committedReadOperator(ctx, bearer, product)
+	if e != nil {
 		return domain.ProductScope{}, e
 	}
 	if domain.ValidateID(asset) != nil {
 		return domain.ProductScope{}, ErrNotFound
 	}
-	var allowed bool
-	if e := o.store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_actions WHERE credential_id=? AND action='content.read') AND EXISTS(SELECT 1 FROM operator_actions WHERE credential_id=? AND action='asset.read')", o.credentialID, o.credentialID).Scan(&allowed); e != nil || !allowed {
+	if e := o.store.CheckOperator(ctx, o.scope, "content.read", "asset.read"); e != nil {
 		return domain.ProductScope{}, ErrForbidden
 	}
 	var task string
-	e := o.store.DB.QueryRowContext(ctx, "SELECT r.task_id FROM harness_rehearsal_reports r JOIN assets a USING(tenant_id,product_id,asset_id) WHERE r.tenant_id=? AND r.product_id=? AND r.asset_id=? AND a.owner_subject_id=?", o.scope.TenantID, o.scope.ProductID, asset, o.scope.SubjectID).Scan(&task)
+	e = o.store.DB.QueryRowContext(ctx, "SELECT r.task_id FROM harness_rehearsal_reports r JOIN assets a USING(tenant_id,product_id,asset_id) WHERE r.tenant_id=? AND r.product_id=? AND r.asset_id=? AND a.owner_subject_id=?", o.scope.TenantID, o.scope.ProductID, asset, o.scope.SubjectID).Scan(&task)
 	if e != nil {
 		return domain.ProductScope{}, ErrNotFound
 	}

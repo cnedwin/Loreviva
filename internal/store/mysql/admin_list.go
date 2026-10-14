@@ -29,6 +29,7 @@ type AdminTaskMetadataPage struct {
 	More               bool
 }
 
+// A metadata page is bounded by the same current authority stamp before and after item inspection; its transaction rolls back and creates no execution or accounting fact.
 func (s *Store) ListAdminTaskMetadata(ctx context.Context, scope domain.ProductScope, in AdminTaskSelection) (AdminTaskMetadataPage, error) {
 	out := AdminTaskMetadataPage{Items: []AdminTaskMetadata{}}
 	if scope.Validate() != nil || in.Limit < 1 || in.Limit > 100 || (in.ExactID != "" && (domain.ValidateID(in.ExactID) != nil || in.After != "")) || (in.After != "" && domain.ValidateID(in.After) != nil) {
@@ -47,12 +48,23 @@ func (s *Store) ListAdminTaskMetadata(ctx context.Context, scope domain.ProductS
 	}
 	defer tx.Rollback()
 	keys := []LockKey{{Rank: 10, IDs: []string{scope.TenantID}}, {Rank: 20, IDs: []string{scope.TenantID, scope.ProductID}}, {Rank: 30, IDs: []string{scope.TenantID, scope.ProductID, scope.SubjectID}}}
+	p, e := s.CurrentOperator(ctx)
+	if e != nil {
+		return out, e
+	}
+	keys, e = PlanLocks(append(keys, operatorKeys(p)...))
+	if e != nil {
+		return out, e
+	}
+	principal := ctx.Value(operatorContextKey{}).(currentOperator)
 	for _, k := range keys {
 		if e = marker(ctx, tx, k); e != nil {
 			return out, e
 		}
 		var locked string
 		switch k.Rank {
+		case 15, 25:
+			e = s.acquireOperatorKey(ctx, tx, BarrierRequest{operator: &principal}, k)
 		case 10:
 			e = tx.QueryRowContext(ctx, "SELECT tenant_id FROM tenant_gates WHERE tenant_id=? FOR UPDATE", scope.TenantID).Scan(&locked)
 		case 20:
@@ -64,7 +76,7 @@ func (s *Store) ListAdminTaskMetadata(ctx context.Context, scope domain.ProductS
 			return out, e
 		}
 	}
-	stamp, e := adminListCurrent(ctx, tx, scope)
+	stamp, e := s.adminListCurrent(ctx, tx, scope)
 	if e != nil {
 		return out, e
 	}
@@ -133,7 +145,7 @@ func (s *Store) ListAdminTaskMetadata(ctx context.Context, scope domain.ProductS
 		}
 		out.Items = append(out.Items, actual)
 	}
-	after, e := adminListCurrent(ctx, tx, scope)
+	after, e := s.adminListCurrent(ctx, tx, scope)
 	if e != nil {
 		return AdminTaskMetadataPage{}, e
 	}
@@ -165,15 +177,22 @@ func (s *Store) ReadAdminTaskMetadata(ctx context.Context, scope domain.ProductS
 const adminListFamilySQL = `((t.task_kind='ADMIN' AND j.operation IN ('REHEARSAL','CANDIDATE','FILE_CLEANUP','PACKAGE_PREFLIGHT','PACKAGE_IMPORT','PACKAGE_EXPORT','DOCUMENT_EXTRACTION')) OR (t.task_kind='CONTROL' AND j.operation='INSTANCE_CONTROL') OR (t.task_kind='MIGRATION' AND j.operation='INSTANCE_MIGRATION') OR (t.task_kind='TURN' AND j.operation='TURN' AND EXISTS(SELECT 1 FROM harness_turns h WHERE h.tenant_id=t.tenant_id AND h.product_id=t.product_id AND h.task_id=t.task_id AND h.owner_subject_id=t.owner_subject_id AND h.world_instance_id=t.world_instance_id))) AND NOT EXISTS(SELECT 1 FROM harness_rehearsal_worlds rw WHERE rw.tenant_id=t.tenant_id AND rw.product_id=t.product_id AND rw.world_instance_id=t.world_instance_id) AND NOT EXISTS(SELECT 1 FROM harness_rehearsal_children rc WHERE rc.tenant_id=t.tenant_id AND rc.product_id=t.product_id AND rc.child_task_id=t.task_id)`
 const adminListCandidatesSQL = `SELECT t.task_id,j.operation,t.state,COALESCE(t.world_instance_id,'') FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) WHERE t.tenant_id=? AND t.product_id=? AND t.owner_subject_id=? AND (?='' OR t.task_id=?) AND t.task_id>? AND ` + adminListFamilySQL + ` ORDER BY t.task_id LIMIT ?`
 
-func adminListCurrent(ctx context.Context, q rowQuerier, s domain.ProductScope) (string, error) {
-	var enabled, allowed bool
+func (owner *Store) adminListCurrent(ctx context.Context, q rowQuerier, s domain.ProductScope) (string, error) {
+	var enabled bool
 	var gates GateVersions
 	var credential []byte
-	e := q.QueryRowContext(ctx, `SELECT t.enabled AND p.enabled AND g.enabled AND c.enabled,t.permission_version,p.permission_version,g.permission_version,g.privacy_epoch,g.view_epoch,c.token_sha256,EXISTS(SELECT 1 FROM operator_actions a WHERE a.credential_id=c.credential_id AND a.action='task.read') FROM subject_governance g JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) JOIN operator_credentials c ON c.tenant_id=g.tenant_id AND c.product_id=g.product_id AND c.subject_id=g.subject_id AND c.credential_id='owner' WHERE g.tenant_id=? AND g.product_id=? AND g.subject_id=?`, s.TenantID, s.ProductID, s.SubjectID).Scan(&enabled, &gates.Tenant, &gates.Product, &gates.Subject, &gates.Privacy, &gates.View, &credential, &allowed)
+	p, e := currentOperatorTx(ctx, q, owner, s)
 	if e != nil {
 		return "", e
 	}
-	if !enabled || !allowed {
+	if e = operatorActionTx(ctx, q, owner, s, "task.read"); e != nil {
+		return "", e
+	}
+	e = q.QueryRowContext(ctx, `SELECT t.enabled AND p.enabled AND g.enabled AND c.enabled,t.permission_version,p.permission_version,g.permission_version,g.privacy_epoch,g.view_epoch,c.token_sha256 FROM subject_governance g JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) JOIN operator_credentials c ON c.tenant_id=g.tenant_id AND c.product_id=g.product_id AND c.subject_id=g.subject_id AND c.credential_id=? WHERE g.tenant_id=? AND g.product_id=? AND g.subject_id=?`, p.principal.CredentialID, s.TenantID, s.ProductID, s.SubjectID).Scan(&enabled, &gates.Tenant, &gates.Product, &gates.Subject, &gates.Privacy, &gates.View, &credential)
+	if e != nil {
+		return "", e
+	}
+	if !enabled {
 		return "", ErrDenied
 	}
 	var install string
@@ -241,7 +260,11 @@ func inspectAdminListItem(ctx context.Context, tx *sql.Tx, s domain.ProductScope
 	return out, nil
 }
 
-func inspectLegacyAdminIntake(ctx context.Context, tx *sql.Tx, s domain.ProductScope, item AdminTaskMetadata) error {
+// Reserved task families are not intake proof: require the one scoped original receipt and reconstruct its payload hash before exposing legacy task metadata.
+func inspectLegacyAdminIntake(ctx context.Context, tx interface {
+	rowQuerier
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}, s domain.ProductScope, item AdminTaskMetadata) error {
 	operation, identity := "", ""
 	switch item.Kind {
 	case "INSTANCE_CONTROL":
@@ -383,6 +406,7 @@ func inspectListedTurn(ctx context.Context, tx *sql.Tx, s domain.ProductScope, o
 	}
 	out.State = projection.Task.TaskState
 	out.Accounting = AdminTaskAccounting{Service: projection.Billing.ServiceSettlementState, Supplier: "NOT_APPLICABLE", Risk: "NOT_APPLICABLE"}
+	// A send marker alone does not reconcile supplier cost: unresolved evidence stays pending, while dispute and debt retain their distinct projected states.
 	rows, e := tx.QueryContext(ctx, `SELECT a.marker_commit_key,l.attempt_id IS NOT NULL,COALESCE(l.final_known,0),COALESCE(l.disputed,0),COALESCE(l.debt_atoms>0,0),COALESCE(q.marker_key=a.marker_commit_key AND q.provider_state='SUCCEEDED' AND JSON_EXTRACT(q.metadata,'$.NoFurtherCost')=true,0) FROM attempts a LEFT JOIN harness_supplier_liabilities l USING(tenant_id,product_id,task_id,attempt_id) LEFT JOIN harness_original_queries q USING(tenant_id,product_id,task_id,attempt_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? ORDER BY a.slot`, s.TenantID, s.ProductID, out.ID)
 	if e != nil {
 		return out, e

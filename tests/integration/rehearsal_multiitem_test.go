@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
@@ -12,8 +11,8 @@ import (
 // has only its custodian. The actual persisted report must not collapse the
 // incomplete program to PASS merely because another item was checked.
 func TestRehearsalActualMultiItemReportPreservesNotRun(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {

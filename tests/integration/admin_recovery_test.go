@@ -24,8 +24,8 @@ import (
 
 func invalidCandidate(t *testing.T) (*app.Runtime, domain.TaskLease, store.DispatchRequest) {
 	t.Helper()
-	ctx := context.Background()
 	r, l, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
@@ -39,17 +39,17 @@ func invalidCandidate(t *testing.T) (*app.Runtime, domain.TaskLease, store.Dispa
 	return r, l, d
 }
 
-func candidateOriginalSnapshot(t *testing.T, r *app.Runtime, d store.DispatchRequest) []byte {
+func candidateOriginalSnapshot(t *testing.T, ctx context.Context, r *app.Runtime, d store.DispatchRequest) []byte {
 	t.Helper()
 	var attempt, validation, binding []byte
 	if e := r.Store.DB.QueryRow("SELECT a.document,v.metadata,c.binding FROM harness_candidate_attempts a JOIN harness_original_validations v USING(tenant_id,product_id,task_id,attempt_id) JOIN harness_admin_candidates c USING(tenant_id,product_id,task_id) WHERE a.task_id=? AND a.attempt_id=?", d.TaskID, d.AttemptID).Scan(&attempt, &validation, &binding); e != nil {
 		t.Fatal(e)
 	}
-	m, e := r.Store.PendingCandidateBody(context.Background(), d)
+	m, e := r.Store.PendingCandidateBody(ctx, d)
 	if e != nil {
 		t.Fatal(e)
 	}
-	body, e := r.Files.ReadPendingCandidateResult(context.Background(), d)
+	body, e := r.Files.ReadPendingCandidateResult(ctx, d)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -58,9 +58,9 @@ func candidateOriginalSnapshot(t *testing.T, r *app.Runtime, d store.DispatchReq
 }
 
 func TestProductCandidateRepairCompetitionAndOriginalImmutability(t *testing.T) {
-	ctx := context.Background()
 	r, l, original := invalidCandidate(t)
-	before := candidateOriginalSnapshot(t, r, original)
+	ctx := runtimeContext(t, r)
+	before := candidateOriginalSnapshot(t, ctx, r, original)
 	var execute, settle string
 	if e := r.Store.DB.QueryRow("SELECT CAST(execute_by AS CHAR),CAST(settle_by AS CHAR) FROM harness_envelopes WHERE task_id=?", l.TaskID).Scan(&execute, &settle); e != nil {
 		t.Fatal(e)
@@ -114,7 +114,7 @@ func TestProductCandidateRepairCompetitionAndOriginalImmutability(t *testing.T) 
 	if json.Unmarshal(prompt["Recovery"], &repair) != nil || repair.OriginalBody != "{\"fields\":" || repair.OriginalAttempt != original.AttemptID || repair.Reason != "STRUCTURE_REPAIR" || sent.AttemptID != d.AttemptID {
 		t.Fatal("actual UTF8 dependency", repair)
 	}
-	if bytes.Equal(before, candidateOriginalSnapshot(t, r, original)) == false {
+	if bytes.Equal(before, candidateOriginalSnapshot(t, ctx, r, original)) == false {
 		t.Fatal("original0 rewritten")
 	}
 	if _, e = r.Store.AuthorizeDispatch(ctx, original); e == nil {
@@ -136,8 +136,8 @@ func TestProductCandidateRepairCompetitionAndOriginalImmutability(t *testing.T) 
 func TestProductCandidateRepairRejectsNonEvidence(t *testing.T) {
 	for _, mode := range []string{"VALID", "REFUSAL", "NO_VALIDATION", "BODY_MISSING", "SOURCE_DELETED", "CANCELLED", "EXPIRED"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, d, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			if mode == "REFUSAL" {
 				r.Worker.Turns.Fault = harness.MockRefuseOriginalResult
 			} else if mode != "VALID" {
@@ -203,8 +203,8 @@ func TestProductCandidateRepairTwoBoundaries(t *testing.T) {
 	for _, phase := range []string{"AUTHORIZE", "SEND", "CONSUME"} {
 		for _, change := range []string{"ASSIST", "BODY", "VALIDATION"} {
 			t.Run(phase+"_"+change, func(t *testing.T) {
-				ctx := context.Background()
 				r, l, original := invalidCandidate(t)
+				ctx := runtimeContext(t, r)
 				d, e := r.Store.PrepareDraftCandidateRecovery(ctx, l, "candidate-worker")
 				if e != nil {
 					t.Fatal(e)
@@ -264,8 +264,8 @@ func TestProductCandidateRepairTwoBoundaries(t *testing.T) {
 func TestProductCandidateRepairRestartKnownMarker(t *testing.T) {
 	for _, mode := range []string{"UNSENT", "SEND_ACK_UNKNOWN", "LOST_REPLY"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _ := invalidCandidate(t)
+			ctx := runtimeContext(t, r)
 			d, e := r.Store.PrepareDraftCandidateRecovery(ctx, l, "candidate-worker")
 			if e != nil {
 				t.Fatal(e)
@@ -378,8 +378,8 @@ func TestProductCandidateRepairRestartKnownMarker(t *testing.T) {
 }
 
 func TestProductCandidateGenuineStructureRepair(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
@@ -441,8 +441,8 @@ func TestProductCandidateGenuineStructureRepair(t *testing.T) {
 func TestProductCandidateRepairApprovalAtomicEvidence(t *testing.T) {
 	for _, mode := range []string{"ROLLBACK", "ACK_UNKNOWN", "VALIDATION_REMOVED", "WITHDRAW", "DELETE_INTENT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 				t.Fatal(e)
@@ -510,8 +510,8 @@ func TestProductCandidateRepairApprovalAtomicEvidence(t *testing.T) {
 }
 
 func TestProductCandidateRepairCanonicalDependencyLimit(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -573,11 +573,11 @@ func TestProductCandidateRepairCanonicalDependencyLimit(t *testing.T) {
 	if e = r.Store.ValidateDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 		t.Fatal(e)
 	}
-	before := candidateOriginalSnapshot(t, r, d)
+	before := candidateOriginalSnapshot(t, ctx, r, d)
 	if _, e = r.Store.PrepareDraftCandidateRecovery(ctx, l, "candidate-worker"); e == nil {
 		t.Fatal("oversize UTF8 original-body dependency bought extra")
 	}
-	if !bytes.Equal(before, candidateOriginalSnapshot(t, r, d)) {
+	if !bytes.Equal(before, candidateOriginalSnapshot(t, ctx, r, d)) {
 		t.Fatal("overflow rewrote or truncated original")
 	}
 	var approvals, calls, steps int
@@ -588,8 +588,8 @@ func TestProductCandidateRepairCanonicalDependencyLimit(t *testing.T) {
 }
 
 func TestProductCandidateRepairOrderedEvidenceCleanup(t *testing.T) {
-	ctx := context.Background()
 	r, l, original := invalidCandidate(t)
+	ctx := runtimeContext(t, r)
 	d, e := r.Store.PrepareDraftCandidateRecovery(ctx, l, "candidate-worker")
 	if e != nil {
 		t.Fatal(e)
@@ -678,8 +678,8 @@ func TestProductCandidateRepairOrderedEvidenceCleanup(t *testing.T) {
 }
 
 func TestProductCandidateInvalidUTF8CannotBecomeRepairText(t *testing.T) {
-	ctx := context.Background()
 	r, l, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	r.Worker.Turns.Fault = harness.MockDraftInvalidUTF8
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e == nil {
 		t.Fatal("invalid UTF8 stored as rewritten text")

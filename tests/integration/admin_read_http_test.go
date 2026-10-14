@@ -14,8 +14,8 @@ import (
 )
 
 func TestAdminTaskListHTTPCursorCurrentScopeAndRestart(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	s := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	for _, key := range []string{"list-a", "list-b", "list-c"} {
 		if _, e := r.Store.AcceptDraftCandidate(ctx, s, draft, key, req); e != nil {
@@ -146,8 +146,8 @@ func TestRegisteredAdminDetailReadWithoutProcurement(t *testing.T) {
 			name = "COMMITTED"
 		}
 		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, req := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			var receipt generated.AdminTaskReceipt
 			runtimeHTTP(t, r, "POST", "/content-drafts/"+draft+"/candidates", "detail", req, 202, &receipt)
 			if terminal {
@@ -214,8 +214,8 @@ func TestRegisteredAdminDetailReadWithoutProcurement(t *testing.T) {
 }
 
 func TestRegisteredAdminDetailCurrentProofAndInfrastructure(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	var receipt generated.AdminTaskReceipt
 	runtimeHTTP(t, r, "POST", "/content-drafts/"+draft+"/candidates", "proof-detail", req, 202, &receipt)
 	if e := r.Worker.Once(ctx); e != nil {
@@ -265,8 +265,8 @@ func TestRegisteredAdminDetailCurrentProofAndInfrastructure(t *testing.T) {
 }
 
 func TestRegisteredAdminLegacyIntakeProof(t *testing.T) {
-	ctx := context.Background()
 	r, s, release := runtimeFixture(t)
+	ctx := runtimeContext(t, r)
 	instance := createRuntimeWorld(t, r, release, "legacy-instance")
 	var control generated.AdminTaskReceipt
 	runtimeHTTP(t, r, "POST", "/instances/"+instance.Scope.WorldInstanceID+"/controls", "legacy-start", generated.AdminControlRequest{ProductID: "coffee", Command: "START", ExpectedVersions: instance.Versions}, 202, &control)

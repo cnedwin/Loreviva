@@ -22,7 +22,19 @@ func (s *Store) ReadDraftCandidateTask(ctx context.Context, scope domain.Product
 		return out, e
 	}
 	defer release()
-	return readDraftCandidateTaskRow(ctx, s.DB, scope, task)
+	read, e := s.BeginOperatorRead(ctx, scope, "task.read")
+	if e != nil {
+		return out, e
+	}
+	defer read.Close()
+	out, e = readDraftCandidateTaskRow(ctx, read.tx, scope, task)
+	if e != nil {
+		return out, e
+	}
+	if e = read.Finish(ctx); e != nil {
+		return generated.AdminTaskView{}, e
+	}
+	return out, nil
 }
 func readDraftCandidateTaskRow(ctx context.Context, q rowQuerier, scope domain.ProductScope, task string) (generated.AdminTaskView, error) {
 	var out generated.AdminTaskView

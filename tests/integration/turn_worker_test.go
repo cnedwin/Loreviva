@@ -82,7 +82,7 @@ func TestWorkerAutomaticallyRecomputesOnlyActualConflict(t *testing.T) {
 			}
 			before := journalBytes(t, r)
 			if related {
-				instance, e := r.World.GetInstance(ctx, scope)
+				instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 				if e != nil {
 					t.Fatal(e)
 				}

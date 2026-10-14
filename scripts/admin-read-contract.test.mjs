@@ -6,8 +6,11 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 const names=['DraftGenerationResolutionRequest','DraftGenerationSupport','DraftGenerationResolution','AdminTaskAccountingStatus','AdminTaskListAdminItem','AdminTaskListWorldItem','AdminTaskListItem','AdminTaskPage'].sort();
 test('1.3 adds exactly2 operations/8 schemas and preserves every1.2 path/schema',async()=>{
- const old=JSON.parse(await readFile(new URL('../tests/fixtures/contract12-before-task06.json',import.meta.url),'utf8'));
- const {openapi:o}=await loadSources();
+ const old=JSON.parse(await readFile(new URL('./fixtures/contract12-before-task06.json',import.meta.url),'utf8'));
+ const o=JSON.parse(await readFile(new URL('./fixtures/contract13-approved-baseline.json',import.meta.url),'utf8'));
+ const {openapi:current}=await loadSources();
+ for(const [p,v]of Object.entries(o.paths))assert.deepEqual(current.paths[p],v,p);
+ for(const [n,v]of Object.entries(o.components.schemas))assert.deepEqual(current.components.schemas[n],v,n);
  assert.equal(old.info.version,'1.2.0');assert.equal(o.info.version,'1.3.0');
  for(const [p,v] of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v] of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);

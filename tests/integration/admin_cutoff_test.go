@@ -22,8 +22,8 @@ type candidateCutoffOwner interface {
 }
 
 func TestProductCandidateUnsentRepairDoesNotRetainSupplierRisk(t *testing.T) {
-	ctx := context.Background()
 	r, l, _ := invalidCandidate(t)
+	ctx := runtimeContext(t, r)
 	id, e := r.Store.CandidateMockIdentity(ctx, l.ProductScope, l.TaskID)
 	if e != nil {
 		t.Fatal(e)
@@ -61,6 +61,7 @@ func TestProductCandidateCutoffOriginalOutcomes(t *testing.T) {
 			ctx := context.Background()
 			if mode == "AUTHORIZED_UNSENT" {
 				r, l := candidateDispatchFixture(t)
+				ctx = runtimeContext(t, r)
 				d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 				if e != nil {
 					t.Fatal(e)
@@ -84,6 +85,7 @@ func TestProductCandidateCutoffOriginalOutcomes(t *testing.T) {
 				return
 			}
 			r, l, _ := validCandidateBusiness(t, mode == "TWO_SENT")
+			ctx = runtimeContext(t, r)
 			if mode == "COMMITTED_ACK" || mode == "ROLLED_BACK_ACK" {
 				r.Store.Commit = func(_ context.Context, tx *sql.Tx) error {
 					var e error
@@ -108,7 +110,11 @@ func TestProductCandidateCutoffOriginalOutcomes(t *testing.T) {
 				result := make(chan error, 1)
 				r.Store.Commit = func(_ context.Context, tx *sql.Tx) error { close(entered); <-release; return tx.Commit() }
 				go func() { _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); result <- e }()
-				<-entered
+				select {
+				case <-entered:
+				case e := <-result:
+					t.Fatal("business commit failed before expected transaction hook", e)
+				}
 				cutoff := make(chan error, 1)
 				go func() {
 					out, e := r.Store.CutoffDraftCandidate(ctx, l.ProductScope, l.TaskID)
@@ -188,8 +194,8 @@ func TestProductCandidateCutoffOriginalOutcomes(t *testing.T) {
 }
 
 func TestProductCandidateCutoffUsesTimeAfterRealTaskLock(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, _ := productSent(t)
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.DB.Exec("UPDATE harness_envelopes SET accepted_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 179 SECOND),execute_by=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 59 SECOND),settle_by=DATE_ADD(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", l.TaskID); e != nil {
 		t.Fatal(e)
 	}
@@ -224,8 +230,8 @@ func TestProductCandidateCutoffUsesTimeAfterRealTaskLock(t *testing.T) {
 }
 
 func TestProductCandidateCommittedLateDebtIsIndependent(t *testing.T) {
-	ctx := context.Background()
 	r, l, _ := validCandidateBusiness(t, true)
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 		t.Fatal(e)
 	}
@@ -298,8 +304,8 @@ func TestProductCandidateCommittedLateDebtIsIndependent(t *testing.T) {
 }
 
 func TestProductCandidateCutoffLockTimeoutHasDurableRetry(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, _ := productSent(t)
+	ctx := runtimeContext(t, r)
 	expireCutoff(t, r.Store.DB, l.TaskID)
 	blocker, e := r.Store.DB.BeginTx(ctx, nil)
 	if e != nil {
@@ -351,8 +357,8 @@ func TestProductCandidateCutoffLockTimeoutHasDurableRetry(t *testing.T) {
 func TestProductCandidateSettlementCurrentAuthority(t *testing.T) {
 	for _, mode := range []string{"SERVICE_DISABLED", "SERVICE_MISSING", "INSTALLATION", "BINDING", "POST_JOURNAL", "WRITER"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, sent := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, sent.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}
@@ -416,8 +422,8 @@ func TestProductCandidateSettlementCurrentAuthority(t *testing.T) {
 }
 
 func TestProductCandidateCanceledResetDiscardsDedicatedConnection(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, _ := productSent(t)
+	ctx := runtimeContext(t, r)
 	expireCutoff(t, r.Store.DB, l.TaskID)
 	r.Store.DB.SetMaxOpenConns(1)
 	r.Store.DB.SetMaxIdleConns(1)
@@ -445,8 +451,8 @@ func TestProductCandidateCanceledResetDiscardsDedicatedConnection(t *testing.T) 
 func TestProductCandidateCutoffInterruptedContinuationIsNotSkipped(t *testing.T) {
 	for _, mode := range []string{"EXHAUSTED_CONTEXT", "WORK_ROW_WAIT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, _ := productSent(t)
+			ctx := runtimeContext(t, r)
 			expireCutoff(t, r.Store.DB, l.TaskID)
 			blocker, e := r.Store.DB.BeginTx(ctx, nil)
 			if e != nil {
@@ -491,8 +497,8 @@ func TestProductCandidateCutoffInterruptedContinuationIsNotSkipped(t *testing.T)
 func TestProductCandidateBillScanAckAndSessionRestoration(t *testing.T) {
 	for _, mode := range []string{"SCAN_ACK", "ITEM_ACK", "SESSION"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, sent := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, sent.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}
@@ -549,8 +555,8 @@ func TestProductCandidateBillScanAckAndSessionRestoration(t *testing.T) {
 }
 
 func TestProductCandidateActualCutoffPageIsBounded(t *testing.T) {
-	ctx := context.Background()
 	r, l := candidateDispatchFixture(t)
+	ctx := runtimeContext(t, r)
 	var draft string
 	if e := r.Store.DB.QueryRow("SELECT draft_id FROM harness_admin_candidates WHERE task_id=?", l.TaskID).Scan(&draft); e != nil {
 		t.Fatal(e)
@@ -583,8 +589,8 @@ func TestProductCandidateActualCutoffPageIsBounded(t *testing.T) {
 }
 
 func TestProductCandidateActualBackgroundSettlementWorker(t *testing.T) {
-	ctx := context.Background()
 	r, l, _, sent := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, sent.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}
@@ -619,8 +625,8 @@ func TestProductCandidateActualBackgroundSettlementWorker(t *testing.T) {
 }
 
 func TestProductCandidateUnknownCutoffKeepsOriginalSupplier(t *testing.T) {
-	ctx := context.Background()
 	r, l := candidateDispatchFixture(t)
+	ctx := runtimeContext(t, r)
 	d, e := r.Store.PrepareDraftCandidateDispatch(ctx, l, "candidate-worker")
 	if e != nil {
 		t.Fatal(e)
@@ -671,8 +677,8 @@ func TestProductCandidateUnknownCutoffKeepsOriginalSupplier(t *testing.T) {
 func TestProductCandidateCutoffAndBillActualScanners(t *testing.T) {
 	for _, mode := range []string{"CUTOFF_SCAN", "LATE_BILL", "BILL_SCAN", "SOURCE_DELETE"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, sent := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, sent.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}

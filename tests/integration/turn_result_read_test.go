@@ -84,8 +84,8 @@ func TestOriginalResultRetentionAfterResourceChangesDuringGenerate(t *testing.T)
 func TestOriginalResultReaderRejectsChangedAuthorityAndMissingBytes(t *testing.T) {
 	for _, kind := range []string{"old-fence", "privacy", "view", "paused", "cancelled", "expired-consent", "route", "actor-core", "actor-route", "actor-settings", "missing-context", "missing-body", "changed-body", "missing-anchor", "input-deleted", "wrong-installation", "disabled-service"} {
 		t.Run(kind, func(t *testing.T) {
-			ctx := context.Background()
 			r, scope, task, actor := originalResultFixture(t, false)
+			ctx := runtimeContext(t, r)
 			lease, worker := currentResultLease(t, task, scope, r.Store.DB)
 			var storage string
 			if e := r.Store.DB.QueryRow("SELECT storage_key FROM harness_result_sources WHERE task_id=?", task).Scan(&storage); e != nil {

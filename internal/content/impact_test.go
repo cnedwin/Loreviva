@@ -1,7 +1,6 @@
 package content_test
 
 import (
-	"context"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/generated"
@@ -9,8 +8,7 @@ import (
 )
 
 func TestStaticSelectedTargetsIncomingRefsAndIndependentResourceCopy(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	d, e := s.Create(ctx, scope, "WORLD", "", coffee(t), "impact-create")
 	if e != nil {
 		t.Fatal(e)
@@ -18,6 +16,9 @@ func TestStaticSelectedTargetsIncomingRefsAndIndependentResourceCopy(t *testing.
 	blocked, e := s.Impact(ctx, scope, string(d.DraftID), 1, "DELETE", "delete-character", "alex-character")
 	if e != nil || len(blocked.SelectedTargets) != 1 || len(blocked.IncomingRefs) == 0 || len(blocked.BlockingFindings) == 0 {
 		t.Fatal("referenced object delete not blocked", blocked, e)
+	}
+	if _, e = s.Command(ctx, scope, string(d.DraftID), 1, "DELETE", string(blocked.ReportID), "", "", "blocked-incoming-command"); e == nil {
+		t.Fatal("owning command ignored retained incoming reference")
 	}
 	copy, e := s.Impact(ctx, scope, string(d.DraftID), 1, "COPY", "copy-character", "alex-character")
 	if e != nil || len(copy.SelectedTargets) != 1 || len(copy.BlockingFindings) != 0 {
@@ -36,8 +37,7 @@ func TestStaticSelectedTargetsIncomingRefsAndIndependentResourceCopy(t *testing.
 	}
 }
 func TestBindingRemovalPlanReportsDutyGapWithoutMutatingDraft(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	var role map[string]any
 	if e := json.Unmarshal(in.Objects[len(in.Objects)-1], &role); e != nil {
@@ -55,6 +55,9 @@ func TestBindingRemovalPlanReportsDutyGapWithoutMutatingDraft(t *testing.T) {
 	report, e := s.Impact(ctx, scope, string(d.DraftID), 1, "REMOVE_BINDING", "remove-binding", "director-binding")
 	if e != nil || len(report.SelectedTargets) != 1 || len(report.DutyCoverage) != 5 || len(report.BlockingFindings) == 0 {
 		t.Fatal("required duty removal accepted", report, e)
+	}
+	if _, e = s.Command(ctx, scope, string(d.DraftID), 1, "REMOVE_BINDING", string(report.ReportID), "", "", "blocked-duty-removal"); e == nil {
+		t.Fatal("owning command ignored required duty gap")
 	}
 	before, e := s.GetDraft(ctx, scope, string(d.DraftID), "")
 	if e != nil || len(before.Input.ModuleAgentBindings) != 1 {
@@ -87,8 +90,7 @@ func TestWoodenSignPrimitiveActuallyEvaluatesSlotCustody(t *testing.T) {
 }
 
 func TestBindingsValidateReferencesAndFreezeEffectiveRoutes(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	binding := generated.ModuleAgentBinding{BindingID: "bad-binding", OwnerObjectID: "coffee-world", ModuleID: "INTERACTION", RoleRef: json.RawMessage(`{"kind":"LOCAL_DRAFT","object_id":"missing-role"}`), Enabled: true, Generation: generated.GenerationSettings{Mode: "INHERIT", RequiredCapabilities: []generated.Identity{}, AllowedExternalUses: []string{"NONE"}}}
 	in.ModuleAgentBindings = append(in.ModuleAgentBindings, binding)
@@ -128,8 +130,7 @@ func TestBindingsValidateReferencesAndFreezeEffectiveRoutes(t *testing.T) {
 func ptrID(v string) *generated.Identity { x := generated.Identity(v); return &x }
 
 func TestSelectedCopyIncludesOwnedBindingDependencies(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	in.ModuleAgentBindings = append(in.ModuleAgentBindings, generated.ModuleAgentBinding{BindingID: "alex-method", OwnerObjectID: "alex-character", ModuleID: "INTERACTION", RoleRef: json.RawMessage(`{"kind":"LOCAL_DRAFT","object_id":"program-duties"}`), Enabled: true, Generation: generated.GenerationSettings{Mode: "INHERIT", RequiredCapabilities: []generated.Identity{}, AllowedExternalUses: []string{"NONE"}}})
 	d, e := s.Create(ctx, scope, "WORLD", "", in, "copy-method-create")

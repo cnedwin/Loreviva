@@ -100,11 +100,15 @@ func (s *Store) QuoteTurn(ctx context.Context, c CommandBarrierRequest, request 
 	r.CommitKey = turnIdentity(id, "receipt")
 	r.PayloadHash = hash
 	r.Locks = append(r.Locks, harnessTaskKey(c.ProductScope, id))
+	r.Locks = append(r.Locks, NewRouteAdmissionLocks(c.ProductScope)...)
 	if e = s.planPerception(ctx, &r, *request.PrimaryActorID); e != nil {
 		return out, e
 	}
 	_, _, e = s.barrier(ctx, r, func(port Tx) error {
 		u := port.(*unit)
+		if e := CheckNewRouteAdmissionTx(ctx, port, c.ProductScope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
+			return e
+		}
 		route, e := s.TurnOwner.ResolveTurnRouteTx(ctx, u, *c.WorldScope, *request.PrimaryActorID)
 		if e != nil {
 			return e
@@ -161,6 +165,7 @@ func TurnCommandHash(scope domain.Scope, request generated.TurnRequest) ([32]byt
 	return hash, e
 }
 
+// An exact original acceptance is returned before the new-intake revision comparison; its current scope gates and command hash still have to match.
 func (s *Store) AcceptR0Turn(ctx context.Context, c CommandBarrierRequest, request generated.TurnRequest) (generated.TurnAccepted, error) {
 	var out generated.TurnAccepted
 	if c.WorldScope == nil || !r0Owner(*c.WorldScope) || s.TurnOwner == nil || request.RequestedAudience != "PRIVATE_RELATIONSHIP" {
@@ -250,13 +255,14 @@ func r0ParentHolds(s domain.Scope, project, task string) []Reservation {
 	return out
 }
 
+// R0 account provisioning is limited to the owning intake plan, current generation consent and the quote's bound project; these inserted accounts start with zero balance and held amounts.
 func provisionR0TurnAccount(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
 	if !r.r0TurnProvision || !r.commandOnly || r.WorldScope == nil || !r0Owner(*r.WorldScope) || r.Operation != "HARNESS_INTAKE" {
 		return ErrDenied
 	}
 	var project string
 	var valid bool
-	if e := tx.QueryRowContext(ctx, "SELECT q.project_id,EXISTS(SELECT 1 FROM operator_credentials o JOIN operator_actions a ON a.credential_id=o.credential_id WHERE o.credential_id='owner' AND o.tenant_id=q.tenant_id AND o.product_id=q.product_id AND o.subject_id=q.owner_subject_id AND o.enabled=1 AND a.action='memory.generation.consent') FROM harness_quotes q JOIN runtime_instances i ON i.tenant_id=q.tenant_id AND i.product_id=q.product_id AND i.world_instance_id=q.world_instance_id AND i.owner_subject_id=q.owner_subject_id WHERE q.tenant_id=? AND q.product_id=? AND q.quote_id=? AND q.owner_subject_id=? AND q.world_instance_id=? AND q.project_id=JSON_UNQUOTE(JSON_EXTRACT(CONVERT(i.initialization USING utf8mb4),'$.ProjectID'))", r.ProductScope.TenantID, r.ProductScope.ProductID, r.harnessIntakeQuote, r.OwnerSubjectID, r.WorldScope.WorldInstanceID).Scan(&project, &valid); e != nil {
+	if e := tx.QueryRowContext(ctx, "SELECT q.project_id,EXISTS(SELECT 1 FROM r0_generation_consent c JOIN operator_credentials o ON o.credential_id=c.credential_id JOIN operator_actions a ON a.credential_id=o.credential_id LEFT JOIN studio_credential_state v ON v.credential_id=o.credential_id WHERE c.tenant_id=q.tenant_id AND c.product_id=q.product_id AND c.subject_id=q.owner_subject_id AND c.opted_in=1 AND c.expires_at>UTC_TIMESTAMP(6) AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)) AND o.tenant_id=q.tenant_id AND o.product_id=q.product_id AND o.subject_id=q.owner_subject_id AND o.enabled=1 AND a.action='memory.generation.consent') FROM harness_quotes q JOIN runtime_instances i ON i.tenant_id=q.tenant_id AND i.product_id=q.product_id AND i.world_instance_id=q.world_instance_id AND i.owner_subject_id=q.owner_subject_id WHERE q.tenant_id=? AND q.product_id=? AND q.quote_id=? AND q.owner_subject_id=? AND q.world_instance_id=? AND q.project_id=JSON_UNQUOTE(JSON_EXTRACT(CONVERT(i.initialization USING utf8mb4),'$.ProjectID'))", r.ProductScope.TenantID, r.ProductScope.ProductID, r.harnessIntakeQuote, r.OwnerSubjectID, r.WorldScope.WorldInstanceID).Scan(&project, &valid); e != nil {
 		return e
 	}
 	if !valid {
@@ -353,7 +359,9 @@ func (s *Store) ReadTurn(ctx context.Context, scope domain.Scope, id string) (ge
 // current context, holds, lease and original identity under the closed barrier.
 func (s *Store) OriginalTurnDispatch(ctx context.Context, r BarrierRequest) (DispatchRequest, error) {
 	var out DispatchRequest
-	if r.WorldScope == nil || !r0Owner(*r.WorldScope) || r.TaskID == "" {
+	// Isolated rehearsal uses its private, lease-bound owning plan. The online
+	// R0 turn path retains its original owner-only policy.
+	if r.WorldScope == nil || (r.rehearsalExecution == nil && !r0Owner(*r.WorldScope)) || r.TaskID == "" {
 		return out, ErrDenied
 	}
 	var quote, project string

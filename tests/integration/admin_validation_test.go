@@ -15,8 +15,8 @@ import (
 func TestProductCandidateActualProgramValidation(t *testing.T) {
 	for _, code := range []string{"STRUCTURE_VALID", "STRUCTURE_INVALID"} {
 		t.Run(code, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			if code == "STRUCTURE_INVALID" {
 				r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
 			}
@@ -45,8 +45,8 @@ func TestProductCandidateActualProgramValidation(t *testing.T) {
 }
 
 func TestProductCandidateLockedEvidenceAndActualSourceCleanup(t *testing.T) {
-	ctx := context.Background()
 	r, l, d, a := productSent(t)
+	ctx := runtimeContext(t, r)
 	if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 		t.Fatal(e)
 	}
@@ -128,8 +128,8 @@ func TestProductCandidateProgramRejectsActualUntrustedFields(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			r.Worker.Turns.Fault = c.fault
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 				t.Fatal(e)
@@ -155,8 +155,8 @@ func TestProductCandidateProgramRejectsActualUntrustedFields(t *testing.T) {
 func TestProductCandidateValidationAtomicOutcomeAndEvidenceClose(t *testing.T) {
 	for _, phase := range []string{"ROLLBACK", "ACK_UNKNOWN", "WITHDRAW_BEFORE_COMMIT", "DELETE_INTENT_BEFORE_COMMIT"} {
 		t.Run(phase, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, d, a := productSent(t)
+			ctx := runtimeContext(t, r)
 			if e := r.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 				t.Fatal(e)
 			}

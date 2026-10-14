@@ -24,6 +24,7 @@ type DraftCandidateOwner interface {
 	CandidateSourcesLiveTx(context.Context, Tx, domain.ProductScope, domain.DraftCandidateMaterial) (bool, error)
 }
 
+// An existing intake is reusable only when its original key and payload hash match the committed receipt; a new intake verifies source bytes before its owning transaction.
 func (s *Store) AcceptDraftCandidate(ctx context.Context, scope domain.ProductScope, draft, key string, request generated.CandidateRequest) (generated.AdminTaskReceipt, error) {
 	var out generated.AdminTaskReceipt
 	ctx, release, e := s.EnterOperation(ctx)
@@ -114,6 +115,9 @@ func (s *Store) AcceptDraftCandidate(ctx context.Context, scope domain.ProductSc
 		if current.ProjectID != material.ProjectID || current.RequestHash != material.RequestHash || !bytes.Equal(current.Canonical, material.Canonical) {
 			return ErrReplan
 		}
+		if e = CheckNewRouteAdmissionTx(ctx, tx, scope, current.Connection, current.Model); e != nil {
+			return e
+		}
 		if e = ensureCandidateProject(ctx, u, *r.candidateIntake); e != nil {
 			return e
 		}
@@ -177,6 +181,7 @@ type candidateIntakeProvision struct {
 	requestHash        string
 }
 
+// Rebuild the current candidate material in the owning transaction and require the original project and request hash to match before accepting this intake.
 func (s *Store) checkCandidateIntakeFinish(ctx context.Context, u *unit, r BarrierRequest) error {
 	if r.candidateIntake == nil {
 		return nil
@@ -196,8 +201,11 @@ func (s *Store) checkCandidateIntakeFinish(ctx context.Context, u *unit, r Barri
 
 func (s *Store) candidateGates(ctx context.Context, scope domain.ProductScope) (GateVersions, error) {
 	var g GateVersions
+	if e := s.CheckOperator(ctx, scope, "content.assist"); e != nil {
+		return g, e
+	}
 	var allowed bool
-	e := s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled AND s.can_execute AND EXISTS(SELECT 1 FROM operator_credentials c JOIN operator_actions a USING(credential_id) WHERE c.credential_id='owner' AND c.tenant_id=s.tenant_id AND c.product_id=s.product_id AND c.subject_id=s.subject_id AND c.enabled=1 AND a.action='content.assist') FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&g.Tenant, &g.Product, &g.Subject, &g.Privacy, &g.View, &allowed)
+	e := s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled AND s.can_execute FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&g.Tenant, &g.Product, &g.Subject, &g.Privacy, &g.View, &allowed)
 	if e != nil {
 		return g, e
 	}
@@ -224,7 +232,7 @@ func r0CandidateAccounts(scope domain.ProductScope, project string) []Reservatio
 	return []Reservation{{Kind: "supplier_global", ScopeKey: "GLOBAL", AccountID: "r0-mock-supplier"}, {Kind: "supplier_tenant", ScopeKey: scope.TenantID, AccountID: "r0-mock-supplier"}, {Kind: "platform_risk", ScopeKey: "GLOBAL", AccountID: "r0-mock-risk"}, {Kind: "customer", ScopeKey: product, AccountID: "r0-owner"}, {Kind: "project", ScopeKey: product, AccountID: project}}
 }
 func candidateProjectIdentity(ctx context.Context, tx *sql.Tx, scope domain.ProductScope, p candidateIntakeProvision) (bool, error) {
-	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" || scope.SubjectID != "creator" {
+	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" {
 		return false, ErrDenied
 	}
 	var original sql.NullString

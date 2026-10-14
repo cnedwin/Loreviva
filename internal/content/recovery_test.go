@@ -9,8 +9,7 @@ import (
 )
 
 func TestDeletionAndUnknownCommitReturnOriginalResult(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	d, e := s.Create(ctx, scope, "WORLD", "", coffee(t), "create-delete")
 	if e != nil {
 		t.Fatal(e)

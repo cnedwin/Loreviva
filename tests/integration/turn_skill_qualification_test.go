@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -16,12 +15,12 @@ import (
 func TestOnlineSkillPinnedDefiningBindingBeforeProcurement(t *testing.T) {
 	for _, mode := range []string{"VALID", "SCHEMA", "CONSUMER_AUTH"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			schema := "GenerationMaterial"
 			if mode == "SCHEMA" {
 				schema = "TurnRequest"
 			}
 			r, draft, req := skillRehearsalFixture(t, schema)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			d, e := r.Content.GetDraft(ctx, scope, draft, "")
 			if e != nil {
@@ -115,8 +114,8 @@ func TestOnlineSkillPinnedDefiningBindingBeforeProcurement(t *testing.T) {
 }
 
 func TestGenerativeSkillEditingCandidateUsesExplicitModuleRoute(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := skillRehearsalFixture(t, "GenerationMaterial")
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -169,8 +168,8 @@ func TestGenerativeSkillEditingCandidateUsesExplicitModuleRoute(t *testing.T) {
 func TestOnlineSkillActualDeclarationAndSourcesBeforePurchase(t *testing.T) {
 	for _, mode := range []string{"VALID", "FAILURE_POLICY", "TOOLS", "DEPTH", "CYCLE", "USE", "EXPIRY", "ROUTE"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, req := skillRehearsalFixture(t, "GenerationMaterial")
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			d, e := r.Content.GetDraft(ctx, scope, draft, "")
 			if e != nil {

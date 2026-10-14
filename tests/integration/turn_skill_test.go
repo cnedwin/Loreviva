@@ -26,6 +26,7 @@ func skillRehearsalFixture(t *testing.T, inputSchema string, ordinary ...bool) (
 	if len(ordinary) > 0 && ordinary[0] {
 		var release string
 		r, _, release = runtimeFixtureWithConsent(t, true)
+		ctx = runtimeContext(t, r)
 		p, e := r.Content.GetRelease(ctx, scope, release)
 		if e != nil {
 			t.Fatal(e)
@@ -49,7 +50,7 @@ func skillRehearsalFixture(t *testing.T, inputSchema string, ordinary ...bool) (
 
 func attachOnlineTextSkill(t *testing.T, r *app.Runtime, draft, inputSchema string) generated.ExactUnsigned {
 	t.Helper()
-	ctx := context.Background()
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -115,8 +116,8 @@ func attachOnlineTextSkill(t *testing.T, r *app.Runtime, draft, inputSchema stri
 }
 
 func TestOnlineSkillActualPublishedTurn(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := skillRehearsalFixture(t, "GenerationMaterial", true)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {
@@ -211,8 +212,8 @@ func skillPrefixDuration(t *testing.T, duration string) (context.Context, *app.R
 }
 func skillPrefixOwned(t *testing.T, duration string) (context.Context, *app.Runtime, domain.TaskLease, domain.TaskLease, store.DispatchRequest, domain.GenerationMaterial, func()) {
 	t.Helper()
-	ctx := context.Background()
 	r, draft, req := skillRehearsalFixture(t, "GenerationMaterial")
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	if duration != "" {
 		d, e := r.Content.GetDraft(ctx, scope, draft, "")
@@ -366,8 +367,8 @@ func TestOnlineSkillCanonicalAndFinisher(t *testing.T) {
 }
 
 func TestOnlineSkillRejectsIncompatibleSavedSchemaBeforeIntake(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := skillRehearsalFixture(t, "TurnRequest")
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	if _, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "bad-skill-schema", req); e == nil {
 		t.Fatal("unregistered typed Skill signature accepted for execution")
@@ -521,7 +522,11 @@ func TestOnlineSkillTakeoverPreservesOriginalInvocation(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	nextChild, e := r.Store.ClaimRehearsalChild(background, nextRoot.TaskLease, "skill-takeover")
+	issuer, e := r.Store.EnterDraftTaskIssuer(background, nextRoot.TaskLease, "skill-takeover")
+	if e != nil {
+		t.Fatal("current persisted root issuer", e)
+	}
+	nextChild, e := r.Store.ClaimRehearsalChild(issuer, nextRoot.TaskLease, "skill-takeover")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -533,7 +538,7 @@ func TestOnlineSkillTakeoverPreservesOriginalInvocation(t *testing.T) {
 	if _, e = r.Store.StartSend(ctx, d, d.AttemptID); !errors.Is(e, store.ErrDenied) {
 		t.Fatal("old Skill lease", e)
 	}
-	current, close, e := r.Store.EnterRehearsalChildExecution(background, nextRoot.TaskLease, nextChild.TaskLease, "skill-takeover")
+	current, close, e := r.Store.EnterRehearsalChildExecution(issuer, nextRoot.TaskLease, nextChild.TaskLease, "skill-takeover")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -568,8 +573,8 @@ func TestOnlineSkillTakeoverPreservesOriginalInvocation(t *testing.T) {
 }
 
 func TestOnlineTextSkillSharesOriginalAttempts(t *testing.T) {
-	ctx := context.Background()
 	r, draft, req := skillRehearsalFixture(t, "GenerationMaterial")
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "online-skill", req)
 	if e != nil {
@@ -604,8 +609,8 @@ func TestOnlineProgramSkillUsesActualActionDecision(t *testing.T) {
 }
 func TestOnlineProgramSkillRejectsActualDeniedAction(t *testing.T) { runOnlineProgramSkill(t, true) }
 func runOnlineProgramSkill(t *testing.T, deny bool) {
-	ctx := context.Background()
 	r, draft, req := skillRehearsalFixture(t, "GenerationMaterial")
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	d, e := r.Content.GetDraft(ctx, scope, draft, "")
 	if e != nil {

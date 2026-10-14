@@ -33,6 +33,10 @@ func (x *Executor) ExecuteRehearsal(ctx context.Context, root domain.TaskLease, 
 	}
 	defer close()
 	s := x.Turns.Store
+	ctx, e = s.EnterDraftTaskIssuer(ctx, root, worker)
+	if e != nil {
+		return e
+	}
 	if _, e = s.QueryRehearsalReportCommit(ctx, root.ProductScope, root.TaskID); e == nil {
 		return nil
 	} else if !errors.Is(e, sql.ErrNoRows) {
@@ -61,6 +65,7 @@ func (x *Executor) ExecuteRehearsal(ctx context.Context, root domain.TaskLease, 
 		if executed == 20 {
 			return store.ErrDenied
 		}
+		// Each ordered input uses the owning root's claim, bound child context and execution entry; require exactly one input advance before continuing or committing the report.
 		phase = "fixed child claim"
 		child, e := s.ClaimRehearsalChild(ctx, root, worker)
 		if e != nil {

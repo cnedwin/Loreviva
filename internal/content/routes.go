@@ -3,6 +3,7 @@ package content
 import (
 	"encoding/json"
 	"fmt"
+	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
 	"sort"
 )
@@ -25,6 +26,9 @@ func EffectiveRoute(in generated.DraftInput, owner, module string, options ...Re
 	return effectiveReferenceRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, module, firstResolved(options))
 }
 func effectiveReferenceRoute(in generated.DraftInput, ownerRef map[string]any, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
+	return ResolveRoute(in, ownerRef, module, resolved, nil)
+}
+func ResolveRoute(in generated.DraftInput, ownerRef map[string]any, module string, resolved ResolvedDefinitions, policy *domain.RoutePolicySnapshot) (generated.GenerationSettings, bool, error) {
 	maps, e := objects(in)
 	if e != nil {
 		return generated.GenerationSettings{}, false, e
@@ -44,11 +48,11 @@ func effectiveReferenceRoute(in generated.DraftInput, ownerRef map[string]any, m
 		}
 		return generated.GenerationSettings{}, false, ErrBlocked
 	}
-	return resolveOwnerRoute(in, ownerRef, ownerDefinition, maps, module, resolved)
+	return resolveOwnerRoute(in, ownerRef, ownerDefinition, maps, module, resolved, policy)
 }
 
 // Fixed editing-only producer selection. It never selects a runtime Skill generator.
-func effectiveDraftCandidateRoute(in generated.DraftInput, owner, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
+func effectiveDraftCandidateRoute(in generated.DraftInput, owner, module string, resolved ResolvedDefinitions, policy *domain.RoutePolicySnapshot) (generated.GenerationSettings, bool, error) {
 	maps, e := objects(in)
 	if e != nil {
 		return generated.GenerationSettings{}, false, e
@@ -58,15 +62,15 @@ func effectiveDraftCandidateRoute(in generated.DraftInput, owner, module string,
 		return generated.GenerationSettings{}, false, ErrBlocked
 	}
 	if definition["kind"] != "SKILL" {
-		return EffectiveRoute(in, owner, module, resolved)
+		return ResolveRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, module, resolved, policy)
 	}
 	if definition["implementation_kind"] != "GENERATIVE" || module != "AUTHORING" {
 		return generated.GenerationSettings{}, false, ErrBlocked
 	}
-	return resolveOwnerRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, definition, maps, module, resolved)
+	return resolveOwnerRoute(in, map[string]any{"kind": "LOCAL_DRAFT", "object_id": owner}, definition, maps, module, resolved, policy)
 }
 
-func resolveOwnerRoute(in generated.DraftInput, ownerRef, ownerDefinition map[string]any, maps map[string]map[string]any, module string, resolved ResolvedDefinitions) (generated.GenerationSettings, bool, error) {
+func resolveOwnerRoute(in generated.DraftInput, ownerRef, ownerDefinition map[string]any, maps map[string]map[string]any, module string, resolved ResolvedDefinitions, policy *domain.RoutePolicySnapshot) (generated.GenerationSettings, bool, error) {
 	owner := fmt.Sprint(ownerRef["object_id"])
 	layers := []generated.GenerationSettings{}
 	var binding *generated.ModuleAgentBinding
@@ -105,6 +109,21 @@ func resolveOwnerRoute(in generated.DraftInput, ownerRef, ownerDefinition map[st
 		read(maps[string(in.RootObjectID)])
 	}
 	connection, model := generated.Identity(MockConnection), generated.Identity(MockModel)
+	// With a policy snapshot, non-DEFAULT modules add product defaults then tenant defaults after owner/root layers and before the installation Mock fallback; NONE still stops resolution.
+	if policy != nil {
+		if policy.DescriptorHash != domain.InstalledMockDescriptorHash() {
+			return generated.GenerationSettings{}, false, ErrBlocked
+		}
+		if module != "DEFAULT" {
+			for _, defaults := range [][]generated.StudioModuleDefault{policy.ProductDefaults, policy.TenantDefaults} {
+				for _, d := range defaults {
+					if d.ModuleID == module {
+						layers = append(layers, d.GenerationSettings)
+					}
+				}
+			}
+		}
+	}
 	layers = append(layers, generated.GenerationSettings{Mode: "OVERRIDE", ConnectionRef: &connection, ModelID: &model, RequiredCapabilities: []generated.Identity{"TEXT"}, AllowedExternalUses: []string{"NONE"}})
 	for _, g := range layers {
 		switch g.Mode {
@@ -129,6 +148,9 @@ func resolveOwnerRoute(in generated.DraftInput, ownerRef, ownerDefinition map[st
 	return generated.GenerationSettings{}, false, ErrBlocked
 }
 func freezeRoutes(in generated.DraftInput, options ...ResolvedDefinitions) ([]routeMapping, string, error) {
+	return freezeRoutesWithPolicy(in, firstResolved(options), nil)
+}
+func freezeRoutesWithPolicy(in generated.DraftInput, resolved ResolvedDefinitions, policy *domain.RoutePolicySnapshot) ([]routeMapping, string, error) {
 	mappings := []routeMapping{}
 	pairs := map[string]struct {
 		Ref    map[string]any
@@ -167,7 +189,7 @@ func freezeRoutes(in generated.DraftInput, options ...ResolvedDefinitions) ([]ro
 	sort.Strings(keys)
 	for _, key := range keys {
 		pair := pairs[key]
-		g, enabled, e := effectiveReferenceRoute(in, pair.Ref, pair.Module, firstResolved(options))
+		g, enabled, e := ResolveRoute(in, pair.Ref, pair.Module, resolved, policy)
 		if e != nil {
 			return nil, "", e
 		}

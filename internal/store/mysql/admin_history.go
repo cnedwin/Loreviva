@@ -17,20 +17,16 @@ type ApprovedDraftCandidate struct {
 	Sources []CandidateSourceAsset
 }
 
-func candidateReadActionsTx(ctx context.Context, tx *sql.Tx, scope domain.ProductScope) error {
-	var allowed bool
-	e := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_credentials c WHERE c.tenant_id=? AND c.product_id=? AND c.subject_id=? AND c.enabled=1 AND c.credential_id='owner' AND EXISTS(SELECT 1 FROM operator_actions a WHERE a.credential_id=c.credential_id AND a.action='content.read') AND EXISTS(SELECT 1 FROM operator_actions a WHERE a.credential_id=c.credential_id AND a.action='asset.read'))", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&allowed)
-	if e != nil {
+func (s *Store) candidateReadActionsTx(ctx context.Context, tx *sql.Tx, scope domain.ProductScope) error {
+	if e := operatorActionTx(ctx, tx, s, scope, "content.read"); e != nil {
 		return e
 	}
-	if !allowed {
-		return ErrDenied
-	}
-	return nil
+	return operatorActionTx(ctx, tx, s, scope, "asset.read")
 }
 
 // The only mint for the private S55 barrier. This returns a current read
 // projection, never a reusable execution or file capability.
+// Qualify history against the original commit and attempt receipts plus current source rights; provider metadata is checked after the DB inspection and grants no body-read capability.
 func (s *Store) InspectApprovedDraftCandidate(ctx context.Context, scope domain.ProductScope, task string) (ApprovedDraftCandidate, error) {
 	var out ApprovedDraftCandidate
 	if scope.Validate() != nil || domain.ValidateID(task) != nil || s.Guard == nil || s.DraftCandidateOwner == nil || s.ProviderEvidence == nil {

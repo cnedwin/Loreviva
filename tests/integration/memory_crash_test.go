@@ -30,6 +30,11 @@ func TestMemoryCrashHelper(t *testing.T) {
 	}
 	ctx := context.Background()
 	s := store.New(dbfixture.ReopenHelper(t))
+	var authError error
+	ctx, _, authError = s.AuthenticateOperator(ctx, "Bearer "+runtimeToken)
+	if authError != nil {
+		t.Fatal(authError)
+	}
 	local, e := app.OpenLocal(ctx, s, os.Getenv("LOREVIVA_MEMORY_ROOT"), os.Getenv("LOREVIVA_MEMORY_FILES"))
 	if e != nil {
 		t.Fatal(e)
@@ -98,7 +103,7 @@ func TestMemoryActualProcessCrashBoundaries(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			r, s, release := runtimeFixture(t)
 			i := runtimeControl(t, r, createRuntimeWorld(t, r, release, "process-crash"), "START")
-			ctx := context.Background()
+			ctx := runtimeContext(t, r)
 			if _, e := r.Store.DB.Exec("UPDATE subject_governance SET can_govern=1 WHERE subject_id='creator'"); e != nil {
 				t.Fatal(e)
 			}
@@ -232,7 +237,7 @@ func TestMemorySealCrashRecoveryRemainsClosedAndRejectsForgedPermits(t *testing.
 		t.Run(mode, func(t *testing.T) {
 			r, _, release := runtimeFixture(t)
 			_ = createRuntimeWorld(t, r, release, "seal-crash")
-			ctx := context.Background()
+			ctx := runtimeContext(t, r)
 			if e := r.Local.Coordinator.BeginClose(ctx, "seal-plan"); e != nil {
 				t.Fatal(e)
 			}

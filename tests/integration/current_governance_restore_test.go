@@ -18,8 +18,8 @@ import (
 )
 
 func TestActualGovernanceOldPairAndOldIndependentHead(t *testing.T) {
-	ctx := context.Background()
 	r, scope, task, actor := originalResultFixture(t, false)
+	ctx := runtimeContext(t, r)
 	lease, worker := currentResultLease(t, task, scope, r.Store.DB)
 	if e := r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
 		t.Fatal(e)
@@ -191,8 +191,8 @@ func TestActualGovernanceOldPairAndOldIndependentHead(t *testing.T) {
 }
 
 func TestGovernanceAppendHeldLifetimeDrainsWithoutLateAppend(t *testing.T) {
-	ctx := context.Background()
 	r, scope, _, _ := originalResultFixture(t, false)
+	ctx := runtimeContext(t, r)
 	ledgerDir := filepath.Join(filepath.Dir(r.Local.Coordinator.Directory()), "ledger")
 	root, e := localstate.Open(ledgerDir, false)
 	if e != nil {

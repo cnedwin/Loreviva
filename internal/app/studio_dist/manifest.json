@@ -1,0 +1,20 @@
+{
+  "source_hash": "d7ebdd17e6a4b125d6ac290f0d318f65c6277ab945caa22265e3d1e35b77bd2b",
+  "files": [
+    {
+      "path": "assets/index-B-5Z-H0f.css",
+      "sha256": "ea4a5a5c92eac7ca7280b96d5817f82be6a42ba0e9762e92b775c1fc9be35215",
+      "size": 7051
+    },
+    {
+      "path": "assets/index-DrxKBa-_.js",
+      "sha256": "9f20b7122a708b7f001d53e9df9da9c90eacca6b52f2a94f0c41ba16049e4d10",
+      "size": 3102629
+    },
+    {
+      "path": "index.html",
+      "sha256": "5b2ae1ef026c9bfba70842b9845b58c1d5889908ca274f2881781eb0bd93ffb9",
+      "size": 413
+    }
+  ]
+}

@@ -32,16 +32,26 @@ func TestRehearsalPurgedAcknowledgmentOwnsDrainLifetime(t *testing.T) {
 		closing := name == "CLOSING"
 		denied := name == "FINISH_CLAIM" || name == "FINISH_PRIVACY"
 		t.Run(name, func(t *testing.T) {
+			started := time.Now()
 			ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 			defer cancel()
+			deadline, _ := ctx.Deadline()
+			observe := func(phase string, err error) {
+				t.Logf("purge prerequisite phase=%s elapsed=%v remaining=%v ctx=%v error_type=%T error=%v deadline=%v cancelled=%v", phase, time.Since(started), time.Until(deadline), ctx.Err(), err, err, errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled))
+			}
 			r, draft, assets, req := physicalRehearsalDraft(t)
+			observe("fixture", nil)
+			ctx = runtimeContextWithParent(t, r, ctx)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "purge-lifetime", req)
+			observe("accept", e)
 			if e != nil {
 				t.Fatal(e)
 			}
 			r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
-			if e = r.Worker.Once(ctx); e != nil {
+			e = r.Worker.Once(ctx)
+			observe("worker", e)
+			if e != nil {
 				t.Fatal(e)
 			}
 			captured := &capturedPurgeOwner{owner: r.Files}
@@ -206,6 +216,7 @@ func TestRehearsalPurgeIOLifetimeFinishesOriginalACK(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 	r, draft, assets, req := physicalRehearsalDraft(t)
+	ctx = runtimeContextWithParent(t, r, ctx)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	root, e := r.Store.AcceptDraftRehearsal(ctx, scope, draft, "purge-io", req)
 	if e != nil {

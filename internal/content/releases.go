@@ -18,12 +18,23 @@ func (s *Service) GetRelease(ctx context.Context, scope domain.ProductScope, id 
 	if _, e := Gate(ctx, s.Store, scope); e != nil {
 		return r, ErrNotFound
 	}
+	read, e := s.Store.BeginOperatorRead(ctx, scope, "content.read")
+	if e != nil {
+		return r, e
+	}
+	defer read.Close()
 	var b []byte
-	e := s.Store.DB.QueryRowContext(ctx, "SELECT c.document FROM content_releases c JOIN releases r ON r.tenant_id=c.tenant_id AND r.product_id=c.product_id AND r.release_id=c.release_id WHERE c.tenant_id=? AND c.product_id=? AND c.release_id=? AND r.available=1", scope.TenantID, scope.ProductID, id).Scan(&b)
+	e = read.QueryRowContext(ctx, "SELECT c.document FROM content_releases c JOIN releases r ON r.tenant_id=c.tenant_id AND r.product_id=c.product_id AND r.release_id=c.release_id WHERE c.tenant_id=? AND c.product_id=? AND c.release_id=? AND r.available=1", scope.TenantID, scope.ProductID, id).Scan(&b)
 	if e != nil {
 		return r, ErrNotFound
 	}
 	e = generated.Decode("Release", b, &r)
+	if e == nil {
+		e = read.Finish(ctx)
+	}
+	if e != nil {
+		return generated.Release{}, e
+	}
 	return r, e
 }
 func (s *Service) ListReleases(ctx context.Context, scope domain.ProductScope, project, draft string, options ...PageOptions) (generated.ReleasePage, error) {
@@ -141,6 +152,7 @@ func (s *Service) CheckPublish(ctx context.Context, scope domain.ProductScope, i
 	}
 	reportID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "check", key)
 	locks := append(dependencyLocks(scope, snapshot.Input), Key(scope, "content_draft", id), Key(scope, "content_check", reportID))
+	locks = append(locks, store.RoutePolicyLocks(scope)...)
 	raw, e := Command(ctx, s.Store, scope, "checkDraftForPublish", key, id, "PublishCheckReport", struct {
 		Revision uint64
 		Labels   []string
@@ -150,12 +162,16 @@ func (s *Service) CheckPublish(ctx context.Context, scope domain.ProductScope, i
 			return nil, e
 		}
 		deps, resolved, e := validateDependencies(ctx, tx, scope, d.Input)
-		f, duties := Findings(d.Input, string(d.RootKind), resolved)
+		policy, policyError := store.ReadRoutePolicyTx(ctx, tx, scope)
+		if policyError != nil {
+			return nil, policyError
+		}
+		f, duties := definitionFindingsPolicy(d.Input, string(d.RootKind), true, resolved, policy)
 		if e != nil {
 			return nil, e
 		}
 		f = append(f, deps...)
-		_, routeHash, routeError := freezeRoutes(d.Input, resolved)
+		_, routeHash, routeError := freezeRoutesWithPolicy(d.Input, resolved, policy)
 		if routeError != nil {
 			f = append(f, generated.FieldError{Pointer: "/generation", Code: "ROUTE_SNAPSHOT", Message: "Effective Mock route cannot be resolved."})
 			routeHash, _ = Hash(d.Input)
@@ -176,6 +192,7 @@ func (s *Service) CheckPublish(ctx context.Context, scope domain.ProductScope, i
 	}
 	return out, e
 }
+// A passed report is not sufficient to publish: the new transaction rechecks the draft, dependency rights and route snapshot before inserting the immutable release.
 func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id string, expected uint64, reportID string, labels []string, key string) (generated.Release, error) {
 	var out generated.Release
 	sl, e := support(labels)
@@ -188,6 +205,7 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 	}
 	releaseID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "publish", key)
 	locks := append(dependencyLocks(scope, snapshot.Input), Key(scope, "content_draft", id), Key(scope, "content_release", releaseID), Key(scope, "content_check", reportID))
+	locks = append(locks, store.RoutePolicyLocks(scope)...)
 	raw, e := Command(ctx, s.Store, scope, "publishContentDraft", key, id, "Release", struct {
 		Revision uint64
 		Report   string
@@ -216,14 +234,18 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 			return nil, ErrBlocked
 		}
 		deps, resolved, e := validateDependencies(ctx, tx, scope, d.Input)
-		f, _ := Findings(d.Input, string(d.RootKind), resolved)
+		policy, policyError := store.ReadRoutePolicyTx(ctx, tx, scope)
+		if policyError != nil {
+			return nil, policyError
+		}
+		f, _ := definitionFindingsPolicy(d.Input, string(d.RootKind), true, resolved, policy)
 		if e != nil {
 			return nil, e
 		}
 		if len(f)+len(deps) > 0 {
 			return nil, ErrBlocked
 		}
-		mappings, routeHash, e := freezeRoutes(d.Input, resolved)
+		mappings, routeHash, e := freezeRoutesWithPolicy(d.Input, resolved, policy)
 		if e != nil || routeHash != check.RouteSnapshotHash {
 			return nil, ErrBlocked
 		}

@@ -30,6 +30,11 @@ func TestFix1CleanupProgressSurvivesRestartAndPreservesReferencedFiles(t *testin
 	if e := maintenance.BootstrapSynthetic(ctx, s, scope, "owner", "synthetic-test-private-operator-secret"); e != nil {
 		t.Fatal(e)
 	}
+	authenticated, _, authErr := s.AuthenticateOperator(ctx, "Bearer synthetic-test-private-operator-secret")
+	if authErr != nil {
+		t.Fatal(authErr)
+	}
+	ctx = authenticated
 	root := t.TempDir()
 	f, e := files.New(s, root)
 	if e != nil {

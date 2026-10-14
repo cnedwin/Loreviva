@@ -1,7 +1,6 @@
 package content_test
 
 import (
-	"context"
 	"encoding/json"
 
 	"loreviva.local/loreviva/internal/generated"
@@ -23,24 +22,24 @@ func skillObject(t *testing.T) generated.ContentObject {
 func TestFix1IneligibleOwnerBindingCannotPublish(t *testing.T) {
 	for _, owner := range []string{"program-duties", "skill-owner", "alex-character"} {
 		t.Run(owner, func(t *testing.T) {
-			s, scope := fixture(t)
+			s, scope, ctx := fixture(t)
 			in := coffee(t)
 			if owner == "skill-owner" {
 				in.Objects = append(in.Objects, skillObject(t))
 			}
 			in.ModuleAgentBindings = append(in.ModuleAgentBindings, generated.ModuleAgentBinding{BindingID: "owner-binding", OwnerObjectID: generated.Identity(owner), ModuleID: "INTERACTION", RoleRef: json.RawMessage(`{"kind":"LOCAL_DRAFT","object_id":"program-duties"}`), Enabled: true, Generation: mockGeneration()})
-			d, e := s.Create(context.Background(), scope, "WORLD", "", in, "owner-create")
+			d, e := s.Create(ctx, scope, "WORLD", "", in, "owner-create")
 			if e != nil {
 				t.Fatal(e)
 			}
-			check, e := s.CheckPublish(context.Background(), scope, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "owner-check")
+			check, e := s.CheckPublish(ctx, scope, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "owner-check")
 			if e != nil {
 				t.Fatal(e)
 			}
 			if check.Passed != (owner == "alex-character") {
 				t.Errorf("owner eligibility bypassed: %s passed=%v findings=%v", owner, check.Passed, check.Findings)
 			}
-			_, e = s.Publish(context.Background(), scope, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "owner-publish")
+			_, e = s.Publish(ctx, scope, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "owner-publish")
 			if (e == nil) != (owner == "alex-character") {
 				t.Errorf("publish owner=%s error=%v", owner, e)
 			}
@@ -56,7 +55,7 @@ func TestFix1IneligibleOwnerBindingCannotPublish(t *testing.T) {
 }
 
 func TestFix1SkillDefaultCannotGenerate(t *testing.T) {
-	s, scope := fixture(t)
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	in.RootObjectID = "skill-owner"
 	in.Objects = []generated.ContentObject{skillObject(t)}
@@ -67,15 +66,15 @@ func TestFix1SkillDefaultCannotGenerate(t *testing.T) {
 	json.Unmarshal(g, &settings)
 	skill["generation"] = settings
 	in.Objects[0], _ = json.Marshal(skill)
-	d, e := s.Create(context.Background(), scope, "SKILL", "", in, "skill-default-create")
+	d, e := s.Create(ctx, scope, "SKILL", "", in, "skill-default-create")
 	if e != nil {
 		t.Fatal(e)
 	}
-	check, e := s.CheckPublish(context.Background(), scope, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "skill-default-check")
+	check, e := s.CheckPublish(ctx, scope, string(d.DraftID), 1, []string{"MOCK_DEMO"}, "skill-default-check")
 	if e != nil || check.Passed {
 		t.Fatalf("Skill DEFAULT enabled generation: %v %v", check, e)
 	}
-	if _, e = s.Publish(context.Background(), scope, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "skill-default-publish"); e == nil {
+	if _, e = s.Publish(ctx, scope, string(d.DraftID), 1, string(check.ReportID), []string{"MOCK_DEMO"}, "skill-default-publish"); e == nil {
 		t.Fatal("Skill DEFAULT published")
 	}
 }

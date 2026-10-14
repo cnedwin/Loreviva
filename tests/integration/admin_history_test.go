@@ -27,8 +27,8 @@ type candidateHistoryReader interface {
 func TestProductCandidateSourceBytesAtOwningBoundaries(t *testing.T) {
 	for _, mode := range []string{"INTAKE", "AUTHORIZE", "START_SEND", "CONSUME", "CONSUME_CORRUPT", "VALIDATE", "REPAIR", "EXTRA_AUTHORIZE", "EXTRA_SEND", "COMMIT", "HISTORY_MISSING", "HISTORY_CORRUPT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, original, asset, _ := historySourceCandidate(t, false)
+			ctx := runtimeContext(t, r)
 			var storage, draft string
 			if e := r.Store.DB.QueryRow("SELECT storage_key FROM assets WHERE asset_id=?", asset).Scan(&storage); e != nil {
 				t.Fatal(e)
@@ -191,8 +191,8 @@ func TestProductCandidateSourceBytesAtOwningBoundaries(t *testing.T) {
 func TestProductCandidateHistoryCurrentInstallationAndStream(t *testing.T) {
 	for _, mode := range []string{"STREAM_READ_REVOKED", "STREAM_BODY_REMOVED", "CLOSING", "MISSING_STORE_WRITER"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _ := validCandidateBusiness(t, false)
+			ctx := runtimeContext(t, r)
 			if _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 				t.Fatal(e)
 			}
@@ -236,6 +236,7 @@ func historySourceCandidate(t *testing.T, pinned bool) (*app.Runtime, domain.Tas
 	assetID := ""
 	sourceRelease := ""
 	r, l := candidateDispatchInputFixture(t, func(r *app.Runtime, s domain.ProductScope, in *generated.DraftInput) {
+		ctx = runtimeContext(t, r)
 		var ref generated.DefinitionRef
 		if pinned {
 			var raw []byte
@@ -361,8 +362,8 @@ func historySourceCandidate(t *testing.T, pinned bool) (*app.Runtime, domain.Tas
 func TestProductCandidateHistoryOriginalSourceClosure(t *testing.T) {
 	for _, mode := range []string{"SWAP_FUTURE_REFS", "ASSET_USE", "ASSET_EXPIRED", "PINNED_UNAVAILABLE"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, asset, release := historySourceCandidate(t, mode == "PINNED_UNAVAILABLE")
+			ctx := runtimeContext(t, r)
 			if mode == "PINNED_UNAVAILABLE" {
 				if _, e := r.Store.DB.Exec("UPDATE releases SET available=0 WHERE release_id=?", release); e != nil {
 					t.Fatal(e)
@@ -418,8 +419,8 @@ func TestProductCandidateHistoryOriginalSourceClosure(t *testing.T) {
 }
 
 func TestProductCandidatePartialSourceCleanupRetiresBothBodies(t *testing.T) {
-	ctx := context.Background()
 	r, l, asset, _ := historySourceCandidate(t, false)
+	ctx := runtimeContext(t, r)
 	if _, e := r.Store.DB.Exec("UPDATE assets SET state='DELETED' WHERE asset_id=?", asset); e != nil {
 		t.Fatal(e)
 	}
@@ -442,8 +443,8 @@ func TestProductCandidatePartialSourceCleanupRetiresBothBodies(t *testing.T) {
 }
 
 func TestProductCandidateHistoryReadsActualCommittedBytes(t *testing.T) {
-	ctx := context.Background()
 	r, l, d := validCandidateBusiness(t, true)
+	ctx := runtimeContext(t, r)
 	original, e := r.Files.ReadPendingCandidateResult(ctx, d)
 	if e != nil {
 		t.Fatal(e)
@@ -526,8 +527,8 @@ func TestProductCandidateHistoryReadsActualCommittedBytes(t *testing.T) {
 func TestProductCandidateHistoryCurrentBoundaries(t *testing.T) {
 	for _, mode := range []string{"READ", "ASSET_READ", "CREDENTIAL", "SUBJECT", "OWNER", "PRODUCT", "SOURCE_USE", "LICENSE", "EXPIRY", "MISSING_RECEIPT", "BAD_RECEIPT", "VALIDATION", "SEND", "LINEAGE", "OLD_NO_PROOF", "ORIGINAL_MISSING", "EXTRA_MISSING", "ORIGINAL_CORRUPT", "EXTRA_CORRUPT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, l, _ := validCandidateBusiness(t, true)
+			ctx := runtimeContext(t, r)
 			if _, e := r.Store.CommitDraftCandidate(ctx, l, "candidate-worker"); e != nil {
 				t.Fatal(e)
 			}

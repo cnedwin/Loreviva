@@ -34,6 +34,7 @@ func legalControl(status, action string) bool {
 	}
 	return false
 }
+// The command accepts a control task; execution later rechecks its stored scope, versions, status and live issuer before advancing the world and committing the result together.
 func (r *Runtime) Control(ctx context.Context, s domain.Scope, c ControlCommand) (generated.AdminTaskReceipt, error) {
 	var out generated.AdminTaskReceipt
 	if string(c.Request.ProductID) != s.ProductID {
@@ -137,6 +138,10 @@ func recordResult(ctx context.Context, tx store.Tx, s domain.Scope, task, id str
 func (r *Runtime) Process(ctx context.Context, lease store.RegisteredLease, worker string) error {
 	if lease.WorldInstanceID == nil || !((lease.Kind == "CONTROL" && lease.Operation == "INSTANCE_CONTROL") || (lease.Kind == "MIGRATION" && lease.Operation == "INSTANCE_MIGRATION")) {
 		return store.ErrDenied
+	}
+	ctx, issuerError := r.Store.EnterControlTaskIssuer(ctx, lease, worker)
+	if issuerError != nil {
+		return issuerError
 	}
 	var raw []byte
 	var p persistedTask

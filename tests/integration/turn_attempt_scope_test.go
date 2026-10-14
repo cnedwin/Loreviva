@@ -69,7 +69,7 @@ func TestRecoveryChecksWholeOriginalCandidateAfterFirstConflict(t *testing.T) {
 			ctx := context.Background()
 			r, scope, task, _ := actionResultFixture(t, fault)
 			lease, worker := currentResultLease(t, task, scope, r.Store.DB)
-			instance, e := r.World.GetInstance(ctx, scope)
+			instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -193,7 +193,7 @@ func TestRealSharedExtraRepairAndRecomputeCommit(t *testing.T) {
 				if e = r.Store.ApproveOriginalTurn(ctx, lease, worker); e != nil {
 					t.Fatal(e)
 				}
-				instance, e := r.World.GetInstance(ctx, scope)
+				instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 				if e != nil {
 					t.Fatal(e)
 				}

@@ -1,0 +1,30 @@
+name: Exact source bytes
+on: [push, pull_request]
+# Read-only default token: no write scope, deployment or pull_request_target execution.
+permissions:
+  contents: read
+jobs:
+  byte-policy:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Immutable reviewed action pins; checkout must not retain the job token in Git config.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # Disable package-manager credential/cache restoration; dependencies come from the frozen lock.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: node scripts/check-byte-policy.mjs
+      - run: node scripts/check-byte-policy.mjs --git HEAD
+      # Same LF classification is insufficient: compare actual raw working/index/HEAD sets and bytes.
+      - run: node scripts/check-byte-policy.mjs --bridge
+      - run: node scripts/check-byte-policy.mjs --git-index
+      - run: node --test scripts/byte-policy.test.mjs
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec node scripts/check-generated.mjs

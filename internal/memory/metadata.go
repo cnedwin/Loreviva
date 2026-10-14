@@ -90,17 +90,18 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 	br.CommitKey = content.Identity(id, "accept")
 	br.PayloadHash = hash
 	br.Locks = append(br.Locks, store.LockKey{Rank: 50, IDs: []string{n.TenantID, n.ProductID, id}})
+	// Apply the selected revisions or policy revision inside the namespace transaction; REVOKE removes only the selected uses when provided, while blocking and derived-asset intent stay bound to the same governance task.
 	_, e = s.Store.WithCommandBarrier(ctx, br, func(tx store.Tx) error {
-		if e := authorizeTx(ctx, tx, n, "memory.govern"); e != nil {
+		if e := authorizeUserTx(ctx, tx, n, "memory.govern"); e != nil {
 			return e
 		}
 		if c.Selector.TargetKind == "SOURCE" {
-			if e := authorizeTx(ctx, tx, n, "memory.source.govern"); e != nil {
+			if e := authorizeUserTx(ctx, tx, n, "memory.source.govern"); e != nil {
 				return e
 			}
 		}
 		if c.Action == "CORRECT" {
-			if e := authorizeTx(ctx, tx, n, "memory.correct"); e != nil {
+			if e := authorizeUserTx(ctx, tx, n, "memory.correct"); e != nil {
 				return e
 			}
 		}
@@ -114,7 +115,7 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 		}
 		var binding Binding
 		if c.Action == "SET_USE_POLICY" {
-			if e = authorizeTx(ctx, tx, n, "memory.policy"); e != nil {
+			if e = authorizeUserTx(ctx, tx, n, "memory.policy"); e != nil {
 				return e
 			}
 			if e = a.SetUsePolicy(c.PolicyRevision, c.PolicyAction, c.Uses); e != nil {
@@ -150,6 +151,7 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 		_, e = tx.ExecContext(ctx, "INSERT INTO memory_governance(tenant_id,product_id,task_id,world_instance_id,data_subject_id,owner_subject_id,request_hash,binding,preservation,cleanup) VALUES(?,?,?,?,?,?,?,?,'PENDING','PENDING')", n.TenantID, n.ProductID, id, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, hash[:], b)
 		return e
 	})
+	// Keep an uncertain blocking outcome pending under its original task; seal rejection only with the Store's rejection proof, and append preservation after the DB unit of work ends.
 	if e != nil {
 		if errors.Is(e, store.ErrCommitUnknown) {
 			return out, pending
@@ -208,6 +210,7 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 
 // Process resumes exactly the existing task. It does not create a new command,
 // source, task framework or restoration authority.
+// Resume only the registered PROGRAM-owned cleanup and its original accepted intent; preserved ledger evidence and confirmed purges are required before marking local cleanup complete.
 func (s *MemoryService) Process(ctx context.Context, lease store.RegisteredLease, worker string) error {
 	ctx, release, permitError := s.Store.EnterOperation(ctx)
 	if permitError != nil {
@@ -216,6 +219,9 @@ func (s *MemoryService) Process(ctx context.Context, lease store.RegisteredLease
 	defer release()
 	if lease.Kind != "GOVERNANCE" || lease.Operation != "MEMORY_GOVERNANCE" || lease.WorldInstanceID == nil || s.Ledger == nil {
 		return store.ErrDenied
+	}
+	if e := s.Store.CheckProgramCleanup(ctx, lease, worker); e != nil {
+		return e
 	}
 	n := Namespace{Scope: domain.Scope{ProductScope: lease.ProductScope, WorldInstanceID: *lease.WorldInstanceID}}
 	var raw []byte
@@ -293,15 +299,23 @@ func (s *MemoryService) Status(ctx context.Context, n Namespace, id string) (Gov
 	if _, e := s.currentGate(ctx, n.ProductScope, true); e != nil {
 		return out, e
 	}
+	read, e := s.Store.BeginMemoryRead(ctx, n.ProductScope, "memory.govern", n.DataSubjectID)
+	if e != nil {
+		return out, e
+	}
+	defer read.Close()
 	var owner bool
-	if e := s.Store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM runtime_instances WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND owner_subject_id=?)", n.TenantID, n.ProductID, n.WorldInstanceID, n.SubjectID).Scan(&owner); e != nil || !owner {
+	if e := read.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM runtime_instances WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND owner_subject_id=?)", n.TenantID, n.ProductID, n.WorldInstanceID, n.SubjectID).Scan(&owner); e != nil || !owner {
 		return out, store.ErrDenied
 	}
 	var permitted bool
-	if e := s.Store.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM memory_subject_permissions p JOIN subject_governance g ON g.tenant_id=p.tenant_id AND g.product_id=p.product_id AND g.subject_id=p.data_subject_id WHERE p.tenant_id=? AND p.product_id=? AND p.caller_subject_id=? AND p.data_subject_id=? AND p.action='memory.govern' AND p.allowed_use='PRIVATE_RESPONSE' AND p.enabled=1 AND g.enabled=1 AND p.expires_at>UTC_TIMESTAMP(6))", n.TenantID, n.ProductID, n.SubjectID, n.DataSubjectID).Scan(&permitted); e != nil || !permitted {
+	if e := read.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM memory_subject_permissions p JOIN subject_governance g ON g.tenant_id=p.tenant_id AND g.product_id=p.product_id AND g.subject_id=p.data_subject_id WHERE p.tenant_id=? AND p.product_id=? AND p.caller_subject_id=? AND p.data_subject_id=? AND p.action='memory.govern' AND p.allowed_use='PRIVATE_RESPONSE' AND p.enabled=1 AND g.enabled=1 AND p.expires_at>UTC_TIMESTAMP(6))", n.TenantID, n.ProductID, n.SubjectID, n.DataSubjectID).Scan(&permitted); e != nil || !permitted {
 		return out, store.ErrDenied
 	}
-	e = s.Store.DB.QueryRowContext(ctx, "SELECT preservation,cleanup FROM memory_governance WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND data_subject_id=? AND owner_subject_id=? AND task_id=?", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, id).Scan(&out.Preservation, &out.Cleanup)
+	e = read.QueryRowContext(ctx, "SELECT preservation,cleanup FROM memory_governance WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND data_subject_id=? AND owner_subject_id=? AND task_id=?", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, id).Scan(&out.Preservation, &out.Cleanup)
+	if finishError := read.Finish(ctx); finishError != nil {
+		return out, finishError
+	}
 	if errors.Is(e, sql.ErrNoRows) {
 		entry, x := s.Ledger.Lookup(ctx, id)
 		if x != nil || digest(entry.Reservation.Scope) != digest([]string{n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID}) {
@@ -331,11 +345,19 @@ func (s *MemoryService) AdminRead(ctx context.Context, n Namespace, actor, actio
 	if _, e := s.currentGate(ctx, n.ProductScope, false); e != nil {
 		return empty, 0, e
 	}
+	read, e := s.Store.BeginMemoryRead(ctx, n.ProductScope, action, n.DataSubjectID)
+	if e != nil {
+		return empty, 0, e
+	}
+	defer read.Close()
 	var b []byte
 	var epoch uint64
-	e := s.Store.DB.QueryRowContext(ctx, "SELECT m.document,w.privacy_epoch FROM memory_aggregates m JOIN runtime_instances i ON i.tenant_id=m.tenant_id AND i.product_id=m.product_id AND i.world_instance_id=m.world_instance_id JOIN world_controls w ON w.tenant_id=i.tenant_id AND w.product_id=i.product_id AND w.world_instance_id=i.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id JOIN subject_governance g ON g.tenant_id=m.tenant_id AND g.product_id=m.product_id AND g.subject_id=m.data_subject_id WHERE m.tenant_id=? AND m.product_id=? AND m.world_instance_id=? AND m.data_subject_id=? AND i.owner_subject_id=? AND r.available=1 AND g.enabled=1 AND EXISTS(SELECT 1 FROM actors a WHERE a.tenant_id=m.tenant_id AND a.product_id=m.product_id AND a.world_instance_id=m.world_instance_id AND a.actor_id=?) AND EXISTS(SELECT 1 FROM memory_subject_permissions p WHERE p.tenant_id=m.tenant_id AND p.product_id=m.product_id AND p.caller_subject_id=? AND p.data_subject_id=m.data_subject_id AND p.action=? AND p.enabled=1 AND p.expires_at>UTC_TIMESTAMP(6) AND p.allowed_use='PRIVATE_RESPONSE')", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, actor, n.SubjectID, action).Scan(&b, &epoch)
+	e = read.QueryRowContext(ctx, "SELECT m.document,w.privacy_epoch FROM memory_aggregates m JOIN runtime_instances i ON i.tenant_id=m.tenant_id AND i.product_id=m.product_id AND i.world_instance_id=m.world_instance_id JOIN world_controls w ON w.tenant_id=i.tenant_id AND w.product_id=i.product_id AND w.world_instance_id=i.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id JOIN subject_governance g ON g.tenant_id=m.tenant_id AND g.product_id=m.product_id AND g.subject_id=m.data_subject_id WHERE m.tenant_id=? AND m.product_id=? AND m.world_instance_id=? AND m.data_subject_id=? AND i.owner_subject_id=? AND r.available=1 AND g.enabled=1 AND EXISTS(SELECT 1 FROM actors a WHERE a.tenant_id=m.tenant_id AND a.product_id=m.product_id AND a.world_instance_id=m.world_instance_id AND a.actor_id=?) AND EXISTS(SELECT 1 FROM memory_subject_permissions p WHERE p.tenant_id=m.tenant_id AND p.product_id=m.product_id AND p.caller_subject_id=? AND p.data_subject_id=m.data_subject_id AND p.action=? AND p.enabled=1 AND p.expires_at>UTC_TIMESTAMP(6) AND p.allowed_use='PRIVATE_RESPONSE')", n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, actor, n.SubjectID, action).Scan(&b, &epoch)
 	if e != nil {
 		return empty, 0, store.ErrDenied
+	}
+	if e = read.Finish(ctx); e != nil {
+		return empty, 0, e
 	}
 	e = json.Unmarshal(b, &empty)
 	return empty, epoch, e

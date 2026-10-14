@@ -38,7 +38,7 @@ func (s *Service) PlanDraftGenerationLocks(ctx context.Context, scope domain.Pro
 	if e != nil {
 		return nil, e
 	}
-	return append(keys, Key(scope, "content_draft", selection.DraftID)), nil
+	return append(append(keys, Key(scope, "content_draft", selection.DraftID)), store.RoutePolicyLocks(scope)...), nil
 }
 func (s *Service) InspectDraftGenerationTx(ctx context.Context, tx store.Tx, scope domain.ProductScope, selection domain.DraftCandidateSelection) (DraftGeneration, error) {
 	out, e := draftGenerationCoreTx(ctx, tx, scope, selection.DraftID, selection.Revision, selection.ObjectID, selection.ModuleID)
@@ -113,8 +113,9 @@ func (s *Service) PlanCandidateLocks(ctx context.Context, scope domain.ProductSc
 	if e != nil {
 		return nil, e
 	}
-	return append(keys, Key(scope, "content_draft", selection.DraftID)), nil
+	return append(append(keys, Key(scope, "content_draft", selection.DraftID)), store.RoutePolicyLocks(scope)...), nil
 }
+// Build material from the current revision, qualified authoring route and selected source graph; the hashes bind this material, not a reusable permission to read source bytes or use WORLD memory.
 func (s *Service) BuildCandidateTx(ctx context.Context, tx store.Tx, scope domain.ProductScope, selection domain.DraftCandidateSelection) (domain.DraftCandidateMaterial, error) {
 	var out domain.DraftCandidateMaterial
 	resolved, e := CandidateGenerationTx(ctx, tx, scope, selection.DraftID, selection.Revision, selection.ObjectID, selection.ModuleID)
@@ -188,23 +189,18 @@ func (s *Service) BuildCandidateTx(ctx context.Context, tx store.Tx, scope domai
 		project = string(*resolved.Draft.ProjectID)
 	}
 	hash := sha256.Sum256(canonical)
-	return domain.DraftCandidateMaterial{Selection: selection, DraftHash: resolved.Draft.ContentHash, RouteHash: resolved.RouteHash, RequestHash: hex.EncodeToString(hash[:]), ProjectID: project, Connection: MockConnection, Model: MockModel, Canonical: canonical, InputBound: store.MockInputLimit, OutputBound: outputBound, SourceHash: sourceHash, Sources: sources}, nil
+	return domain.DraftCandidateMaterial{RoutePolicy: resolved.RoutePolicy, Selection: selection, DraftHash: resolved.Draft.ContentHash, RouteHash: resolved.RouteHash, RequestHash: hex.EncodeToString(hash[:]), ProjectID: project, Connection: MockConnection, Model: MockModel, Canonical: canonical, InputBound: store.MockInputLimit, OutputBound: outputBound, SourceHash: sourceHash, Sources: sources}, nil
 }
 
 // CandidateGenerationTx is the fixed owner of draft generation qualification.
 // It reads only authoring definitions. It never authorizes WORLD memory use.
 func CandidateGenerationTx(ctx context.Context, tx store.Tx, scope domain.ProductScope, draft string, revision uint64, object, module string) (DraftGeneration, error) {
 	var out DraftGeneration
-	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" || scope.SubjectID != "creator" {
+	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" {
 		return out, store.ErrDenied
 	}
-	var allowed bool
-	e := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN operator_actions a ON a.credential_id=c.credential_id WHERE c.credential_id='owner' AND c.tenant_id=? AND c.product_id=? AND c.subject_id=? AND c.enabled=1 AND a.action='content.assist')", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&allowed)
-	if e != nil {
+	if e := store.CheckOperatorTx(ctx, tx, scope, "content.assist"); e != nil {
 		return out, e
-	}
-	if !allowed {
-		return out, store.ErrDenied
 	}
 	return draftGenerationCoreTx(ctx, tx, scope, draft, revision, object, module)
 }
@@ -296,7 +292,11 @@ func draftGenerationCoreTx(ctx context.Context, tx store.Tx, scope domain.Produc
 	if len(out.Fields) == 0 {
 		return out, nil
 	}
-	settings, enabled, e := effectiveDraftCandidateRoute(d.Input, object, module, resolved)
+	out.RoutePolicy, e = store.ReadRoutePolicyTx(ctx, tx, scope)
+	if e != nil {
+		return out, e
+	}
+	settings, enabled, e := effectiveDraftCandidateRoute(d.Input, object, module, resolved, out.RoutePolicy)
 	out.Settings = settings
 	if e != nil {
 		return out, nil

@@ -31,6 +31,7 @@ type rehearsalIntakeProvision struct {
 
 // This fixed internal intake is not exposed until the registered isolated
 // executor and its full accounting obligations are installed.
+// An exact original receipt reuses the accepted rehearsal; a new intake verifies source bytes and rebuilds the same binding in its owning transaction before persisting the original inputs and limits.
 func (s *Store) AcceptDraftRehearsal(ctx context.Context, scope domain.ProductScope, draft, key string, request generated.RehearsalRequest) (out generated.AdminTaskReceipt, err error) {
 	ctx, close, e := s.EnterOperation(ctx)
 	if e != nil {
@@ -110,6 +111,9 @@ func (s *Store) AcceptDraftRehearsal(ctx context.Context, scope domain.ProductSc
 	_, _, e = s.barrier(ctx, r, func(tx Tx) error {
 		u := tx.(*unit)
 		if e := s.checkRehearsalIntakeFinish(ctx, u, r); e != nil {
+			return e
+		}
+		if e := CheckNewRouteAdmissionTx(ctx, tx, scope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
 			return e
 		}
 		if e := rehearsalProjectIdentity(ctx, u.tx, scope, m); e != nil {
@@ -199,8 +203,11 @@ func (u *unit) PurgeRehearsalInputs(ctx context.Context, scope domain.ProductSco
 
 func (s *Store) rehearsalGates(ctx context.Context, scope domain.ProductScope) (GateVersions, error) {
 	var g GateVersions
+	if e := s.CheckOperator(ctx, scope, "content.rehearse"); e != nil {
+		return g, e
+	}
 	var ok bool
-	e := s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled AND s.can_execute AND EXISTS(SELECT 1 FROM operator_credentials c JOIN operator_actions a USING(credential_id) WHERE c.credential_id='owner' AND c.tenant_id=s.tenant_id AND c.product_id=s.product_id AND c.subject_id=s.subject_id AND c.enabled=1 AND a.action='content.rehearse') FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&g.Tenant, &g.Product, &g.Subject, &g.Privacy, &g.View, &ok)
+	e := s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled AND s.can_execute FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&g.Tenant, &g.Product, &g.Subject, &g.Privacy, &g.View, &ok)
 	if e == nil && !ok {
 		e = ErrDenied
 	}
@@ -238,7 +245,7 @@ func (s *Store) checkRehearsalIntakeFinish(ctx context.Context, u *unit, r Barri
 	return nil
 }
 func rehearsalProjectIdentity(ctx context.Context, tx *sql.Tx, scope domain.ProductScope, m domain.RehearsalBinding) error {
-	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" || scope.SubjectID != "creator" {
+	if scope.TenantID != "demo-local" || scope.ProductID != "coffee" {
 		return ErrDenied
 	}
 	var ok bool
@@ -300,6 +307,9 @@ func (s *Store) InspectRehearsalSourceMaterial(ctx context.Context, scope domain
 	key := turnIdentity(scope.TenantID, scope.ProductID, scope.SubjectID, m.DraftID, m.SourceHash, "rehearsal-source-inspection")
 	r := BarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, Operation: "REHEARSAL_SOURCE_INSPECT", CommandKey: key, CommitKey: key, GateVersions: g, Locks: keys, commandOnly: true}
 	_, _, e = s.barrier(ctx, r, func(tx Tx) error {
+		u := tx.(*unit)
+		u.routePolicyFrozen = true
+		u.routePolicy = m.RoutePolicy
 		current, e := s.DraftRehearsalOwner.BuildRehearsalTx(ctx, tx, scope, m.DraftID, request)
 		if e != nil {
 			return e

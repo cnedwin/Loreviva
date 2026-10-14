@@ -75,8 +75,8 @@ func TestTurnCanonicalContainsActualBoundedWorldPerception(t *testing.T) {
 func TestPerceptionUsesRealSceneVisibilityAndHidesReferences(t *testing.T) {
 	for _, scenario := range []string{"actor-scoped", "cross-scene", "over-cap"} {
 		t.Run(scenario, func(t *testing.T) {
-			ctx := context.Background()
 			r, s, seed := runtimeFixtureWithConsent(t, true)
+			ctx := runtimeContext(t, r)
 			base, e := r.Content.GetRelease(ctx, s, seed)
 			if e != nil {
 				t.Fatal(e)
@@ -437,7 +437,7 @@ func TestOriginalWorldSnapshotSurvivesActualRelatedAction(t *testing.T) {
 	if e = r.Store.DB.QueryRow("SELECT document FROM harness_attempt_contexts WHERE task_id=?", task).Scan(&snapshotBefore); e != nil {
 		t.Fatal(e)
 	}
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -473,7 +473,7 @@ func TestApprovedOriginalWorldConflictDoesNotCommitOrBuy(t *testing.T) {
 	if e := r.Store.DB.QueryRow("SELECT document FROM harness_candidate_approvals WHERE task_id=?", task).Scan(&approvalBefore); e != nil {
 		t.Fatal(e)
 	}
-	instance, e := r.World.GetInstance(ctx, scope)
+	instance, e := r.World.GetInstance(runtimeContextWithParent(t, r, ctx), scope)
 	if e != nil {
 		t.Fatal(e)
 	}

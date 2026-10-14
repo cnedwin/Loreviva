@@ -78,6 +78,13 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 	newID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "copy", key)
 	newProject := Identity(newID, "project")
 	locks := []store.LockKey{Key(scope, "content_draft", id), Key(scope, "content_check", reportID)}
+	if action == "REMOVE_BINDING" {
+		snapshot, e := s.snapshotDraft(ctx, scope, id)
+		if e != nil {
+			return nil, e
+		}
+		locks = append(locks, dependencyLocks(scope, snapshot.Input)...)
+	}
 	if action == "COPY" {
 		locks = append(locks, Key(scope, "content_draft", newID))
 		if project.Valid {
@@ -88,6 +95,7 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 		Revision                      uint64
 		Action, Report, Restore, Name string
 	}{expected, action, reportID, restoreRevision, copyName}, locks, func(tx store.Tx) (any, error) {
+		// A new lifecycle effect must match the stored impact report's revision, hash, action and expiry. Binding removal recomputes its selected targets, and whole-draft deletion still refuses retained releases.
 		d, e := current(ctx, tx, scope, id, expected)
 		if e != nil {
 			return nil, e
@@ -133,6 +141,31 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 			return nil, ErrBlocked
 		}
 		switch action {
+		case "REMOVE_BINDING":
+			selected := make([]string, 0, len(report.SelectedTargets))
+			for _, target := range report.SelectedTargets {
+				if target.Kind != "MODULE_BINDING" && target.Kind != "SKILL_BINDING" {
+					return nil, ErrBlocked
+				}
+				selected = append(selected, string(target.TargetID))
+			}
+			resolved, dependencyFindings, e := resolvePinned(ctx, tx, scope, d.Input)
+			if e != nil {
+				return nil, e
+			}
+			targets, _, _, findings, e := staticImpact(d, action, selected, resolved)
+			if e != nil || len(findings) > 0 || len(dependencyFindings) > 0 {
+				return nil, ErrBlocked
+			}
+			actual, _ := json.Marshal(targets)
+			planned, _ := json.Marshal(report.SelectedTargets)
+			if string(actual) != string(planned) {
+				return nil, ErrBlocked
+			}
+			d.Input, e = Prepare(selectedInput(d.Input, targets, false))
+			if e != nil {
+				return nil, e
+			}
 		case "ARCHIVE":
 			d.State = "ARCHIVED"
 		case "RESTORE":

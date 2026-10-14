@@ -161,8 +161,9 @@ func (s *MemoryService) RenderPrivateText(ctx context.Context, n Namespace, acto
 	asset := content.Key(n.ProductScope, "asset", id)
 	locks := []store.LockKey{asset, s.Files.DerivedStageLock(n.ProductScope, stage)}
 	payload := []any{n, node, original.Revision, lineageHash(a, original), key}
+	// Stage and bind only bytes derived from the verified node, rechecking current permission and lineage in those transactions; readiness still requires the current node revision and no deletion intent.
 	e = s.mutateLocks(ctx, n, key, "MEMORY_DERIVED_STAGE", payload, locks, func(tx store.Tx, current *Aggregate) error {
-		if e := authorizeTx(ctx, tx, n, "memory.private_body.read"); e != nil {
+		if e := authorizeUserTx(ctx, tx, n, "memory.private_body.read"); e != nil {
 			return e
 		}
 		eligible := false
@@ -208,7 +209,7 @@ func (s *MemoryService) RenderPrivateText(ctx context.Context, n Namespace, acto
 	}
 
 	e = s.mutateLocks(ctx, n, key, "MEMORY_DERIVED_FILE", payload, locks, func(tx store.Tx, current *Aggregate) error {
-		if e := authorizeTx(ctx, tx, n, "memory.private_body.read"); e != nil {
+		if e := authorizeUserTx(ctx, tx, n, "memory.private_body.read"); e != nil {
 			return e
 		}
 		eligible := false
@@ -255,7 +256,7 @@ func (s *MemoryService) RenderPrivateText(ctx context.Context, n Namespace, acto
 		return "", e
 	}
 	e = s.mutateLocks(ctx, n, key, "MEMORY_DERIVED_READY", payload, locks, func(tx store.Tx, current *Aggregate) error {
-		if e := authorizeTx(ctx, tx, n, "memory.private_body.read"); e != nil {
+		if e := authorizeUserTx(ctx, tx, n, "memory.private_body.read"); e != nil {
 			return e
 		}
 		eligible := false

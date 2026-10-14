@@ -17,8 +17,8 @@ import (
 func TestRehearsalWorkerOriginalRecovery(t *testing.T) {
 	for _, mode := range []string{"REPLY_LOST", "REPORT_ACK_COMMIT", "REPORT_ACK_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -103,8 +103,8 @@ func TestRehearsalRegisteredWorker(t *testing.T) {
 			name = "REPAIR"
 		}
 		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED","RIGHTS","DUTIES","SIGN_CUSTODY"]}`), &req); e != nil {
@@ -164,8 +164,8 @@ func TestRehearsalRegisteredWorker(t *testing.T) {
 }
 
 func TestRehearsalKnownRefusalProducesHonestCompleteReport(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED","RIGHTS"]}`), &req); e != nil {
@@ -209,8 +209,8 @@ func TestRehearsalKnownRefusalProducesHonestCompleteReport(t *testing.T) {
 }
 
 func TestRehearsalFinalStructureRejectionProducesHonestCompleteReport(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED","RIGHTS"]}`), &req); e != nil {

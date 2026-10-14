@@ -20,8 +20,8 @@ import (
 func TestRehearsalNegativeHistoryAndUnknown(t *testing.T) {
 	for _, mode := range []string{"FINAL_STRUCTURE_HISTORY", "UNKNOWN_USAGE", "UNKNOWN"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -178,8 +178,8 @@ func TestRehearsalNegativeHistoryAndUnknown(t *testing.T) {
 func TestRehearsalNegativeAtomicRecovery(t *testing.T) {
 	for _, mode := range []string{"CUTOFF", "MIXED", "COMMIT_ACK", "ROLLBACK_ACK", "SOURCE", "REHEARSE", "FENCE", "RECEIPT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""},{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED","RIGHTS"]}`), &req); e != nil {

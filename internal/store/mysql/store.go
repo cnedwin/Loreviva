@@ -26,6 +26,7 @@ var ErrReplan = errors.New("lock absent from frozen plan; rollback and replan wh
 // conservative UNKNOWN. It may not perform provider/network work. BeforeCommit
 // is an optional local pre-commit validation seam and always rolls back on error.
 type Store struct {
+	StudioConsentOwner       StudioConsentOwner
 	RehearsalPurgeOwner      RehearsalPurgeOwner
 	TurnSkills               TurnSkillOwner
 	RehearsalReportReader    RehearsalReportReader
@@ -48,8 +49,11 @@ type Store struct {
 	Guard                    OperationGuard
 	DB                       *sql.DB
 	BeforeCommit             func(context.Context, *sql.Tx) error
-	Commit                   func(context.Context, *sql.Tx) error
-	Trace                    func(LockKey)
+	// BeforeReadFinish is a read-only transaction verification seam. It does not
+	// run mutation/commit fault injection during unrelated owning reads.
+	BeforeReadFinish func(context.Context, *sql.Tx) error
+	Commit           func(context.Context, *sql.Tx) error
+	Trace            func(LockKey)
 }
 type OperationGuard interface {
 	EnterStore(context.Context) (context.Context, func(), error)
@@ -111,6 +115,9 @@ const (
 )
 
 type BarrierRequest struct {
+	operator                                                           *currentOperator
+	operatorActions                                                    []string
+	contentAction                                                      string
 	rehearsalPurgeACK                                                  *rehearsalPurgeACK
 	draftResolution                                                    bool
 	rehearsalNegative                                                  *rehearsalNegativeGuard
@@ -160,6 +167,7 @@ type BarrierRequest struct {
 	r0TurnProvision                                                    bool
 }
 type CommandBarrierRequest struct {
+	ContentAction                                    string
 	Runtime                                          *RuntimeBinding
 	ProductScope                                     domain.ProductScope
 	WorldScope                                       *domain.Scope
@@ -238,7 +246,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return errors.New("schema migration lock unavailable")
 	}
 	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK('loreviva.core.schema')")
-	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt} {
+	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
 		e = conn.QueryRowContext(ctx, "SELECT sha256 FROM schema_migrations WHERE version=?", version+1).Scan(&existing)
@@ -255,8 +263,19 @@ func (s *Store) Migrate(ctx context.Context) error {
 				return errors.New("cannot verify migration state")
 			}
 		}
+		if version == 6 {
+			if e = studioMigrationPreflight(ctx, conn); e != nil {
+				return e
+			}
+		}
 		for _, statement := range strings.Split(source, ";") {
 			if strings.TrimSpace(statement) == "" {
+				continue
+			}
+			if version == 6 {
+				if e = migrateStudioStatement(ctx, conn, statement); e != nil {
+					return e
+				}
 				continue
 			}
 			if version == 3 && strings.HasPrefix(strings.TrimSpace(statement), "ALTER TABLE world_controls") {
@@ -268,6 +287,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 			if _, e = conn.ExecContext(ctx, statement); e != nil {
 				return fmt.Errorf("core migration failed: %w", e)
 			}
+		}
+		if version == 6 {
+			if e = finalizeStudioMigration(ctx, conn, sum); e != nil {
+				return e
+			}
+			continue
 		}
 		if _, e = conn.ExecContext(ctx, "INSERT INTO schema_migrations(version,sha256) VALUES(?,?)", version+1, sum[:]); e != nil {
 			return e
@@ -300,10 +325,26 @@ func (s *Store) Readiness(ctx context.Context, prerequisites ...func(context.Con
 	}
 	return nil
 }
+// Before commit, recheck the applicable operator, owning-proof and lease conditions. Any commit transport error becomes UNKNOWN and must be resolved through the original receipt, not assumed to be rollback.
 func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning ...*unit) error {
 	if s.BeforeCommit != nil {
 		if e := s.BeforeCommit(ctx, tx); e != nil {
 			return e
+		}
+	}
+	if e := s.checkOperatorBarrier(ctx, tx, r); e != nil {
+		return e
+	}
+	if len(owning) == 1 && owning[0] != nil {
+		if owning[0].newRouteAdmission {
+			if e := checkNewRouteAdmission(ctx, tx, r.ProductScope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
+				return e
+			}
+		}
+		for _, a := range owning[0].memoryHTTPActions {
+			if e := operatorActionTx(ctx, tx, s, r.ProductScope, a); e != nil {
+				return e
+			}
 		}
 	}
 	if r.rehearsalPurgeACK != nil {

@@ -1,3 +1,11 @@
 packages:
   - packages/*
   - apps/*
+engineStrict: true
+strictPeerDependencies: true
+autoInstallPeers: false
+strictDepBuilds: true
+allowBuilds: {}
+minimumReleaseAgeStrict: true
+minimumReleaseAgeExclude:
+  - '@types/node@24.19.2'

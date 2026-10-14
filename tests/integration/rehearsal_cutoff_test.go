@@ -22,8 +22,8 @@ type rehearsalCutoffOwner interface {
 func TestRehearsalCutoffOldWritersAndFinisher(t *testing.T) {
 	for _, mode := range []string{"UNSENT", "MARKER", "CHILD_COMMITTED", "CHILD_COMMIT_UNKNOWN", "CANCEL", "MISSING_J", "FINISH_SERVICE", "FINISH_BINDING", "FINISH_HOLD", "ACK_COMMIT", "ACK_ROLLBACK"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -221,8 +221,8 @@ func TestRehearsalCutoffOldWritersAndFinisher(t *testing.T) {
 func TestRehearsalOriginalRootCutoff(t *testing.T) {
 	for _, mode := range []string{"UNSTARTED", "SENT_UNKNOWN", "REPORT_COMMITTED", "SCANNER"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, draft, _ := candidateHTTPFixture(t)
+			ctx := runtimeContext(t, r)
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 			var req generated.RehearsalRequest
 			if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {
@@ -306,8 +306,8 @@ func TestRehearsalOriginalRootCutoff(t *testing.T) {
 }
 
 func TestRehearsalCutoffTaskLockFailedRetry(t *testing.T) {
-	ctx := context.Background()
 	r, draft, _ := candidateHTTPFixture(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	var req generated.RehearsalRequest
 	if e := generated.Decode("RehearsalRequest", []byte(`{"product_id":"coffee","expected_draft_revision":"1","mode":"MOCK","fixture":"COFFEE","inputs":[{"actor_slot":"mia","text":""}],"max_cost_units":"0","assertions":["ISOLATED"]}`), &req); e != nil {

@@ -7,16 +7,8 @@ import (
 	"loreviva.local/loreviva/internal/domain"
 )
 
-func draftResolutionReadTx(ctx context.Context, tx *sql.Tx, scope domain.ProductScope) error {
-	var allowed bool
-	e := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN operator_actions a USING(credential_id) WHERE c.credential_id='owner' AND c.tenant_id=? AND c.product_id=? AND c.subject_id=? AND c.enabled=1 AND a.action='content.read')", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&allowed)
-	if e != nil {
-		return e
-	}
-	if !allowed {
-		return ErrDenied
-	}
-	return nil
+func (s *Store) draftResolutionReadTx(ctx context.Context, tx *sql.Tx, scope domain.ProductScope) error {
+	return operatorActionTx(ctx, tx, s, scope, "content.read")
 }
 
 // The only mint for S59's fixed pure resolution guard. No caller-selected

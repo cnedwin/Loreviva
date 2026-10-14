@@ -1,17 +1,16 @@
 package content_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/generated"
+	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"testing"
 )
 
 func TestPinnedRoleResolvesDutyAndInheritedRouteWithoutInlining(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	raw := in.Objects[len(in.Objects)-1]
 	var role map[string]any
@@ -85,15 +84,16 @@ func TestPinnedRoleResolvesDutyAndInheritedRouteWithoutInlining(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
-	od, e := s.Create(ctx, other, "ROLE", "", resource, "outside-role")
+	otherCtx := testprincipal.Register(t, s.Store, other)
+	od, e := s.Create(otherCtx, other, "ROLE", "", resource, "outside-role")
 	if e != nil {
 		t.Fatal(e)
 	}
-	oc, e := s.CheckPublish(ctx, other, string(od.DraftID), 1, []string{"MOCK_DEMO"}, "outside-check")
+	oc, e := s.CheckPublish(otherCtx, other, string(od.DraftID), 1, []string{"MOCK_DEMO"}, "outside-check")
 	if e != nil || !oc.Passed {
 		t.Fatal(oc, e)
 	}
-	or, e := s.Publish(ctx, other, string(od.DraftID), 1, string(oc.ReportID), []string{"MOCK_DEMO"}, "outside-publish")
+	or, e := s.Publish(otherCtx, other, string(od.DraftID), 1, string(oc.ReportID), []string{"MOCK_DEMO"}, "outside-publish")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -111,8 +111,7 @@ func TestPinnedRoleResolvesDutyAndInheritedRouteWithoutInlining(t *testing.T) {
 }
 
 func TestPinnedResolutionRejectsCyclesAndExcessiveDepth(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	for _, count := range []int{1, 70} {
 		in := coffee(t)
 		template := in.Objects[len(in.Objects)-1]
@@ -162,8 +161,7 @@ func TestPinnedResolutionRejectsCyclesAndExcessiveDepth(t *testing.T) {
 }
 
 func TestPinnedCharacterVersionsKeepQualifiedGenerationOwners(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	refs := []map[string]any{}
 	locks := []generated.DependencyLock{}

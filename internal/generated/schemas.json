@@ -8411,6 +8411,3106 @@
           "items"
         ],
         "additionalProperties": false
+      },
+      "StudioSettingsScope": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope_type": {
+                "const": "TENANT"
+              },
+              "tenant_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "scope_type",
+              "tenant_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope_type": {
+                "const": "PRODUCT"
+              },
+              "tenant_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "product_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "scope_type",
+              "tenant_id",
+              "product_id"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioSettingsCommandKind": {
+        "type": "string",
+        "enum": [
+          "SET_DEFAULTS",
+          "SET_QUOTA_POLICY",
+          "UPSERT_CONNECTION_METADATA",
+          "DISABLE_CONNECTION",
+          "SET_LOCAL_NOTIFICATIONS",
+          "SET_SCOPE_GRANT",
+          "SET_CREDENTIAL_STATE",
+          "INITIAL",
+          "RENEW",
+          "REVOKE"
+        ]
+      },
+      "StudioSettingsBasis": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/StudioSettingsScope"
+          },
+          "credential_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "allowed_commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioSettingsCommandKind"
+            },
+            "minItems": 0,
+            "maxItems": 10,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "scope",
+          "credential_id",
+          "server_now",
+          "allowed_commands"
+        ],
+        "additionalProperties": false
+      },
+      "StudioModuleDefault": {
+        "type": "object",
+        "properties": {
+          "module_id": {
+            "type": "string",
+            "enum": [
+              "INTERACTION",
+              "PROACTIVE",
+              "AUTHORING",
+              "KNOWLEDGE_EXTRACTION",
+              "MEDIA",
+              "REHEARSAL",
+              "EVALUATION"
+            ]
+          },
+          "generation_settings": {
+            "$ref": "#/components/schemas/GenerationSettings"
+          }
+        },
+        "required": [
+          "module_id",
+          "generation_settings"
+        ],
+        "additionalProperties": false
+      },
+      "StudioDefaults": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "product_pack_ref": {
+            "type": "null"
+          },
+          "module_defaults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioModuleDefault"
+            },
+            "minItems": 0,
+            "maxItems": 7,
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "INTERACTION"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "PROACTIVE"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "AUTHORING"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "KNOWLEDGE_EXTRACTION"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "MEDIA"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "REHEARSAL"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "module_id": {
+                      "const": "EVALUATION"
+                    }
+                  },
+                  "required": [
+                    "module_id"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
+              }
+            ]
+          }
+        },
+        "required": [
+          "revision",
+          "product_pack_ref",
+          "module_defaults"
+        ],
+        "additionalProperties": false
+      },
+      "StudioQuotaPolicyBinding": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "policy_ref": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Identity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hard_limit_source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "revision",
+          "policy_ref",
+          "hard_limit_source"
+        ],
+        "additionalProperties": false
+      },
+      "StudioConnectionMetadata": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "connection_id": {
+                "const": "mock-local"
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "provider_ref": {
+                "const": "r0-mock-provider"
+              },
+              "model_id": {
+                "const": "synthetic-text-v1"
+              },
+              "endpoint_alias_ref": {
+                "type": "null"
+              },
+              "secret_alias_ref": {
+                "type": "null"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "DISABLED",
+                  "UNVERIFIED"
+                ]
+              }
+            },
+            "required": [
+              "connection_id",
+              "revision",
+              "name",
+              "provider_ref",
+              "model_id",
+              "endpoint_alias_ref",
+              "secret_alias_ref",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "connection_id": {
+                "type": "string",
+                "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                "not": {
+                  "const": "mock-local"
+                }
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "provider_ref": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "model_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "endpoint_alias_ref": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "secret_alias_ref": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "DISABLED",
+                  "UNVERIFIED",
+                  "R1_REQUIRED"
+                ]
+              }
+            },
+            "required": [
+              "connection_id",
+              "revision",
+              "name",
+              "provider_ref",
+              "model_id",
+              "endpoint_alias_ref",
+              "secret_alias_ref",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioLocalNotificationPreference": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "channel": {
+            "const": "LOCAL_DISPLAY"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TASK_STATUS",
+                "CONSENT_EXPIRY"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2,
+            "uniqueItems": true
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "IMMEDIATE",
+              "ON_OPEN"
+            ]
+          }
+        },
+        "required": [
+          "revision",
+          "channel",
+          "enabled",
+          "events",
+          "frequency"
+        ],
+        "additionalProperties": false
+      },
+      "StudioInstallationStorageMetadata": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "enum": [
+              "LOCAL_PRIVATE_FILES"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE",
+              "UNKNOWN"
+            ]
+          },
+          "restart_required": {
+            "type": "boolean"
+          },
+          "capacity_bytes": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capacity_source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "adapter",
+          "source",
+          "state",
+          "restart_required",
+          "capacity_bytes",
+          "capacity_source"
+        ],
+        "additionalProperties": false
+      },
+      "StudioSettingsReferenceCatalog": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "ref_id",
+                "label",
+                "enabled",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "endpoint_aliases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "ref_id",
+                "label",
+                "enabled",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "secret_aliases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "ref_id",
+                "label",
+                "enabled",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "quota_policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "ref_id",
+                "label",
+                "enabled",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "product_packs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "ref_id",
+                "label",
+                "enabled",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "providers",
+          "endpoint_aliases",
+          "secret_aliases",
+          "quota_policies",
+          "product_packs"
+        ],
+        "additionalProperties": false
+      },
+      "StudioGrant": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "TENANT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "settings.read",
+                  "settings.defaults.write",
+                  "settings.quota.write",
+                  "settings.connection.write",
+                  "settings.notifications.write",
+                  "members.manage"
+                ]
+              },
+              "use": {
+                "const": "TENANT_SETTINGS"
+              },
+              "effect": {
+                "type": "string",
+                "enum": [
+                  "ALLOW",
+                  "DENY"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "effect",
+              "enabled",
+              "expires_at",
+              "revision"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "settings.read",
+                  "settings.defaults.write",
+                  "settings.quota.write",
+                  "settings.connection.write",
+                  "settings.notifications.write",
+                  "members.manage"
+                ]
+              },
+              "use": {
+                "const": "PRODUCT_SETTINGS"
+              },
+              "effect": {
+                "type": "string",
+                "enum": [
+                  "ALLOW",
+                  "DENY"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "effect",
+              "enabled",
+              "expires_at",
+              "revision"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "TENANT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "const": "maintenance.manage"
+              },
+              "use": {
+                "const": "MAINTENANCE_COMMAND"
+              },
+              "effect": {
+                "type": "string",
+                "enum": [
+                  "ALLOW",
+                  "DENY"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "effect",
+              "enabled",
+              "expires_at",
+              "revision"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "content.read",
+                  "content.edit",
+                  "content.copy",
+                  "content.archive",
+                  "content.restore",
+                  "content.delete",
+                  "content.check",
+                  "content.publish",
+                  "content.rehearse",
+                  "content.assist",
+                  "task.read",
+                  "task.cancel",
+                  "asset.upload",
+                  "asset.read",
+                  "runtime.create",
+                  "runtime.read",
+                  "runtime.control",
+                  "runtime.migrate"
+                ]
+              },
+              "use": {
+                "const": "PRODUCT_ADMIN"
+              },
+              "effect": {
+                "type": "string",
+                "enum": [
+                  "ALLOW",
+                  "DENY"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "effect",
+              "enabled",
+              "expires_at",
+              "revision"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioDelegableGrant": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "TENANT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "settings.read",
+                  "settings.defaults.write",
+                  "settings.quota.write",
+                  "settings.connection.write",
+                  "settings.notifications.write",
+                  "members.manage"
+                ]
+              },
+              "use": {
+                "const": "TENANT_SETTINGS"
+              },
+              "max_expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "max_expires_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "settings.read",
+                  "settings.defaults.write",
+                  "settings.quota.write",
+                  "settings.connection.write",
+                  "settings.notifications.write",
+                  "members.manage"
+                ]
+              },
+              "use": {
+                "const": "PRODUCT_SETTINGS"
+              },
+              "max_expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "max_expires_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "TENANT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "const": "maintenance.manage"
+              },
+              "use": {
+                "const": "MAINTENANCE_COMMAND"
+              },
+              "max_expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "max_expires_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "content.read",
+                  "content.edit",
+                  "content.copy",
+                  "content.archive",
+                  "content.restore",
+                  "content.delete",
+                  "content.check",
+                  "content.publish",
+                  "content.rehearse",
+                  "content.assist",
+                  "task.read",
+                  "task.cancel",
+                  "asset.upload",
+                  "asset.read",
+                  "runtime.create",
+                  "runtime.read",
+                  "runtime.control",
+                  "runtime.migrate"
+                ]
+              },
+              "use": {
+                "const": "PRODUCT_ADMIN"
+              },
+              "max_expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "action",
+              "use",
+              "max_expires_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioMemberMetadata": {
+        "type": "object",
+        "properties": {
+          "credential_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "home_product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "credential_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "grant_set_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioGrant"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          }
+        },
+        "required": [
+          "credential_id",
+          "subject_id",
+          "home_product_id",
+          "enabled",
+          "expires_at",
+          "credential_revision",
+          "grant_set_revision",
+          "grants"
+        ],
+        "additionalProperties": false
+      },
+      "StudioSelfConsentState": {
+        "type": "string",
+        "enum": [
+          "NOT_GRANTED",
+          "ACTIVE",
+          "EXPIRED",
+          "REVOKED"
+        ]
+      },
+      "StudioSelfConsentSnapshot": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "object",
+            "properties": {
+              "scope_type": {
+                "const": "PRODUCT"
+              },
+              "tenant_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "product_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "scope_type",
+              "tenant_id",
+              "product_id"
+            ],
+            "additionalProperties": false
+          },
+          "credential_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "policy_id": {
+            "const": "R0_OWNER_PRIVATE_GENERATION_30D"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StudioSelfConsentState"
+          },
+          "consent_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "accepted_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_use_enabled": {
+            "type": "boolean"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "scope",
+          "credential_id",
+          "subject_id",
+          "policy_id",
+          "state",
+          "consent_revision",
+          "accepted_at",
+          "expires_at",
+          "current_use_enabled",
+          "server_now"
+        ],
+        "additionalProperties": false
+      },
+      "StudioSettingsSnapshot": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/StudioSettingsBasis"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/StudioDefaults"
+          },
+          "quota_policy": {
+            "$ref": "#/components/schemas/StudioQuotaPolicyBinding"
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioConnectionMetadata"
+            },
+            "minItems": 0,
+            "maxItems": 64
+          },
+          "local_notifications": {
+            "$ref": "#/components/schemas/StudioLocalNotificationPreference"
+          },
+          "installation_storage": {
+            "$ref": "#/components/schemas/StudioInstallationStorageMetadata"
+          },
+          "reference_catalog": {
+            "$ref": "#/components/schemas/StudioSettingsReferenceCatalog"
+          }
+        },
+        "required": [
+          "basis",
+          "defaults",
+          "quota_policy",
+          "connections",
+          "local_notifications",
+          "installation_storage",
+          "reference_catalog"
+        ],
+        "additionalProperties": false
+      },
+      "StudioMemberPage": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/StudioSettingsBasis"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioMemberMetadata"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "delegable_pairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioDelegableGrant"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "next_cursor": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "basis",
+          "items",
+          "delegable_pairs"
+        ],
+        "additionalProperties": false
+      },
+      "StudioSettingsCommandRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "SET_DEFAULTS"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "defaults": {
+                "type": "object",
+                "properties": {
+                  "product_pack_ref": {
+                    "type": "null"
+                  },
+                  "module_defaults": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/StudioModuleDefault"
+                    },
+                    "minItems": 0,
+                    "maxItems": 7,
+                    "allOf": [
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "INTERACTION"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "PROACTIVE"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "AUTHORING"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "KNOWLEDGE_EXTRACTION"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "MEDIA"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "REHEARSAL"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      },
+                      {
+                        "contains": {
+                          "type": "object",
+                          "properties": {
+                            "module_id": {
+                              "const": "EVALUATION"
+                            }
+                          },
+                          "required": [
+                            "module_id"
+                          ]
+                        },
+                        "minContains": 0,
+                        "maxContains": 1
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "product_pack_ref",
+                  "module_defaults"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "defaults"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "SET_QUOTA_POLICY"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "quota_policy_ref": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "quota_policy_ref"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "UPSERT_CONNECTION_METADATA"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "connection": {
+                "$ref": "#/components/schemas/StudioConnectionMetadata"
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "connection"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "DISABLE_CONNECTION"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "connection_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "connection_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "SET_LOCAL_NOTIFICATIONS"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "preference": {
+                "type": "object",
+                "properties": {
+                  "channel": {
+                    "const": "LOCAL_DISPLAY"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "TASK_STATUS",
+                        "CONSENT_EXPIRY"
+                      ]
+                    },
+                    "minItems": 0,
+                    "maxItems": 2,
+                    "uniqueItems": true
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": [
+                      "IMMEDIATE",
+                      "ON_OPEN"
+                    ]
+                  }
+                },
+                "required": [
+                  "channel",
+                  "enabled",
+                  "events",
+                  "frequency"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "preference"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioMemberCommandRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "kind": {
+                "const": "SET_SCOPE_GRANT"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "grant": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "type": "object",
+                        "properties": {
+                          "scope_type": {
+                            "const": "TENANT"
+                          },
+                          "tenant_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          }
+                        },
+                        "required": [
+                          "scope_type",
+                          "tenant_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "settings.read",
+                          "settings.defaults.write",
+                          "settings.quota.write",
+                          "settings.connection.write",
+                          "settings.notifications.write",
+                          "members.manage"
+                        ]
+                      },
+                      "use": {
+                        "const": "TENANT_SETTINGS"
+                      },
+                      "effect": {
+                        "type": "string",
+                        "enum": [
+                          "ALLOW",
+                          "DENY"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expires_at": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "action",
+                      "use",
+                      "effect",
+                      "enabled",
+                      "expires_at"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "type": "object",
+                        "properties": {
+                          "scope_type": {
+                            "const": "PRODUCT"
+                          },
+                          "tenant_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          },
+                          "product_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          }
+                        },
+                        "required": [
+                          "scope_type",
+                          "tenant_id",
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "settings.read",
+                          "settings.defaults.write",
+                          "settings.quota.write",
+                          "settings.connection.write",
+                          "settings.notifications.write",
+                          "members.manage"
+                        ]
+                      },
+                      "use": {
+                        "const": "PRODUCT_SETTINGS"
+                      },
+                      "effect": {
+                        "type": "string",
+                        "enum": [
+                          "ALLOW",
+                          "DENY"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expires_at": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "action",
+                      "use",
+                      "effect",
+                      "enabled",
+                      "expires_at"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "type": "object",
+                        "properties": {
+                          "scope_type": {
+                            "const": "TENANT"
+                          },
+                          "tenant_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          }
+                        },
+                        "required": [
+                          "scope_type",
+                          "tenant_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "action": {
+                        "const": "maintenance.manage"
+                      },
+                      "use": {
+                        "const": "MAINTENANCE_COMMAND"
+                      },
+                      "effect": {
+                        "type": "string",
+                        "enum": [
+                          "ALLOW",
+                          "DENY"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expires_at": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "action",
+                      "use",
+                      "effect",
+                      "enabled",
+                      "expires_at"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "type": "object",
+                        "properties": {
+                          "scope_type": {
+                            "const": "PRODUCT"
+                          },
+                          "tenant_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          },
+                          "product_id": {
+                            "$ref": "#/components/schemas/Identity"
+                          }
+                        },
+                        "required": [
+                          "scope_type",
+                          "tenant_id",
+                          "product_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "content.read",
+                          "content.edit",
+                          "content.copy",
+                          "content.archive",
+                          "content.restore",
+                          "content.delete",
+                          "content.check",
+                          "content.publish",
+                          "content.rehearse",
+                          "content.assist",
+                          "task.read",
+                          "task.cancel",
+                          "asset.upload",
+                          "asset.read",
+                          "runtime.create",
+                          "runtime.read",
+                          "runtime.control",
+                          "runtime.migrate"
+                        ]
+                      },
+                      "use": {
+                        "const": "PRODUCT_ADMIN"
+                      },
+                      "effect": {
+                        "type": "string",
+                        "enum": [
+                          "ALLOW",
+                          "DENY"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "expires_at": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "action",
+                      "use",
+                      "effect",
+                      "enabled",
+                      "expires_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "credential_id",
+              "subject_id",
+              "grant"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "TENANT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id"
+                ],
+                "additionalProperties": false
+              },
+              "kind": {
+                "const": "SET_CREDENTIAL_STATE"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "credential_id",
+              "subject_id",
+              "enabled",
+              "expires_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioSelfConsentCommandRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "kind": {
+                "const": "INITIAL"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "policy_id": {
+                "const": "R0_OWNER_PRIVATE_GENERATION_30D"
+              },
+              "accepted": {
+                "const": true
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "policy_id",
+              "accepted"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "kind": {
+                "const": "RENEW"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "policy_id": {
+                "const": "R0_OWNER_PRIVATE_GENERATION_30D"
+              },
+              "accepted": {
+                "const": true
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "policy_id",
+              "accepted"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "scope_type": {
+                    "const": "PRODUCT"
+                  },
+                  "tenant_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "product_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "scope_type",
+                  "tenant_id",
+                  "product_id"
+                ],
+                "additionalProperties": false
+              },
+              "kind": {
+                "const": "REVOKE"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "policy_id": {
+                "const": "R0_OWNER_PRIVATE_GENERATION_30D"
+              }
+            },
+            "required": [
+              "scope",
+              "kind",
+              "expected_revision",
+              "policy_id"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioCommandTarget": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "DEFAULTS"
+              }
+            },
+            "required": [
+              "section"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "QUOTA"
+              }
+            },
+            "required": [
+              "section"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "CONNECTION"
+              },
+              "connection_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "section",
+              "connection_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "NOTIFICATIONS"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "section",
+              "credential_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "MEMBERS"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "section",
+              "credential_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "CREDENTIAL"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "section",
+              "credential_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "section": {
+                "const": "SELF_CONSENT"
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "section",
+              "subject_id"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioLocalCommandReceipt": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SETTINGS"
+              },
+              "kind": {
+                "const": "SET_DEFAULTS"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "DEFAULTS"
+                  }
+                },
+                "required": [
+                  "section"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioDefaults"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SETTINGS"
+              },
+              "kind": {
+                "const": "SET_QUOTA_POLICY"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "QUOTA"
+                  }
+                },
+                "required": [
+                  "section"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioQuotaPolicyBinding"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SETTINGS"
+              },
+              "kind": {
+                "const": "UPSERT_CONNECTION_METADATA"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "CONNECTION"
+                  },
+                  "connection_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "connection_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioConnectionMetadata"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SETTINGS"
+              },
+              "kind": {
+                "const": "DISABLE_CONNECTION"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "CONNECTION"
+                  },
+                  "connection_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "connection_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioConnectionMetadata"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SETTINGS"
+              },
+              "kind": {
+                "const": "SET_LOCAL_NOTIFICATIONS"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "NOTIFICATIONS"
+                  },
+                  "credential_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "credential_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioLocalNotificationPreference"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "MEMBER"
+              },
+              "kind": {
+                "const": "SET_SCOPE_GRANT"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "MEMBERS"
+                  },
+                  "credential_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "credential_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioMemberMetadata"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "MEMBER"
+              },
+              "kind": {
+                "const": "SET_CREDENTIAL_STATE"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "CREDENTIAL"
+                  },
+                  "credential_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "credential_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioMemberMetadata"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SELF_CONSENT"
+              },
+              "kind": {
+                "const": "INITIAL"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "SELF_CONSENT"
+                  },
+                  "subject_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "subject_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioSelfConsentSnapshot"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SELF_CONSENT"
+              },
+              "kind": {
+                "const": "RENEW"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "SELF_CONSENT"
+                  },
+                  "subject_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "subject_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioSelfConsentSnapshot"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "$ref": "#/components/schemas/StudioSettingsScope"
+              },
+              "credential_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "family": {
+                "const": "SELF_CONSENT"
+              },
+              "kind": {
+                "const": "REVOKE"
+              },
+              "command_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "const": "SELF_CONSENT"
+                  },
+                  "subject_id": {
+                    "$ref": "#/components/schemas/Identity"
+                  }
+                },
+                "required": [
+                  "section",
+                  "subject_id"
+                ],
+                "additionalProperties": false
+              },
+              "result_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "committed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "$ref": "#/components/schemas/StudioSelfConsentSnapshot"
+              }
+            },
+            "required": [
+              "scope",
+              "credential_id",
+              "family",
+              "kind",
+              "command_key",
+              "target",
+              "result_revision",
+              "committed_at",
+              "result"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StudioLocalCommandError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "INVALID_REQUEST",
+              "VALIDATION_FAILED",
+              "IDEMPOTENCY_CONFLICT",
+              "SNAPSHOT_STALE",
+              "STATE_CONFLICT",
+              "VIEW_RESET",
+              "RATE_LIMITED",
+              "BUDGET_EXCEEDED",
+              "ALREADY_COMMITTED",
+              "EXTERNAL_UNKNOWN",
+              "DEPENDENCY_UNAVAILABLE",
+              "PAYMENT_GATE_PENDING"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "correlation_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "recovery_action": {
+            "type": "string",
+            "enum": [
+              "FIX_REQUEST",
+              "AUTHENTICATE",
+              "USE_ORIGINAL_KEY",
+              "QUERY_ORIGINAL_TASK",
+              "QUERY_ORIGINAL_ATTEMPT",
+              "FETCH_NEW_SNAPSHOT",
+              "WAIT_RETRY_AFTER",
+              "CONTACT_OPERATOR",
+              "NONE"
+            ]
+          },
+          "field_errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "conflict": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "$ref": "#/components/schemas/StudioCommandTarget"
+              },
+              "expected_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              },
+              "current_revision": {
+                "$ref": "#/components/schemas/ExactUnsigned"
+              }
+            },
+            "required": [
+              "target",
+              "expected_revision",
+              "current_revision"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "correlation_id",
+          "retryable",
+          "recovery_action"
+        ],
+        "additionalProperties": false
+      },
+      "DraftCandidateArtifact": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "background": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "biography": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "expression_style": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "example_lines": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 20
+              },
+              "instruction_template": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "minProperties": 1
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "RehearsalReportArtifact": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "const": "R0_REHEARSAL_REPORT_V1"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 19
+                },
+                "result_id": {
+                  "$ref": "#/components/schemas/Identity"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "COMMITTED",
+                    "REFUSED",
+                    "FAILED"
+                  ]
+                },
+                "supplier_reconciliation_state": {
+                  "type": "string",
+                  "enum": [
+                    "RECONCILED",
+                    "PENDING_VERIFICATION"
+                  ]
+                }
+              },
+              "required": [
+                "index",
+                "result_id",
+                "state",
+                "supplier_reconciliation_state"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ISOLATED",
+                    "DUTIES",
+                    "RIGHTS",
+                    "SIGN_CUSTODY"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "FAIL",
+                    "NOT_RUN"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "program",
+          "inputs",
+          "assertions"
+        ],
+        "additionalProperties": false
       }
     }
   }

@@ -335,8 +335,24 @@ func (r *Runtime) GetInstance(ctx context.Context, s domain.Scope) (generated.In
 	if _, e := content.Gate(ctx, r.Store, s.ProductScope); e != nil {
 		return out, e
 	}
+	read, e := r.Store.BeginOperatorRead(ctx, s.ProductScope, "runtime.read")
+	if e != nil {
+		return out, e
+	}
+	defer read.Close()
+	out, e = instanceRead(ctx, read, s)
+	if e != nil {
+		return out, e
+	}
+	if e = read.Finish(ctx); e != nil {
+		return generated.Instance{}, e
+	}
+	return out, nil
+}
+func instanceRead(ctx context.Context, read *store.OperatorRead, s domain.Scope) (generated.Instance, error) {
+	var out generated.Instance
 	var v domain.Versions
-	e := r.Store.DB.QueryRowContext(ctx, "SELECT w.status,w.release_id,w.world_revision,w.control_version,w.privacy_epoch,w.view_epoch,i.mode FROM world_controls w JOIN runtime_instances i ON i.tenant_id=w.tenant_id AND i.product_id=w.product_id AND i.world_instance_id=w.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id WHERE w.tenant_id=? AND w.product_id=? AND w.world_instance_id=? AND i.owner_subject_id=? AND r.available=1", s.TenantID, s.ProductID, s.WorldInstanceID, s.SubjectID).Scan(&out.InstanceState, &v.ReleaseID, &v.WorldRevision, &v.ControlVersion, &v.PrivacyEpoch, &v.ViewEpoch, &out.Mode)
+	e := read.QueryRowContext(ctx, "SELECT w.status,w.release_id,w.world_revision,w.control_version,w.privacy_epoch,w.view_epoch,i.mode FROM world_controls w JOIN runtime_instances i ON i.tenant_id=w.tenant_id AND i.product_id=w.product_id AND i.world_instance_id=w.world_instance_id JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id WHERE w.tenant_id=? AND w.product_id=? AND w.world_instance_id=? AND i.owner_subject_id=? AND r.available=1", s.TenantID, s.ProductID, s.WorldInstanceID, s.SubjectID).Scan(&out.InstanceState, &v.ReleaseID, &v.WorldRevision, &v.ControlVersion, &v.PrivacyEpoch, &v.ViewEpoch, &out.Mode)
 	if e != nil {
 		return out, content.ErrNotFound
 	}
@@ -371,7 +387,12 @@ func (r *Runtime) ListInstances(ctx context.Context, s domain.ProductScope, limi
 	if after != "" && domain.ValidateID(after) != nil {
 		return out, content.ErrBlocked
 	}
-	rows, e := r.Store.DB.QueryContext(ctx, "SELECT i.world_instance_id FROM runtime_instances i JOIN world_controls w USING(tenant_id,product_id,world_instance_id) JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id WHERE i.tenant_id=? AND i.product_id=? AND i.owner_subject_id=? AND i.world_instance_id>? AND r.available=1 ORDER BY i.world_instance_id LIMIT ?", s.TenantID, s.ProductID, s.SubjectID, after, limit+1)
+	read, e := r.Store.BeginOperatorRead(ctx, s, "runtime.read")
+	if e != nil {
+		return out, e
+	}
+	defer read.Close()
+	rows, e := read.QueryContext(ctx, "SELECT i.world_instance_id FROM runtime_instances i JOIN world_controls w USING(tenant_id,product_id,world_instance_id) JOIN releases r ON r.tenant_id=w.tenant_id AND r.product_id=w.product_id AND r.release_id=w.release_id WHERE i.tenant_id=? AND i.product_id=? AND i.owner_subject_id=? AND i.world_instance_id>? AND r.available=1 ORDER BY i.world_instance_id LIMIT ?", s.TenantID, s.ProductID, s.SubjectID, after, limit+1)
 	if e != nil {
 		return out, e
 	}
@@ -395,21 +416,30 @@ func (r *Runtime) ListInstances(ctx context.Context, s domain.ProductScope, limi
 		out.NextCursor = &next
 	}
 	for _, id := range ids {
-		i, e := r.GetInstance(ctx, domain.Scope{ProductScope: s, WorldInstanceID: id})
+		i, e := instanceRead(ctx, read, domain.Scope{ProductScope: s, WorldInstanceID: id})
 		if e != nil {
 			return out, e
 		}
 		out.Items = append(out.Items, i)
 	}
+	if e = read.Finish(ctx); e != nil {
+		return generated.AdminInstancePage{}, e
+	}
 	return out, nil
 }
+// Actor listing returns only the metadata projection after the scoped instance read and final authority check; stored actor definitions are not returned as body-read authority.
 func (r *Runtime) Actors(ctx context.Context, s domain.Scope) (generated.AdminActorPage, error) {
 	out := generated.AdminActorPage{Items: []generated.AdminActorMetadata{}}
-	i, e := r.GetInstance(ctx, s)
+	read, e := r.Store.BeginOperatorRead(ctx, s.ProductScope, "runtime.read")
 	if e != nil {
 		return out, e
 	}
-	rows, e := r.Store.DB.QueryContext(ctx, "SELECT document FROM actors WHERE tenant_id=? AND product_id=? AND world_instance_id=? ORDER BY actor_id LIMIT 1001", s.TenantID, s.ProductID, s.WorldInstanceID)
+	defer read.Close()
+	i, e := instanceRead(ctx, read, s)
+	if e != nil {
+		return out, e
+	}
+	rows, e := read.QueryContext(ctx, "SELECT document FROM actors WHERE tenant_id=? AND product_id=? AND world_instance_id=? ORDER BY actor_id LIMIT 1001", s.TenantID, s.ProductID, s.WorldInstanceID)
 	if e != nil {
 		return out, e
 	}
@@ -428,5 +458,12 @@ func (r *Runtime) Actors(ctx context.Context, s domain.Scope) (generated.AdminAc
 			return out, content.ErrBlocked
 		}
 	}
-	return out, rows.Err()
+	if e = rows.Err(); e != nil {
+		return out, e
+	}
+	rows.Close()
+	if e = read.Finish(ctx); e != nil {
+		return generated.AdminActorPage{}, e
+	}
+	return out, nil
 }

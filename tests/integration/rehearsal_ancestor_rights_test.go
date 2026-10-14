@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -15,8 +14,8 @@ import (
 )
 
 func TestRehearsalAncestorRightsAtExtraSendAndHistory(t *testing.T) {
-	ctx := context.Background()
 	r, draft, assets, req := physicalRehearsalDraft(t)
+	ctx := runtimeContext(t, r)
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	// The second actual uploaded asset is an ancestor of the first source.
 	// Both allowed audience policies are represented: direct EDITORS, ancestor READERS.

@@ -16,8 +16,8 @@ import (
 )
 
 func TestCandidateDraftQualificationUsesCurrentOwnerRouteAndPureRead(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -64,8 +64,8 @@ func TestCandidateDraftQualificationUsesCurrentOwnerRouteAndPureRead(t *testing.
 }
 
 func TestCandidateSameKeyCompetitionUsesOneOriginalBudget(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -97,8 +97,8 @@ func TestCandidateSameKeyCompetitionUsesOneOriginalBudget(t *testing.T) {
 func TestCandidateIntakeWholeTransactionUnknownAndWorkspaceCollision(t *testing.T) {
 	for _, mode := range []string{"ROLLBACK", "ACK_UNKNOWN", "PROJECT_COLLISION", "EXISTING_PROJECT", "WITHDRAW_BEFORE_COMMIT"} {
 		t.Run(mode, func(t *testing.T) {
-			ctx := context.Background()
 			r, scope, release := runtimeFixtureWithConsent(t, false)
+			ctx := runtimeContext(t, r)
 			published, e := r.Content.GetRelease(ctx, scope, release)
 			if e != nil {
 				t.Fatal(e)
@@ -200,8 +200,8 @@ func TestCandidateIntakeWholeTransactionUnknownAndWorkspaceCollision(t *testing.
 }
 
 func TestCandidateIntakeAtomicZeroBudgetAndOriginalReplay(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -257,8 +257,8 @@ func TestCandidateIntakeAtomicZeroBudgetAndOriginalReplay(t *testing.T) {
 }
 
 func TestCandidateCanonicalReadsOnlySupportedSelectedFields(t *testing.T) {
-	ctx := context.Background()
 	r, scope, release := runtimeFixtureWithConsent(t, false)
+	ctx := runtimeContext(t, r)
 	published, e := r.Content.GetRelease(ctx, scope, release)
 	if e != nil {
 		t.Fatal(e)
@@ -289,7 +289,7 @@ func TestCandidateCanonicalReadsOnlySupportedSelectedFields(t *testing.T) {
 		}
 		var material domain.DraftCandidateMaterial
 		sentinel := errors.New("actual read only end")
-		_, e = r.Store.WithCommandBarrier(ctx, store.CommandBarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, Operation: "CANDIDATE_SOURCE_TEST", CommandKey: "selected-fields", CommitKey: content.Identity("selected-fields"), GateVersions: g, PayloadHash: sha256.Sum256([]byte("selected-fields")), Locks: keys}, func(tx store.Tx) error {
+		_, e = r.Store.WithCommandBarrier(ctx, store.CommandBarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, Operation: "CANDIDATE_PREPARE", CommandKey: "selected-fields", CommitKey: content.Identity("selected-fields"), GateVersions: g, PayloadHash: sha256.Sum256([]byte("selected-fields")), Locks: keys}, func(tx store.Tx) error {
 			material, e = r.Content.BuildCandidateTx(ctx, tx, scope, sel)
 			if e != nil {
 				return e

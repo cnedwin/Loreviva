@@ -9,11 +9,12 @@ import (
 	"loreviva.local/loreviva/internal/generated"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/tests/integration/dbfixture"
+	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"os"
 	"testing"
 )
 
-func fixture(t *testing.T) (*content.Service, domain.ProductScope) {
+func fixture(t *testing.T) (*content.Service, domain.ProductScope, context.Context) {
 	t.Helper()
 	s := store.New(dbfixture.Open(t))
 	if e := s.Migrate(context.Background()); e != nil {
@@ -24,7 +25,8 @@ func fixture(t *testing.T) (*content.Service, domain.ProductScope) {
 			t.Fatal(e)
 		}
 	}
-	return content.New(s), domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
+	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
+	return content.New(s), scope, testprincipal.Register(t, s, scope)
 }
 func coffee(t *testing.T) generated.DraftInput {
 	t.Helper()
@@ -39,8 +41,7 @@ func coffee(t *testing.T) generated.DraftInput {
 	return input
 }
 func TestReleaseImmutableAndOldInstancePinned(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	d, e := s.Create(ctx, scope, "WORLD", "", in, "create")
 	if e != nil {
@@ -85,8 +86,7 @@ func TestReleaseImmutableAndOldInstancePinned(t *testing.T) {
 	}
 }
 func TestCopyExcludesRuntimeIdentityAndSecrets(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	d, e := s.Create(ctx, scope, "WORLD", "", in, "create")
 	if e != nil {
@@ -114,8 +114,7 @@ func TestCopyExcludesRuntimeIdentityAndSecrets(t *testing.T) {
 	}
 }
 func TestCoffeeSeedIdempotent(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	a, e := s.SeedCoffee(ctx, scope, "coffee-v1")
 	if e != nil {
 		t.Fatal(e)
@@ -133,8 +132,7 @@ func TestCoffeeSeedIdempotent(t *testing.T) {
 	}
 }
 func TestDutyCoverageEditablePresetAndWrongScope(t *testing.T) {
-	s, scope := fixture(t)
-	ctx := context.Background()
+	s, scope, ctx := fixture(t)
 	in := coffee(t)
 	d, e := s.Create(ctx, scope, "WORLD", "", in, "create")
 	if e != nil {

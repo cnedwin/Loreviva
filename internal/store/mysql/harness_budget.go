@@ -83,6 +83,8 @@ func (s *Store) QuoteHarness(ctx context.Context, c CommandBarrierRequest, q Har
 func (s *Store) AcceptHarness(ctx context.Context, c CommandBarrierRequest, in HarnessIntake) (CommitReceipt, error) {
 	return s.acceptHarness(ctx, c, in, nil)
 }
+// Freeze the original quote and separate service holds from the supplier-risk cap.
+// Create the task, holds and fixed execution/settlement deadlines in the same barrier transaction.
 func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in HarnessIntake, turn *turnIntake) (CommitReceipt, error) {
 	if c.Operation != "HARNESS_INTAKE" || c.Purpose != ExecutionPurpose || c.Runtime != nil || domain.ValidateID(in.TaskID) != nil || domain.ValidateID(in.QuoteID) != nil || in.TaskID == in.QuoteID {
 		return CommitReceipt{}, ErrDenied
@@ -128,6 +130,7 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 	r.originalSettlementService = settlement
 	if turn != nil {
 		r.PayloadHash = turn.Hash
+		r.Locks = append(r.Locks, NewRouteAdmissionLocks(c.ProductScope)...)
 		if e = s.planPerception(ctx, &r, turn.Request.PrimaryActorID); e != nil {
 			return CommitReceipt{}, e
 		}
@@ -140,6 +143,11 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 	r.Locks = append(r.Locks, holdLocks(in.ParentHolds)...)
 	receipt, _, e := s.barrier(ctx, r, func(port Tx) error {
 		u := port.(*unit)
+		if turn != nil {
+			if e := CheckNewRouteAdmissionTx(ctx, port, c.ProductScope, domain.InstalledMockConnection, domain.InstalledMockModel); e != nil {
+				return e
+			}
+		}
 		t, p := c.ProductScope.TenantID, c.ProductScope.ProductID
 		var qraw []byte
 		var owner, project string
@@ -229,6 +237,8 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 	return receipt, e
 }
 
+// Under the caller's lock plan and validated amount, reserve only if the account UPDATE affects exactly one row.
+// Insert the matching hold in this same transaction so either both effects commit or neither does.
 func reserveHarnessHold(ctx context.Context, tx *sql.Tx, t, p, task, purpose string, h Reservation) error {
 	result, e := tx.ExecContext(ctx, "UPDATE budget_accounts SET held=held+?,revision=revision+1 WHERE kind=? AND scope_key=? AND account_id=? AND balance-held>=?", h.Amount, h.Kind, h.ScopeKey, h.AccountID, h.Amount)
 	if e != nil {
@@ -291,6 +301,7 @@ func checkHarnessAttempt(ctx context.Context, tx *sql.Tx, d DispatchRequest, all
 		}
 		seen[h.Kind] = true
 	}
+	// Reuse a matching original attempt allocation without consuming more calls or supplier atoms; a new allocation consumes the task cap and, for rehearsal, the shared parent cap in the same transaction.
 	var original int64
 	e = tx.QueryRowContext(ctx, "SELECT supplier_atoms FROM harness_attempt_allocations WHERE tenant_id=? AND product_id=? AND task_id=? AND attempt_id=?", d.ProductScope.TenantID, d.ProductScope.ProductID, d.TaskID, d.AttemptID).Scan(&original)
 	if e == nil {

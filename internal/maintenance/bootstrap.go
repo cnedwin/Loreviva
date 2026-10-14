@@ -87,5 +87,8 @@ func BootstrapSyntheticWithConsent(ctx context.Context, s *store.Store, scope do
 	if _, e = tx.ExecContext(ctx, "UPDATE subject_governance SET can_control=1,can_migrate=1 WHERE tenant_id=? AND product_id=? AND subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID); e != nil {
 		return e
 	}
+	if e = store.SeedFreshAdministrationTx(ctx, tx, scope, credentialID); e != nil {
+		return e
+	}
 	return tx.Commit()
 }

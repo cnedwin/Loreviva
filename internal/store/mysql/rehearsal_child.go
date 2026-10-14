@@ -85,23 +85,49 @@ func (s *Store) StartRehearsalChild(ctx context.Context, lease domain.TaskLease,
 		return out, e
 	}
 	_, _, e = s.barrier(ctx, r, func(port Tx) error {
+		// Receipt replay is historical metadata; claim and execution revalidate current authority.
 		u := port.(*unit)
 		if e := s.checkRehearsalChildStart(ctx, u, r); e != nil {
 			return e
 		}
 		var now, rootEnd, settle time.Time
+		var oldExpiry sql.NullTime
 		var generation uint64
-		if e := u.tx.QueryRowContext(ctx, "SELECT UTC_TIMESTAMP(6),execute_by,settle_by,narrative_generation FROM harness_envelopes WHERE tenant_id=? AND product_id=? AND task_id=?", lease.TenantID, lease.ProductID, lease.TaskID).Scan(&now, &rootEnd, &settle, &generation); e != nil {
+		if e := u.tx.QueryRowContext(ctx, "SELECT UTC_TIMESTAMP(6),h.execute_by,h.settle_by,h.narrative_generation,t.lease_expires_at FROM harness_envelopes h JOIN tasks t USING(tenant_id,product_id,task_id) WHERE h.tenant_id=? AND h.product_id=? AND h.task_id=?", lease.TenantID, lease.ProductID, lease.TaskID).Scan(&now, &rootEnd, &settle, &generation, &oldExpiry); e != nil {
 			return e
 		}
 		end := now.Add(time.Minute)
 		if rootEnd.Before(end) {
 			end = rootEnd
 		}
-		if !end.After(now) {
+		if !end.After(now) || !settle.After(now) || !oldExpiry.Valid || !oldExpiry.Time.After(now) {
 			return ErrDenied
 		}
 		t, pr := lease.TenantID, lease.ProductID
+		// Only the first child-start transaction may cover this child's original deadline.
+		// An existing live lease is never shortened, and an expired lease is never revived.
+		if oldExpiry.Time.Before(end) {
+			result, e := u.tx.ExecContext(ctx, "UPDATE tasks t SET lease_expires_at=? WHERE t.tenant_id=? AND t.product_id=? AND t.task_id=? AND t.owner_subject_id=? AND t.task_kind='ADMIN' AND t.scope_kind='PRODUCT' AND t.world_instance_id IS NULL AND t.state='RUNNING' AND t.cancelled=0 AND t.fence=? AND t.lease_owner=? AND t.lease_expires_at=? AND t.lease_expires_at>UTC_TIMESTAMP(6) AND ?>UTC_TIMESTAMP(6) AND EXISTS(SELECT 1 FROM registered_jobs j JOIN harness_envelopes h USING(tenant_id,product_id,task_id) WHERE j.tenant_id=t.tenant_id AND j.product_id=t.product_id AND j.task_id=t.task_id AND j.operation='REHEARSAL' AND h.state='ACTIVE' AND h.execute_by=? AND h.settle_by=? AND h.execute_by>UTC_TIMESTAMP(6) AND h.settle_by>UTC_TIMESTAMP(6))", end, t, pr, lease.TaskID, lease.OwnerSubjectID, lease.Fence, worker, oldExpiry.Time, end, rootEnd, settle)
+			if e != nil {
+				return e
+			}
+			rows, e := result.RowsAffected()
+			if e != nil {
+				return e
+			}
+			if rows != 1 {
+				var live bool
+				e = u.tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM tasks t JOIN registered_jobs j USING(tenant_id,product_id,task_id) JOIN harness_envelopes h USING(tenant_id,product_id,task_id) WHERE t.tenant_id=? AND t.product_id=? AND t.task_id=? AND t.owner_subject_id=? AND t.task_kind='ADMIN' AND t.scope_kind='PRODUCT' AND t.world_instance_id IS NULL AND t.state='RUNNING' AND t.cancelled=0 AND t.fence=? AND t.lease_owner=? AND t.lease_expires_at>UTC_TIMESTAMP(6) AND ?>UTC_TIMESTAMP(6) AND j.operation='REHEARSAL' AND h.state='ACTIVE' AND h.execute_by=? AND h.settle_by=? AND h.execute_by>UTC_TIMESTAMP(6) AND h.settle_by>UTC_TIMESTAMP(6))", t, pr, lease.TaskID, lease.OwnerSubjectID, lease.Fence, worker, end, rootEnd, settle).Scan(&live)
+				if e != nil {
+					return e
+				}
+				if !live {
+					return ErrDenied
+				}
+				// A failed CAS is never promoted to success by observing a newer value.
+				return ErrReplan
+			}
+		}
 		if _, e := u.tx.ExecContext(ctx, "INSERT INTO tasks(tenant_id,product_id,task_id,owner_subject_id,scope_kind,world_instance_id,state,fence,next_run_at,task_kind,project_id) VALUES(?,?,?,?,'WORLD',?,'ACCEPTED',0,?,'TURN',?)", t, pr, child, lease.SubjectID, world, now, b.ProjectID); e != nil {
 			return e
 		}
@@ -161,6 +187,8 @@ func (s *Store) StartRehearsalChild(ctx context.Context, lease domain.TaskLease,
 	return out, nil
 }
 
+// Recheck the original next input and isolated state inside the owning transaction.
+// If its actor changed after planning, replan rather than substituting a new child identity.
 func (s *Store) checkRehearsalChildStart(ctx context.Context, u *unit, r BarrierRequest) error {
 	p := r.rehearsalChildStart
 	init := r.rehearsalInitialization
