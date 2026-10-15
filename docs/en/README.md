@@ -1,5 +1,3 @@
-Draft reading view of the locally approved Tasks 1–7 source. Public distribution and rights review remain pending; this document is not release acceptance.
-
 # Loreviva
 
 **The AI Platform for Living Worlds**  
@@ -7,7 +5,7 @@ Create a world. Let it keep growing.
 
 Loreviva aims to let creators combine world rules, characters, roles, Skills, knowledge, and model configurations to make evolving interactive content, with customers connecting through their own clients.
 
-This draft is based on the locally approved **Tasks 1–7**: content authoring, world instance control, compatible migration, memory governance, a persistent Mock Harness, candidates and isolated rehearsals, plus native Vue Studio and local settings administration. Only synthetic Mock models and Mock billing are currently allowed. The complete customer SDK, installation release, long-term experience with real AI, and production SaaS have not been delivered or accepted; final distribution scope must be pinned by a `PUBLICATION.json` that passes the public gates.
+This repository contains the approved **Tasks 1–7** source: content authoring, world instance control, compatible migration, memory governance, a persistent Mock Harness, candidates and isolated rehearsals, plus native Vue Studio and local settings administration. Only synthetic Mock models and Mock billing are currently allowed. The complete customer SDK, installation release, long-term experience with real AI, and production SaaS have not been delivered or accepted; the source and documentation inventory is pinned by `PUBLICATION.json`; source publication is separate from complete product release.
 
 ## Current scope
 
@@ -71,8 +69,10 @@ pnpm test
 go test ./...
 ```
 
-Public contract tests use two fixed historical baseline fixtures in the repository, retaining comparisons against the original 18 operations/43 DTO and 1.2's 49 operations/123 Schema. Database integration tests additionally require a privately configured restricted test account and disposable databases; see [test boundaries](04-setup-and-integration.md#development-checks). Each published copy is governed by its corresponding check results.
+Public contract tests use three fixed historical baseline fixtures in the repository, retaining comparisons against the original18 operations/43 DTO,1.2's49 operations/123 Schema and1.3's51 operations/131 Schema. Database integration tests additionally require a privately configured restricted test account and disposable databases; see [test boundaries](04-setup-and-integration.md#development-checks). Each published copy is governed by its corresponding check results.
 
 Original code uses [Apache-2.0](../../LICENSE); see [contributing](../../CONTRIBUTING.md), [security reporting](../../SECURITY.md), and [third-party licenses](../../THIRD_PARTY_NOTICES.md).
 
-Task8–12 are outside the approved scope of this batch and have not been accepted; LC, real models, human experience, the complete release, billing, and deployment remain pending.
+## Complete Product Design
+
+The current design for teams, partners and investors includes the[product overview](../design/en/01-product-overview.md),[requirements](../design/en/02-requirements.md),[architecture white paper](../design/en/03-architecture.md) and[setup/integration design](../design/en/04-setup-and-integration.md). Design3.0.2 is separate from this checkout's contract1.4.0 baseline;[support scope](../design/en/00-status.md) explains that boundary. See also the[roadmap](../design/en/05-roadmap.md),[documentation standard](../design/en/06-documentation-style.md) and[中文](../../README.md).

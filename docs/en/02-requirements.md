@@ -1,5 +1,3 @@
-Draft reading view of the locally approved Tasks 1–7 source. Public distribution and rights review remain pending; this document is not release acceptance.
-
 # Requirements and Implementation Status
 
 Loreviva — The AI Platform for Living Worlds.
@@ -87,5 +85,3 @@ Customers retain authority over player identities, business eligibility, industr
 Backup/recovery must protect the database, private files, and independent governance records together; existing governance mechanisms do not mean complete recovery tools are available. Unverified capabilities cannot be promised publicly as "general support."
 
 Return to the [product overview](01-product-overview.md) · View [connected endpoints](03-architecture.md#http-routes-actually-connected)
-
-Task8–12 are outside the approved scope of this batch and have not been accepted; LC, real models, human experience, the complete release, billing, and deployment remain pending.

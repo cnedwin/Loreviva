@@ -1,5 +1,3 @@
-Draft reading view of the locally approved Tasks 1–7 source. Public distribution and rights review remain pending; this document is not release acceptance.
-
 # Technical Architecture and Implementation Boundaries
 
 Loreviva — The AI Platform for Living Worlds.
@@ -106,5 +104,3 @@ Local settings persist by exact tenant/product scope and independent revision. O
 Task7 provides native Vue Studio; Task8–12 implementation and subsequent scope including the complete SDK, import/export, metering management, and complete recovery remain pending. New industry adapters can submit candidates or receipts but cannot bypass facts, privacy, or customer business authority. LC, real models, human experience, the complete release, billing, and deployment are unaccepted.
 
 Return to [home](README.md) · View [setup and integration](04-setup-and-integration.md)
-
-Task8–12 are outside the approved scope of this batch and have not been accepted; LC, real models, human experience, the complete release, billing, and deployment remain pending.

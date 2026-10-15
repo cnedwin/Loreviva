@@ -1,5 +1,3 @@
-本地已批准 Tasks 1–7 源码的阅读稿草案。公开分发与权益审查仍待完成；本文不构成发行验收。
-
 # Loreviva
 
 **The AI Platform for Living Worlds**  
@@ -7,7 +5,7 @@
 
 Loreviva 的目标是让创作者组合世界规则、角色、岗位、Skill、知识与模型配置，制作持续发展的互动内容，并让客户通过自己的客户端接入。
 
-本稿依据本地已批准的 **Tasks 1–7**：内容制作、世界实例控制、兼容迁移、记忆治理、持久 Mock Harness、候选和隔离排练，以及原生 Vue Studio 与本地设置管理。当前只允许合成 Mock 模型与 Mock 计费。完整客户 SDK、安装发行、真实 AI 长期体验和生产 SaaS 尚未交付或验收；最终分发范围须由通过公开门的 `PUBLICATION.json` 固定。
+本仓库包含已批准的 **Tasks 1–7** 源码：内容制作、世界实例控制、兼容迁移、记忆治理、持久 Mock Harness、候选和隔离排练，以及原生 Vue Studio 与本地设置管理。当前只允许合成 Mock 模型与 Mock 计费。完整客户 SDK、安装发行、真实 AI 长期体验和生产 SaaS 尚未交付或验收；源码和文档清单由 `PUBLICATION.json` 固定；源码公开不等于完整产品发行。
 
 ## 当前范围
 
@@ -71,8 +69,10 @@ pnpm test
 go test ./...
 ```
 
-公开契约测试使用仓库内的两份固定历史基准夹具，保留 original 18 操作/43 DTO 以及 1.2 的 49 操作/123 Schema比较。数据库集成测试另需私下配置受限测试账户及可销毁数据库；详见[测试边界](docs/04-setup-and-integration.md#开发检查)。具体发布副本以对应的检查结果为准。
+公开契约测试使用仓库内的三份固定历史基准夹具，保留 original 18 操作/43 DTO、1.2 的 49 操作/123 Schema及1.3 的51操作/131 Schema比较。数据库集成测试另需私下配置受限测试账户及可销毁数据库；详见[测试边界](docs/04-setup-and-integration.md#开发检查)。具体发布副本以对应的检查结果为准。
 
 原创代码使用 [Apache-2.0](LICENSE)；参见[贡献说明](CONTRIBUTING.md)、[安全报告](SECURITY.md)和[第三方许可](THIRD_PARTY_NOTICES.md)。
 
-Task8–12 不在本批已批准交付范围内，且尚未验收；LC、真实模型、真人体验、完整发行、收费与部署仍待完成。
+## 完整产品设计
+
+面向团队、合作方和投资人的现行设计见[产品概述](docs/design/01-product-overview.md)、[产品需求](docs/design/02-requirements.md)、[架构白皮书](docs/design/03-architecture.md)和[搭建接入设计](docs/design/04-setup-and-integration.md)。设计为3.0.2，本仓库代码仍为1.4.0基线；[支持范围](docs/design/00-status.md)明确区分二者。另见[开发路线](docs/design/05-roadmap.md)、[文档规范](docs/design/06-documentation-style.md)与[English](docs/en/README.md)。
