@@ -1,5 +1,3 @@
-Draft reading view of the locally approved Tasks 1–7 source. Public distribution and rights review remain pending; this document is not release acceptance.
-
 # Loreviva Product Overview
 
 **The AI Platform for Living Worlds — Create a world. Let it keep growing.**
@@ -71,5 +69,3 @@ The aim is for the self-hosted community core and hosted services to share a ker
 Results, necessary costs, and allowance records for original Mock requests have been verified separately; local settings and member interfaces are included in Task7. Real models, metering management pages, billing/payment workflows, complete recovery, and the first paid release gate remain to be implemented and verified. The current Mock environment provides neither production SaaS nor player billing capabilities. Task8–12 implementation, LC long-term effects, human validation, and the complete release remain pending.
 
 Return to the [project home](README.md) · View [architecture](03-architecture.md)
-
-Task8–12 are outside the approved scope of this batch and have not been accepted; LC, real models, human experience, the complete release, billing, and deployment remain pending.

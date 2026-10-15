@@ -1,5 +1,3 @@
-本地已批准 Tasks 1–7 源码的阅读稿草案。公开分发与权益审查仍待完成；本文不构成发行验收。
-
 # 搭建和接入指南
 
 Loreviva — The AI Platform for Living Worlds。
@@ -125,10 +123,8 @@ pnpm build:studio
 
 `go test ./...` 本身不会自动启用浏览器夹具。`TestStudioBrowser` 与 `TestStudioSettingsEntryBrowser` 需要显式 `LOREVIVA_STUDIO_BROWSER=1`，以及核验过的 `LOREVIVA_TEST_NODE`、`LOREVIVA_TEST_PNPM` 和私有 `LOREVIVA_STUDIO_EVIDENCE` 输出位置；未启用时为 SKIP，不能算浏览器通过。夹具启动真实本机服务并提供合成数据，按固定 Playwright 项目执行；直接 `pnpm test:e2e` 不能替代这些服务和凭据前置。受控浏览器通过也不是真人或真实模型验收。
 
-这些是源码中的开发入口，不是新公开候选的执行回执。新候选的完整安装、构建、功能与公开门均为 NOT_RUN；既有本地批准不能填作本候选通过。实际执行须另安排唯一受限测试数据库窗口，保留前置失败与未运行结果。
+这些是源码中的开发入口，不是新公开候选的执行回执。本次为纯文档更新，代码字节保持原公开基线；没有重新执行安装、构建或数据库功能测试，也不据文档核验新增安装或功能通过结论。实际执行须另安排唯一受限测试数据库窗口，保留前置失败与未运行结果。
 
 数据库集成测试强制使用 TCP `127.0.0.1:33267` 和非 root 账户，通过私下提供的 `LOREVIVA_TEST_DSN` 创建并清理 `loreviva_test_<24位小写十六进制>` 测试库。未设置该变量时测试失败，不会自动跳过；账户应只拥有此受限测试范围的权限。实际 CLI 测试另使用 `LOREVIVA_TEST_GO_EXE` 指定执行器。这是测试夹具的限制，服务本身的 `LOREVIVA_DB_ADDR` 按配置指定。检查结果以具体发布副本为准。
 
 返回[首页](../README.md) · 查看[需求与状态](02-requirements.md)
-
-Task8–12 不在本批已批准交付范围内，且尚未验收；LC、真实模型、真人体验、完整发行、收费与部署仍待完成。

@@ -1,5 +1,3 @@
-Draft reading view of the locally approved Tasks 1–7 source. Public distribution and rights review remain pending; this document is not release acceptance.
-
 # Setup and Integration Guide
 
 Loreviva — The AI Platform for Living Worlds.
@@ -125,10 +123,8 @@ pnpm build:studio
 
 `go test ./...` does not automatically enable browser fixtures. `TestStudioBrowser` and `TestStudioSettingsEntryBrowser` require explicit `LOREVIVA_STUDIO_BROWSER=1`, verified `LOREVIVA_TEST_NODE` and `LOREVIVA_TEST_PNPM`, and a private `LOREVIVA_STUDIO_EVIDENCE` output location. Without opt-in they SKIP, which is not browser success. The fixtures start actual local services with synthetic data and run the pinned Playwright projects; invoking `pnpm test:e2e` alone cannot replace those service and credential prerequisites. Controlled browser success is not human or real-model acceptance.
 
-These are development entry points from source, not execution receipts for a new public candidate. Complete installation, build, functional checks, and public gates for the new candidate are NOT_RUN; prior local approval cannot be entered as candidate success. Actual execution needs a separately arranged exclusive restricted test database window, retaining prerequisite failures and unrun results.
+These are source development entry points. This documentation-only update retains the published code bytes. Installation, build and database functionality have not been rerun; documentation verification adds no installation or functional acceptance. Future functional verification needs a separately arranged exclusive restricted test database window, retaining prerequisite failures and unrun results.
 
 Database integration tests require TCP `127.0.0.1:33267` and a non-root account. A privately provided `LOREVIVA_TEST_DSN` creates and cleans up `loreviva_test_<24位小写十六进制>` test databases. Without that variable, tests fail rather than automatically skipping; the account should have permissions only within this restricted test scope. Actual CLI tests also use `LOREVIVA_TEST_GO_EXE` to specify the executor. These are test-fixture restrictions; the service's `LOREVIVA_DB_ADDR` is set through configuration. Check results are specific to the published copy.
 
 Return to [home](README.md) · View [requirements and status](02-requirements.md)
-
-Task8–12 are outside the approved scope of this batch and have not been accepted; LC, real models, human experience, the complete release, billing, and deployment remain pending.

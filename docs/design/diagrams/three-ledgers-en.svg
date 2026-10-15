@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="770" viewBox="0 0 1600 770" role="img" aria-labelledby="title desc">
+  <title id="title">The three ledgers carry different responsibilities</title>
+  <desc id="desc">Faithful English reading view of the three separate source panels: provider raw usage and cost; platform service Tokens; customer player Tokens. No arrows or shared balance are introduced.</desc>
+  <rect width="1600" height="770" fill="#ffffff"/>
+  <g font-family="Arial, sans-serif" fill="#1c2738">
+    <text x="50" y="76" font-size="38">The three ledgers carry different responsibilities</text>
+    <rect x="50" y="116" width="1500" height="174" rx="18" fill="#f5f7fa" stroke="#8da0bb" stroke-width="1.5"/>
+    <text x="74" y="169" font-size="34">Provider raw usage and costs</text>
+    <text x="74" y="213" font-size="26" fill="#4e6078">Raw units such as model input/output, voice, and images</text>
+    <text x="74" y="248" font-size="26" fill="#4e6078">The procuring party settles with providers; every actual attempt retains its actual cost</text>
+    <rect x="50" y="322" width="1500" height="174" rx="18" fill="#e8eef7" stroke="#8da0bb" stroke-width="1.5"/>
+    <text x="74" y="374" font-size="34">Platform service Tokens</text>
+    <text x="74" y="419" font-size="26" fill="#4e6078">Service units agreed in the customer price list</text>
+    <text x="74" y="454" font-size="26" fill="#4e6078">Approved service events are charged; included quantities, BYOK, and risk deadlines are handled separately</text>
+    <rect x="50" y="527" width="1500" height="174" rx="18" fill="#f5f7fa" stroke="#8da0bb" stroke-width="1.5"/>
+    <text x="74" y="580" font-size="34">Customer player Tokens</text>
+    <text x="74" y="625" font-size="26" fill="#4e6078">Consumer entitlements the customer's product grants players</text>
+    <text x="74" y="660" font-size="26" fill="#4e6078">The customer owns player wallets, prices, and payments; the platform makes no unauthorized extra deductions</text>
+  </g>
+</svg>

@@ -149,8 +149,8 @@
       "bytes": 560
     },
     "README.md": {
-      "sha256": "2fd48af2ca9364cf706945a2c0503440e58ede4b666e15bfe31806ee3319b5d9",
-      "bytes": 5195
+      "sha256": "6c1d9f91fee0f59ee8ae6bd9bac69c559e0ec9af97377ce3235621db7e6f6461",
+      "bytes": 5515
     },
     "SECURITY.md": {
       "sha256": "18cd6fb763a4dcd1f8738c905e3a68d816eb5813c6a434b6534cf0a104aea097",
@@ -409,44 +409,132 @@
       "bytes": 15804
     },
     "docs/01-product-overview.md": {
-      "sha256": "8d9cbb0fc10f893b5ea4ba5be0b09182ecc36b419c9aa2eb7ad85f9faccfbe0d",
-      "bytes": 6714
+      "sha256": "6af6513d2495969239d43f99cadb94fb3c2c71393954ded0068ae2676a485106",
+      "bytes": 6435
     },
     "docs/02-requirements.md": {
-      "sha256": "f5a2f7befef44420b5109b75306940e7e1643cd91be34653a6a3419dbc30a2bd",
-      "bytes": 8200
+      "sha256": "31e131f73641e1395febf8690c567828a80c24f17322d6f24e16b5716ff173c9",
+      "bytes": 7921
     },
     "docs/03-architecture.md": {
-      "sha256": "b54fbfb3c1b0b73e7a7b47856022b905a76b19e0e5afd44ddc49fb794048d7c8",
-      "bytes": 9013
+      "sha256": "881921645fe7882cc9b7066358ce2f53f8cf3cd988d1d341409eea355f3ad42f",
+      "bytes": 8734
     },
     "docs/04-setup-and-integration.md": {
-      "sha256": "ed1e4ffdd58c166f99617cef90e81821db4987a3b1d04795bed8f2f2df77e54b",
-      "bytes": 10609
+      "sha256": "0cae5c2a411024d213e150917c27a7ccd0b92b294021e69bf458a20764d7c35c",
+      "bytes": 10391
+    },
+    "docs/design/00-status.md": {
+      "sha256": "8b26d76146a0129b5f22218fd7d92f4fad6de806f9450b0bf09df1c8a3d7b54b",
+      "bytes": 1287
+    },
+    "docs/design/01-product-overview.md": {
+      "sha256": "36a605dc561d3521b2e81ef8a9ac9d4c6d84e4b5dc3234c06a5188e971bf8b8a",
+      "bytes": 15740
+    },
+    "docs/design/02-requirements.md": {
+      "sha256": "af62d78b942f083b70adfe3b36e97a6260b0d3a1b7bfa0e13c38d655e8ce38e3",
+      "bytes": 92397
+    },
+    "docs/design/03-architecture.md": {
+      "sha256": "3f84c1ba2eb335d36696741083af8ac64d59a5f55ca84e0060cf5f244f962a14",
+      "bytes": 87131
+    },
+    "docs/design/04-setup-and-integration.md": {
+      "sha256": "8d3ebec8da7da4a45d6531a5cfb981f605896ef1339ff5884411a30992047ed8",
+      "bytes": 33019
+    },
+    "docs/design/05-roadmap.md": {
+      "sha256": "dfd20cfe28ad5d03e36b47b157b8e05b5fd6928c609d0889014503a1934e3864",
+      "bytes": 1191
+    },
+    "docs/design/06-documentation-style.md": {
+      "sha256": "6a091c724ba54ad366b77217d3a9b3a15d1f4a373716f7eefa37e2ec301003af",
+      "bytes": 2562
+    },
+    "docs/design/diagrams/deployment.md": {
+      "sha256": "9edce2f1ded6b1cb0186c3dfb6cf3e3284da726b2c360da6d4a7feb23929eee1",
+      "bytes": 332
+    },
+    "docs/design/diagrams/deployment.png": {
+      "sha256": "6381e7183f1d2b2d133e390f1115fd2596c1cf85fdddf5ca2ed080dc7dafc6e5",
+      "bytes": 207355
+    },
+    "docs/design/diagrams/interaction-commit.md": {
+      "sha256": "3610cc1831ae0f7ca669a38dcee418077b0b25fc702bad16408f4f1a05cee058",
+      "bytes": 553
+    },
+    "docs/design/diagrams/interaction-commit.png": {
+      "sha256": "ec402e08ea85b2a887955f24f8df2c0d6ad2c31e1db5bea645cdb55d2de3ca4f",
+      "bytes": 155279
+    },
+    "docs/design/diagrams/product-structure.md": {
+      "sha256": "7a76759e464470b0992c1e2bcae5dc1a4caab2a48d5e24a3d0d683da85474c43",
+      "bytes": 775
+    },
+    "docs/design/diagrams/product-structure.png": {
+      "sha256": "fcc3c40b018682cd8a091133f332057bb80d0df4ba13c480b0dd777fa34050a5",
+      "bytes": 232238
+    },
+    "docs/design/diagrams/three-ledgers-en.svg": {
+      "sha256": "135202b9cc3596f521f4ef4734cb258adb57e918c3462a57393fc807b0592c55",
+      "bytes": 2030
+    },
+    "docs/design/diagrams/three-ledgers.png": {
+      "sha256": "82ffabeb2d223680842a634b122146da5c46a7cc41b3b7ef22a247c0f60d856e",
+      "bytes": 104962
+    },
+    "docs/design/en/00-status.md": {
+      "sha256": "1e2e07638e4737b6d6e38c6bb0802bc8c57bedf818694c30590ad94592d49be3",
+      "bytes": 1521
+    },
+    "docs/design/en/01-product-overview.md": {
+      "sha256": "50dcc6d6f1777823a171f1c55780b55978cb7ce86ede034a3c37685842401eea",
+      "bytes": 22176
+    },
+    "docs/design/en/02-requirements.md": {
+      "sha256": "dfc434161387e454fce8207d98e77427b1d69ced509183014d60f031ffe02787",
+      "bytes": 121292
+    },
+    "docs/design/en/03-architecture.md": {
+      "sha256": "90b40c70b059bfc1bb26ea1fbac2d5133ed4ff9abc69f283f8d4c44ee2a18ee6",
+      "bytes": 102820
+    },
+    "docs/design/en/04-setup-and-integration.md": {
+      "sha256": "056b106c6ddf9dd6cfc919504fedb0830f4f370c2575e1a9b630592a20e49a65",
+      "bytes": 39760
+    },
+    "docs/design/en/05-roadmap.md": {
+      "sha256": "e6a6775018a1ecbb567ae7ddf5cffa35ce64235f505a8d695624e11895b9886c",
+      "bytes": 1534
+    },
+    "docs/design/en/06-documentation-style.md": {
+      "sha256": "82ed53850f16d4bce10f1800769536aadfbb392bd1742665146c52d3ff817cc4",
+      "bytes": 2988
     },
     "docs/en/01-product-overview.md": {
-      "sha256": "70556b8ec472b2276f25659c488fc86a77b465db9f6e588e45d6bc0fe1608de5",
-      "bytes": 8794
+      "sha256": "f70c46b1d6de5e8e253216001ac4ffe05e4a0848b1560b567f94f69fd9ebb821",
+      "bytes": 8453
     },
     "docs/en/02-requirements.md": {
-      "sha256": "eac596d55c060fc936989fa0398d248853d7399b28d7da35309fc6048b8499dc",
-      "bytes": 10558
+      "sha256": "99f279b4b50d8734d27256f1195bb1068065dc646b0ad2cc811a41a6056f5570",
+      "bytes": 10217
     },
     "docs/en/03-architecture.md": {
-      "sha256": "30e9beda847de6508209b13ca8e3e1fe2d55103fefb0638118c48b9838c2ad3a",
-      "bytes": 10923
+      "sha256": "ba3a90f86fde20ccff7ca03704c2d0b6cf1865db58a9fdd4a8c665d1bb60ccb8",
+      "bytes": 10582
     },
     "docs/en/04-setup-and-integration.md": {
-      "sha256": "6a8ef137b71cee1a4bf21b207406a36693b70ed3a6b65c2f5e8b2a4ab0509918",
-      "bytes": 13009
+      "sha256": "35da681177fcb6c4a12dd661f2406023830e29c12e6b580cf5f1243856c7987a",
+      "bytes": 12671
     },
     "docs/en/CONTRIBUTING.md": {
       "sha256": "133a0c440261eba9bb33e202209f4fc7dfb320054ae1672da6727277cce2e483",
       "bytes": 1727
     },
     "docs/en/README.md": {
-      "sha256": "4708bea3c0ee1358dd840e35ca1cd6fdd67e3b29cd27311a200a76cf8b7bf68e",
-      "bytes": 6399
+      "sha256": "9841467a62ad7b1d60c0d3358d7f1d8b0ddd73fde5f4b7918b622ba6432b20ab",
+      "bytes": 6739
     },
     "docs/en/SECURITY.md": {
       "sha256": "5236ae23d797761ef7ac8dbb0e4181bb3126d579370be96cf37f158ba8653cce",
@@ -1968,5 +2056,15 @@
       "sha256": "e3bbf8a27fd6155bafb80571fdcb80087c546a037be32705ae3795375cd10a97",
       "bytes": 25694
     }
+  },
+  "documentation_revision": {
+    "base_public_commit": "86abeb3e4442dbe1101fecf7de997e66960190b2",
+    "code_contract_version": "1.4.0",
+    "date": "2026-10-15",
+    "design_version": "3.0.2",
+    "english_index": "docs/design/en/00-status.md",
+    "index": "docs/design/00-status.md",
+    "new_functional_or_installation_acceptance": false,
+    "scope": "documentation-only"
   }
 }
