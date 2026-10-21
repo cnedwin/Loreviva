@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {openSync,closeSync} from 'node:fs';
 import {mkdtemp,readFile,writeFile,mkdir,rm,cp} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -37,6 +38,9 @@ test('actual Git Windows clean and checkout preserve canonical source and regene
  // The source-derived standalone validators exceed spawnSync's 1 MiB default.
  // Keep the byte comparison intact and bound capture above the generated file.
  const git=(args,input)=>{const result=spawnSync('git',['-c','core.autocrlf=true',...args],{cwd:root,input,maxBuffer:16*1024*1024});assert.equal(result.status,0,result.error?.message??result.stderr?.toString());return result.stdout};
+ // Generated validators exceed any in-memory spawnSync buffer, so the filtered
+ // checkout is written straight to its destination file and read back.
+ const gitToFile=(args,dest)=>{const fd=openSync(dest,'w');try{const result=spawnSync('git',['-c','core.autocrlf=true',...args],{cwd:root,stdio:['ignore',fd,'pipe'],maxBuffer:16*1024*1024});assert.equal(result.status,0,result.error?.message??result.stderr?.toString())}finally{closeSync(fd)}};
  const hash=data=>createHash('sha256').update(data).digest('hex');
  try {
   git(['init','--quiet']);
@@ -47,9 +51,12 @@ test('actual Git Windows clean and checkout preserve canonical source and regene
   const before={},after={};
   for(const output of [...sources,...generated.outputs]){
    const data=await readFile(path.join(sources.includes(output)?repo:path.join(root,'source'),output));
-   const oid=git(['hash-object','-w','--path='+output,'--stdin'],data).toString().trim();
-   const checkout=git(['cat-file','--filters','--path='+output,oid]);
-   await mkdir(path.dirname(path.join(root,'checkout',output)),{recursive:true});await writeFile(path.join(root,'checkout',output),checkout);
+   const staged=path.join(root,'staged-blob');await writeFile(staged,data);
+   const oid=git(['hash-object','-w','--path='+output,staged]).toString().trim();
+   await rm(staged,{force:true});
+   const checkoutPath=path.join(root,'checkout',output);await mkdir(path.dirname(checkoutPath),{recursive:true});
+   gitToFile(['cat-file','--filters','--path='+output,oid],checkoutPath);
+   const checkout=await readFile(checkoutPath);
    assert.equal(checkout.includes(Buffer.from('\r\n')),false,output+' converted to CRLF');
    before[output]=hash(data);after[output]=hash(checkout);
   }
