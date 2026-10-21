@@ -79,4 +79,4 @@ go test ./...
 
 ## 完整产品设计
 
-面向团队、合作方和投资人的现行设计见[产品概述](docs/design/01-product-overview.md)、[产品需求](docs/design/02-requirements.md)、[架构白皮书](docs/design/03-architecture.md)和[搭建接入设计](docs/design/04-setup-and-integration.md)。设计为3.0.2，本仓库代码仍为1.4.0基线；[支持范围](docs/design/00-status.md)明确区分二者。另见[开发路线](docs/design/05-roadmap.md)、[文档规范](docs/design/06-documentation-style.md)与[English](docs/en/README.md)。
+面向团队、合作方和投资人的现行设计见[产品概述](docs/design/01-product-overview.md)、[产品需求](docs/design/02-requirements.md)、[架构白皮书](docs/design/03-architecture.md)和[搭建接入设计](docs/design/04-setup-and-integration.md)。设计为3.0.2，已批准契约基线为1.4.0，当前代码含Task8开发快照（工作契约1.5.0）；[支持范围](docs/design/00-status.md)明确区分三者。另见[开发路线](docs/design/05-roadmap.md)、[文档规范](docs/design/06-documentation-style.md)与[English](docs/en/README.md)。
