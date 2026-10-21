@@ -179,8 +179,8 @@
       "sha256": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00"
     },
     "README.md": {
-      "bytes": 6281,
-      "sha256": "ce03616d63ab1dcd9b0431e6ae874b17f021ec8181057f3bc844ec4e77ad571d"
+      "bytes": 6360,
+      "sha256": "fc1a96098e7ed3702502ba75e122f22583bf32b9d5ae116037cc91c4e46292b3"
     },
     "SECURITY.md": {
       "bytes": 969,
@@ -491,16 +491,16 @@
       "sha256": "6af6513d2495969239d43f99cadb94fb3c2c71393954ded0068ae2676a485106"
     },
     "docs/02-requirements.md": {
-      "bytes": 7921,
-      "sha256": "31e131f73641e1395febf8690c567828a80c24f17322d6f24e16b5716ff173c9"
+      "bytes": 8012,
+      "sha256": "c3b0485a547e083c46f8811cba0d9e579349bf122485fba2b3e90e1f16c01cb6"
     },
     "docs/03-architecture.md": {
-      "bytes": 8734,
-      "sha256": "881921645fe7882cc9b7066358ce2f53f8cf3cd988d1d341409eea355f3ad42f"
+      "bytes": 8815,
+      "sha256": "eaa7fc15f2d9ef5921783a1b98977c2a9d5e9ec3e16ea4e62fc65e14d2942976"
     },
     "docs/04-setup-and-integration.md": {
-      "bytes": 10391,
-      "sha256": "0cae5c2a411024d213e150917c27a7ccd0b92b294021e69bf458a20764d7c35c"
+      "bytes": 10447,
+      "sha256": "27d9a914a7c468803f311eb766507940357df1f2609eb0014fab052d70bc7bb6"
     },
     "docs/design/00-status.md": {
       "bytes": 1267,
@@ -595,24 +595,24 @@
       "sha256": "f70c46b1d6de5e8e253216001ac4ffe05e4a0848b1560b567f94f69fd9ebb821"
     },
     "docs/en/02-requirements.md": {
-      "bytes": 10217,
-      "sha256": "99f279b4b50d8734d27256f1195bb1068065dc646b0ad2cc811a41a6056f5570"
+      "bytes": 10315,
+      "sha256": "8b6cfa81ef63bfb3fe85bfbfd023eb061b7a769a82e7283f2ac0b879d295dd9f"
     },
     "docs/en/03-architecture.md": {
-      "bytes": 10582,
-      "sha256": "ba3a90f86fde20ccff7ca03704c2d0b6cf1865db58a9fdd4a8c665d1bb60ccb8"
+      "bytes": 10662,
+      "sha256": "a048373187e27d86391acea607fd438bc61c53f7b4b469b4097f0a73a99af3c0"
     },
     "docs/en/04-setup-and-integration.md": {
-      "bytes": 12671,
-      "sha256": "35da681177fcb6c4a12dd661f2406023830e29c12e6b580cf5f1243856c7987a"
+      "bytes": 12730,
+      "sha256": "d0726bc5e18786792d41a2146d8395422d35e2166cb437c0b358cd3548b9c07e"
     },
     "docs/en/CONTRIBUTING.md": {
       "bytes": 1727,
       "sha256": "133a0c440261eba9bb33e202209f4fc7dfb320054ae1672da6727277cce2e483"
     },
     "docs/en/README.md": {
-      "bytes": 6830,
-      "sha256": "e93f58af6e5deb5026b89c7ca3a036b5c497d0f9999683f745609dbef551fcf7"
+      "bytes": 6906,
+      "sha256": "29f0729a7ea8005281f418711fa871f29c802d739c81af1a48d716928ba55a25"
     },
     "docs/en/SECURITY.md": {
       "bytes": 1215,
@@ -2540,6 +2540,11 @@
     }
   },
   "documentation_corrections": [
+    {
+      "date": "2026-10-21",
+      "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
+      "note": "File hashes in this record were re-synchronised with the tree; the validation block still describes the 3c7f1cc snapshot measurements."
+    },
     {
       "date": "2026-10-21",
       "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
