@@ -168,7 +168,7 @@ func (s *Store) recoveryReasonTx(ctx context.Context, tx Tx, r BarrierRequest, e
 		}
 		_, e := s.CandidateOwner.EvaluateOriginalCandidateTx(ctx, tx, *r.WorldScope, r.TaskID, meta.Identity.AttemptID, evidence.Bytes())
 		var current *CandidateResourceConflict
-		if !errors.As(e, &current) || *current != old {
+		if !errors.As(e, &current) || !current.SameSubject(old) {
 			return ErrDenied
 		}
 		if choose {
