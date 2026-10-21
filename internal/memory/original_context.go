@@ -88,11 +88,11 @@ func (m *MemoryService) ValidateOriginalResultContextTx(ctx context.Context, tx 
 	} else if taskBinding != original.Binding {
 		return zero, store.ErrConflict
 	}
-	current, e := currentGenerationMaterialAtOriginalRevision(ctx, tx, generationSelection(s, task, base), &original.Versions, &original.World)
+	current, e := currentGenerationMaterialAtOriginalRevision(ctx, tx, generationSelection(s, task, base), &original.Versions, &original.World, original.Sources.Nodes)
 	if e != nil {
 		return zero, e
 	}
-	if current.Binding != base {
+	if !sameGenerationProof(current.Binding, base) {
 		return zero, store.ErrConflict
 	}
 	a, e := loadTx(ctx, tx, Namespace{Scope: s, DataSubjectID: s.SubjectID})
@@ -119,9 +119,23 @@ func (m *MemoryService) ValidateOriginalResultContextTx(ctx context.Context, tx 
 		if e != nil {
 			return zero, e
 		}
-		if current.Binding != original.Binding {
+		if !sameGenerationProof(current.Binding, original.Binding) {
 			return zero, store.ErrConflict
 		}
 	}
 	return current.Binding, nil
+}
+
+// sameGenerationProof compares an original attempt's recorded proof with the
+// proof reconstructed now. Component digests let a world advance concurrently:
+// only the attempt's own memories, core, skills and world must still match, so
+// a memory another task committed is not treated as an identity conflict.
+// Older bindings without components fall back to exact equality (fail closed).
+func sameGenerationProof(current, base domain.GenerationBinding) bool {
+	if current.MemoryGraphHash == "" || base.MemoryGraphHash == "" {
+		return current == base
+	}
+	return current.SameOrigin(base) && current.CoreHash == base.CoreHash &&
+		current.SkillsHash == base.SkillsHash && current.MemoryGraphHash == base.MemoryGraphHash &&
+		current.WorldHash == base.WorldHash
 }

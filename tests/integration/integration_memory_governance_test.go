@@ -2395,6 +2395,112 @@ func TestIntegrationTurnMemoryProofFinalAndRecovery(t *testing.T) {
 			t.Fatal("actual recompute birth current proof", e)
 		}
 	})
+	t.Run("cited-node-body-tamper-rejected", func(t *testing.T) {
+		// The negative control for concurrent-world tolerance: ignoring memories
+		// another task added must never mean ignoring a change to a memory this
+		// attempt actually cited.
+		f := integrationBirthFixture(t, "integration_r0_v1")
+		ctx := context.Background()
+		worker := "tamper-worker"
+		q, e := f.quote(f.service, "tamper-quote")
+		if e != nil {
+			t.Fatal(e)
+		}
+		req := f.input
+		req.QuoteID = q.QuoteID
+		req.Input = json.RawMessage(`{"kind":"TEXT","text":"Pass the sign and remember my request."}`)
+		accepted, e := f.r.Store.AcceptIntegrationTurn(f.client, f.world.WorldInstanceID, "tamper-first", req)
+		if e != nil {
+			t.Fatal(e)
+		}
+		lease, e := f.r.Store.ClaimRegistered(ctx, worker, time.Now().UTC(), time.Minute, []store.RegisteredOperation{{Kind: "TURN", Operation: "TURN", TaskID: accepted.TurnID}})
+		if e != nil {
+			t.Fatal(e)
+		}
+		stage, close, e := func() (context.Context, func(), error) {
+			p, close, e := f.r.Local.Participant.Enter(ctx, maintenance.HarnessWriter)
+			if e != nil {
+				return nil, nil, e
+			}
+			p, e = f.r.Store.EnterIntegrationTaskIssuer(p, lease.TaskLease, worker)
+			if e != nil {
+				close()
+				return nil, nil, e
+			}
+			return p, close, nil
+		}()
+		if e != nil {
+			t.Fatal(e)
+		}
+		d, e := f.r.Turns.PrepareOriginalTurn(stage, lease.TaskLease, worker)
+		if e == nil {
+			_, e = f.r.Store.AuthorizeDispatch(stage, d)
+		}
+		if e == nil {
+			d.CommandKey = content.Identity(accepted.TurnID, "send")
+			d.CommitKey = d.CommandKey
+			var auth store.DispatchAuthorization
+			auth, e = f.r.Store.StartSend(stage, d, d.AttemptID)
+			if e == nil && auth.CanSend {
+				e = f.r.Worker.Turns.Generate(stage, auth.OriginalSend())
+				if e == nil {
+					_, e = f.r.Store.ObserveOriginalReply(stage, auth.OriginalSend())
+				}
+				if e == nil {
+					e = f.r.Store.ValidateOriginalTurn(stage, lease.TaskLease, worker)
+				}
+				if e == nil {
+					e = f.r.Store.ApproveOriginalTurn(stage, lease.TaskLease, worker)
+				}
+			} else if e == nil {
+				e = store.ErrDenied
+			}
+		}
+		close()
+		if e != nil {
+			t.Fatal("original turn setup", e)
+		}
+		var raw []byte
+		if e := f.r.Store.DB.QueryRow("SELECT document FROM harness_attempt_contexts WHERE tenant_id=? AND product_id=? AND task_id=? AND attempt_id=?", f.world.TenantID, f.world.ProductID, accepted.TurnID, d.AttemptID).Scan(&raw); e != nil {
+			t.Fatal("attempt context", e)
+		}
+		var snapshot domain.OriginalContextSnapshot
+		if json.Unmarshal(raw, &snapshot) != nil || len(snapshot.Sources.Nodes) == 0 {
+			t.Fatal("attempt context has no cited node")
+		}
+		var node string
+		for id := range snapshot.Sources.Nodes {
+			node = id
+			break
+		}
+		if _, e := f.r.Store.DB.Exec("UPDATE memory_aggregates SET document=JSON_SET(CONVERT(document USING utf8mb4),?,?) WHERE tenant_id=? AND product_id=? AND world_instance_id=?", "$.Nodes.\""+node+"\".Body", "silently rewritten", f.world.TenantID, f.world.ProductID, f.world.WorldInstanceID); e != nil {
+			t.Fatal("tamper", e)
+		}
+		stage, close, e = func() (context.Context, func(), error) {
+			p, close, e := f.r.Local.Participant.Enter(ctx, maintenance.HarnessWriter)
+			if e != nil {
+				return nil, nil, e
+			}
+			p, e = f.r.Store.EnterIntegrationTaskIssuer(p, lease.TaskLease, worker)
+			if e != nil {
+				close()
+				return nil, nil, e
+			}
+			return p, close, nil
+		}()
+		if e != nil {
+			t.Fatal(e)
+		}
+		_, e = f.r.Store.CommitOriginalTurn(stage, lease.TaskLease, worker)
+		close()
+		if e == nil {
+			t.Fatal("cited node body tamper was committed")
+		}
+		var commits int
+		if e := f.r.Store.DB.QueryRow("SELECT COUNT(*) FROM harness_turn_commits WHERE task_id=?", accepted.TurnID).Scan(&commits); e != nil || commits != 0 {
+			t.Fatal("tampered turn left a commitment", commits, e)
+		}
+	})
 	t.Run("real-structure-repair-committed-birth", func(t *testing.T) {
 		f := integrationBirthFixture(t, "integration_r0_v1")
 		f.r.Worker.Turns.Fault = harness.MockMalformedOriginalResult
