@@ -698,15 +698,155 @@ func TestIntegrationSlice3FixMetadata(t *testing.T) {
 	if json.Unmarshal(raw, &aggregate) != nil {
 		t.Fatal("aggregate")
 	}
-	id, secretBody := "", ""
-	for k, n := range aggregate.Nodes {
-		id = k
-		secretBody = n.Body
-		break
+	id, secretBody, first := "", "", memory.MemoryRecord{}
+	for key, value := range aggregate.Nodes {
+		if id == "" || key < id {
+			id, first = key, value
+			secretBody = value.Body
+		}
 	}
-	if id == "" || secretBody == "" {
+	privateResponse := false
+	for _, use := range first.Uses {
+		privateResponse = privateResponse || use == memory.PrivateResponse
+	}
+	if id == "" || secretBody == "" || first.Audience != memory.Private || len(first.Sources) == 0 || !privateResponse {
 		t.Fatal("real initial knowledge missing")
 	}
+	// The integration profile's default read answers with PlayerMemoryMetadata
+	// under contract 1.5: no content and no source identity. Source identity moved
+	// to include=provenance_v1, which requires current positive use. The previous
+	// assertions decoded generated.Memory, so they could not pass at HTTP 200.
+	contractKinds := []string{"EPISODE", "PREFERENCE", "PROMISE", "RELATIONSHIP_INTERPRETATION", "BELIEF"}
+	projectedKind := func(kind string) string {
+		for _, known := range contractKinds {
+			if kind == known {
+				return kind
+			}
+		}
+		return "BELIEF" // The wire projection normalises every other kind to BELIEF.
+	}
+	// Only WORLD_FACT, ACTOR_BELIEF and PLAYER_STATEMENT reach this endpoint; the
+	// default matches the projection's own fallback for any wider domain.
+	projectedSourceKind := func(domain memory.EvidenceDomain) string {
+		switch domain {
+		case memory.WorldFact:
+			return "COMMITTED_EVENT"
+		case memory.ActorBelief:
+			return "KNOWLEDGE_VERSION"
+		}
+		return "PLAYER_STATEMENT"
+	}
+	// Single comparison source for every metadata field, so the negative control
+	// below exercises the assertions that this test actually runs.
+	metadataMismatches := func(want, got generated.PlayerMemoryMetadata) []string {
+		problems := []string{}
+		check := func(name string, same bool) {
+			if !same {
+				problems = append(problems, name)
+			}
+		}
+		check("memory_id", got.MemoryID == want.MemoryID)
+		check("scope", got.Scope == want.Scope)
+		check("actor_instance_id", got.ActorInstanceID == want.ActorInstanceID)
+		check("target_subject_id", got.TargetSubjectID == want.TargetSubjectID)
+		check("memory_kind", got.MemoryKind == want.MemoryKind)
+		check("revision", got.Revision == want.Revision)
+		check("privacy_epoch", got.PrivacyEpoch == want.PrivacyEpoch)
+		check("validity", got.Validity == want.Validity)
+		check("allowed_uses", reflect.DeepEqual(got.AllowedUses, want.AllowedUses))
+		check("body_readable", got.BodyReadable == want.BodyReadable)
+		return problems
+	}
+	increment := func(value string) string {
+		digits := []byte(value)
+		for i := len(digits) - 1; i >= 0; i-- {
+			if digits[i] != '9' {
+				digits[i]++
+				return string(digits)
+			}
+			digits[i] = '0'
+		}
+		return "1" + string(digits)
+	}
+	// Expectations come from the stored aggregate and the governance row of this
+	// phase, never from the response under test nor from a stale snapshot.
+	currentState := func(t *testing.T) (memory.Aggregate, memory.MemoryRecord, string) {
+		t.Helper()
+		var document []byte
+		if e := r.Store.DB.QueryRow("SELECT document FROM memory_aggregates WHERE world_instance_id=? AND data_subject_id=?", w.Scope.WorldInstanceID, first.TargetID).Scan(&document); e != nil {
+			t.Fatal(e)
+		}
+		var fresh memory.Aggregate
+		if json.Unmarshal(document, &fresh) != nil {
+			t.Fatal("aggregate")
+		}
+		record, ok := fresh.Nodes[id]
+		if !ok {
+			t.Fatal("stored node missing")
+		}
+		var epoch uint64
+		if e := r.Store.DB.QueryRow("SELECT g.privacy_epoch FROM memory_aggregates m JOIN subject_governance g ON g.tenant_id=m.tenant_id AND g.product_id=m.product_id AND g.subject_id=m.data_subject_id WHERE m.world_instance_id=? AND m.data_subject_id=?", w.Scope.WorldInstanceID, first.TargetID).Scan(&epoch); e != nil {
+			t.Fatal("governance epoch")
+		}
+		return fresh, record, fmt.Sprint(epoch)
+	}
+	// Negative control: the comparison must reject a change in every compared
+	// field, and the schema check must reject the pre-1.5 response shape.
+	t.Run("assertion-can-fail", func(t *testing.T) {
+		base := generated.PlayerMemoryMetadata{MemoryID: id, Scope: generated.WorldScope{TenantID: w.Scope.TenantID, ProductID: w.Scope.ProductID, WorldInstanceID: w.Scope.WorldInstanceID}, ActorInstanceID: first.ActorID, TargetSubjectID: first.TargetID, MemoryKind: projectedKind(first.Kind), Revision: fmt.Sprint(first.Revision), PrivacyEpoch: "0", Validity: "ACTIVE", AllowedUses: []string{"PRIVATE_RESPONSE"}, BodyReadable: false}
+		if problems := metadataMismatches(base, base); len(problems) != 0 {
+			t.Errorf("identical metadata reported differences: %v", problems)
+		}
+		mutations := map[string]func(generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata{
+			"memory_id": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata { v.MemoryID += "x"; return v },
+			"scope": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.Scope.WorldInstanceID += "x"
+				return v
+			},
+			"actor_instance_id": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.ActorInstanceID += "x"
+				return v
+			},
+			"target_subject_id": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.TargetSubjectID += "x"
+				return v
+			},
+			"memory_kind": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.MemoryKind = "EPISODE"
+				return v
+			},
+			"revision":      func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata { v.Revision += "0"; return v },
+			"privacy_epoch": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata { v.PrivacyEpoch += "0"; return v },
+			"validity": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.Validity = "REVOKED"
+				return v
+			},
+			"allowed_uses": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.AllowedUses = append([]string{"PUBLIC_RESPONSE"}, v.AllowedUses...)
+				return v
+			},
+			"body_readable": func(v generated.PlayerMemoryMetadata) generated.PlayerMemoryMetadata {
+				v.BodyReadable = !v.BodyReadable
+				return v
+			},
+		}
+		for field, mutate := range mutations {
+			if len(metadataMismatches(base, mutate(base))) == 0 {
+				t.Errorf("%s comparison cannot fail", field)
+			}
+		}
+		both := mutations["revision"](mutations["privacy_epoch"](base))
+		if len(metadataMismatches(base, both)) < 2 {
+			t.Error("combined comparison cannot fail on two fields")
+		}
+		legacy := generated.Memory{MemoryID: id, Scope: base.Scope, ActorInstanceID: first.ActorID, TargetSubjectID: first.TargetID, MemoryKind: base.MemoryKind, Revision: base.Revision, PrivacyEpoch: base.PrivacyEpoch, Validity: base.Validity, AllowedUses: base.AllowedUses, Content: secretBody, Audience: generated.Audience{Kind: "PRIVATE_RELATIONSHIP", SubjectIDS: []string{first.TargetID}}, Sources: []generated.MemorySource{{SourceID: first.Sources[0], SourceKind: "KNOWLEDGE_VERSION", SourceRevision: "1", AcquisitionKind: "INITIAL", AcquiredByActorID: first.ActorID}}}
+		if raw, e := json.Marshal(legacy); e != nil {
+			t.Fatal(e)
+		} else if generated.Validate("PlayerMemoryMetadata", raw) == nil {
+			t.Error("metadata schema accepted the pre-1.5 shape")
+		}
+	})
+	epochs := map[string]string{}
 	for _, phase := range []string{"before", "active", "revoked"} {
 		if phase != "before" {
 			command := `{"command":"INITIAL","expected_revision":"0","policy_id":"R0_PLAYER_PRIVATE_GENERATION_30D"}`
@@ -718,58 +858,120 @@ func TestIntegrationSlice3FixMetadata(t *testing.T) {
 			}
 		}
 		t.Run(phase, func(t *testing.T) {
-			for _, include := range []string{"", "?include=provenance_v1"} {
-				q := httptest.NewRequest("GET", "/world/v1/instances/"+w.Scope.WorldInstanceID+"/memories/"+id+include, nil)
-				q.Header.Set("Authorization", "Bearer "+session.AccessToken)
-				q.Header.Set("Loreviva-Client-Contract", "integration_r0_v1")
-				out := httptest.NewRecorder()
-				r.Handler().ServeHTTP(out, q)
-				if include == "" {
-					var body generated.Memory
-					if out.Code != 200 || generated.Decode("Memory", out.Body.Bytes(), &body) != nil {
-						t.Errorf("metadata status=%d", out.Code)
+			stored, record, epoch := currentState(t)
+			epochs[phase] = epoch
+			want := generated.PlayerMemoryMetadata{MemoryID: id, Scope: generated.WorldScope{TenantID: w.Scope.TenantID, ProductID: w.Scope.ProductID, WorldInstanceID: w.Scope.WorldInstanceID}, ActorInstanceID: record.ActorID, TargetSubjectID: record.TargetID, MemoryKind: projectedKind(record.Kind), Revision: fmt.Sprint(record.Revision), PrivacyEpoch: epoch, Validity: "ACTIVE", AllowedUses: []string{"PRIVATE_RESPONSE"}, BodyReadable: phase == "active"}
+			md := httptest.NewRequest("GET", "/world/v1/instances/"+w.Scope.WorldInstanceID+"/memories/"+id, nil)
+			md.Header.Set("Authorization", "Bearer "+session.AccessToken)
+			md.Header.Set("Loreviva-Client-Contract", "integration_r0_v1")
+			out := httptest.NewRecorder()
+			r.Handler().ServeHTTP(out, md)
+			if out.Code != 200 {
+				t.Errorf("metadata status=%d", out.Code)
+			} else if generated.Validate("PlayerMemoryMetadata", out.Body.Bytes()) != nil {
+				t.Error("metadata violates PlayerMemoryMetadata")
+			} else {
+				var body generated.PlayerMemoryMetadata
+				if generated.Decode("PlayerMemoryMetadata", out.Body.Bytes(), &body) != nil {
+					t.Fatalf("metadata decode")
+				}
+				if problems := metadataMismatches(want, body); len(problems) != 0 {
+					t.Errorf("metadata substituted %v", problems)
+				}
+				var fields map[string]any
+				if json.Unmarshal(out.Body.Bytes(), &fields) != nil {
+					t.Error("metadata JSON")
+				} else {
+					if len(fields) != 10 {
+						t.Errorf("metadata keys=%d", len(fields))
+					}
+					for _, key := range []string{"content", "sources", "audience", "provenance", "source_epoch_ids", "parent_memory_ids", "occurred_at", "occurred_at_estimated"} {
+						if _, ok := fields[key]; ok {
+							t.Error("extra metadata field " + key)
+						}
+					}
+				}
+				if bytes.Contains(out.Body.Bytes(), []byte(secretBody)) {
+					t.Error("default metadata disclosed body")
+				}
+			}
+			pv := httptest.NewRequest("GET", "/world/v1/instances/"+w.Scope.WorldInstanceID+"/memories/"+id+"?include=provenance_v1", nil)
+			pv.Header.Set("Authorization", "Bearer "+session.AccessToken)
+			pv.Header.Set("Loreviva-Client-Contract", "integration_r0_v1")
+			out = httptest.NewRecorder()
+			r.Handler().ServeHTTP(out, pv)
+			if phase != "active" {
+				if out.Code != 403 {
+					t.Errorf("provenance passed without use, status=%d", out.Code)
+				}
+				var refusal map[string]any
+				if json.Unmarshal(out.Body.Bytes(), &refusal) == nil && refusal["code"] != "FORBIDDEN" {
+					t.Errorf("provenance refusal code=%v", refusal["code"])
+				}
+				if bytes.Contains(out.Body.Bytes(), []byte(secretBody)) {
+					t.Error("provenance refusal disclosed body")
+				}
+				return
+			}
+			if out.Code != 200 || generated.Validate("MemoryProvenanceV1", out.Body.Bytes()) != nil {
+				t.Fatalf("active provenance status=%d", out.Code)
+			}
+			var view generated.MemoryProvenanceV1
+			if generated.Decode("MemoryProvenanceV1", out.Body.Bytes(), &view) != nil {
+				t.Fatalf("provenance decode")
+			}
+			if view.Projection != "provenance_v1" || view.Memory.MemoryID != id || view.Memory.Content != record.Body {
+				t.Error("provenance substituted memory")
+			}
+			if view.EvidenceDomain != string(record.Domain) {
+				t.Errorf("evidence domain=%s", view.EvidenceDomain)
+			}
+			if len(view.Memory.Sources) != len(record.Sources) || len(view.Memory.Sources) == 0 {
+				t.Fatalf("provenance source count=%d", len(view.Memory.Sources))
+			}
+			for index, source := range view.Memory.Sources {
+				if source.SourceID != record.Sources[index] {
+					t.Errorf("provenance source order=%d", index)
+					continue
+				}
+				original := stored.Sources[source.SourceID]
+				if source.SourceRevision != fmt.Sprint(original.Revision) || source.AcquiredByActorID != record.ActorID {
+					t.Error("source identity substituted")
+				}
+				if source.SourceKind != projectedSourceKind(original.Domain) {
+					t.Errorf("source kind=%s", source.SourceKind)
+				}
+				chosen, found := memory.Acquisition{}, false
+				for _, acq := range stored.Acquisitions {
+					if acq.SourceID != source.SourceID || acq.ActorID != record.ActorID {
 						continue
 					}
-					if body.Content != "" || bytes.Contains(out.Body.Bytes(), []byte(secretBody)) {
-						t.Error("default metadata disclosed body")
+					chosen, found = acq, true
+					if acq.EvidenceID == record.ID {
+						chosen, found = acq, true
+						break
 					}
-					var fields map[string]any
-					_ = json.Unmarshal(out.Body.Bytes(), &fields)
-					if !reflect.DeepEqual(body.AllowedUses, []string{"PRIVATE_RESPONSE"}) || len(body.Sources) != len(aggregate.Nodes[id].Sources) || len(body.Sources) == 0 {
-						t.Error("required real metadata absent")
+				}
+				if !found || string(chosen.Kind) != source.AcquisitionKind {
+					t.Error("acquisition substituted")
+				}
+			}
+			var widths struct {
+				Memory struct {
+					Sources []map[string]any `json:"sources"`
+				} `json:"memory"`
+			}
+			if json.Unmarshal(out.Body.Bytes(), &widths) == nil {
+				for _, source := range widths.Memory.Sources {
+					if len(source) != 5 {
+						t.Error("source exceeds required metadata")
 					}
-					for _, source := range body.Sources {
-						original, ok := aggregate.Sources[source.SourceID]
-						if !ok || source.SourceRevision != fmt.Sprint(original.Revision) || source.AcquiredByActorID != aggregate.Nodes[id].ActorID {
-							t.Error("source identity substituted")
-						}
-						found := false
-						for _, acq := range aggregate.Acquisitions {
-							found = found || acq.SourceID == source.SourceID && acq.ActorID == source.AcquiredByActorID && string(acq.Kind) == source.AcquisitionKind
-						}
-						if !found {
-							t.Error("acquisition substituted")
-						}
-					}
-					for _, key := range []string{"source_epoch_ids", "parent_memory_ids", "occurred_at", "provenance"} {
-						if _, ok := fields[key]; ok {
-							t.Error("extra provenance", key)
-						}
-					}
-					for _, source := range fields["sources"].([]any) {
-						if len(source.(map[string]any)) != 5 {
-							t.Error("source exceeds required metadata")
-						}
-					}
-				} else if phase == "active" {
-					if out.Code != 200 || generated.Validate("MemoryProvenanceV1", out.Body.Bytes()) != nil {
-						t.Error("active provenance denied", out.Code)
-					}
-				} else if out.Code == 200 {
-					t.Error("provenance passed without use")
 				}
 			}
 		})
+	}
+	if epochs["active"] != increment(epochs["before"]) || epochs["revoked"] != increment(epochs["active"]) {
+		t.Errorf("governance epoch did not advance once per consent command: %v", epochs)
 	}
 	for _, fault := range []string{"acquisition", "permission", "audience"} {
 		t.Run("metadata-current-"+fault, func(t *testing.T) {
