@@ -144,9 +144,10 @@ func studioMigrationFixture(t *testing.T) (*store.Store, *sql.DB) {
 
 func TestStudioMigrationEightTablesAndRetry(t *testing.T) {
 	s, db := studioMigrationFixture(t)
-	var version int
-	if e := db.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version); e != nil || version != 7 {
-		t.Fatalf("need schema7, got %d: %v", version, e)
+	// Later migrations may exist; this case is about the Studio migration itself.
+	var applied int
+	if e := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version=7").Scan(&applied); e != nil || applied != 1 {
+		t.Fatalf("need schema7 applied, got %d: %v", applied, e)
 	}
 	for _, table := range studioTables {
 		var n int
@@ -208,6 +209,9 @@ func TestStudioMigrationConsentBaselinePreservesFalseAndTrue(t *testing.T) {
 	for _, q := range []string{
 		"INSERT INTO tenant_gates VALUES('t',1,1)",
 		"INSERT INTO product_gates VALUES('t','p',1,1)",
+		// A real upgraded installation already carries its installation row; the
+		// schema8 step binds legacy credentials to it.
+		"INSERT INTO memory_installation VALUES(1,UNHEX(SHA2('synthetic-installation',256)),1,UNHEX(SHA2('synthetic-database',256)),UNHEX(SHA2('synthetic-files',256)),UNHEX(SHA2('synthetic-coordinator',256)))",
 		"INSERT INTO subject_governance(tenant_id,product_id,subject_id,permission_version,privacy_epoch,view_epoch,enabled) VALUES('t','p','yes',1,1,1,1),('t','p','no',1,1,1,1)",
 		"INSERT INTO operator_credentials VALUES('yes','t','p','yes',UNHEX(SHA2('synthetic-yes',256)),0),('no','t','p','no',UNHEX(SHA2('synthetic-no',256)),1)",
 		"INSERT INTO r0_generation_consent VALUES('t','p','yes','yes','R0_OWNER_PRIVATE_GENERATION_30D',1,'2026-01-01','2026-01-31'),('t','p','no','no','R0_OWNER_PRIVATE_GENERATION_30D',0,'2026-01-01',NULL)",

@@ -89,7 +89,7 @@ func TestTask6MigrationRecoversOriginalDDLWithoutMarker(t *testing.T) {
 					t.Fatal("existing table changed", name)
 				}
 			}
-			for i, source := range append(prior, migrations.TurnAttempt, migrations.StudioSettings) {
+			for i, source := range append(prior, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity) {
 				var got []byte
 				sum := sha256.Sum256([]byte(source))
 				if e := s.DB.QueryRow("SELECT sha256 FROM schema_migrations WHERE version=?", i+1).Scan(&got); e != nil || !bytes.Equal(got, sum[:]) {
@@ -102,7 +102,7 @@ func TestTask6MigrationRecoversOriginalDDLWithoutMarker(t *testing.T) {
 			if !reflect.DeepEqual(after, definitions()) {
 				t.Fatal("replay changed schema")
 			}
-			if e := s.DB.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&marker); e != nil || marker != 7 {
+			if e := s.DB.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&marker); e != nil || marker != len(prior)+3 {
 				t.Fatal(marker, e)
 			}
 		})
