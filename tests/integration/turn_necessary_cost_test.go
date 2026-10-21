@@ -11,7 +11,6 @@ import (
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/harness"
 	store "loreviva.local/loreviva/internal/store/mysql"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -149,13 +148,7 @@ func TestNecessaryCostWorkerLifetimeBudgetSurvivesRestart(t *testing.T) {
 			t.Fatal("UNKNOWN treated as zero authoritative cost", c)
 		}
 		if i == 1 {
-			local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-			if e != nil {
-				t.Fatal(e)
-			}
-			defer local.Participant.Close(ctx)
-			recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-			recovered.BindLocal(local)
+			recovered := reopenRuntimeFixture(t, ctx, r)
 			r = recovered
 		}
 		costDue(t, r, id)

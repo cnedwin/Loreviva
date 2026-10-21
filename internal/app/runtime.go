@@ -7,6 +7,7 @@ import (
 	"loreviva.local/loreviva/internal/auth"
 	"loreviva.local/loreviva/internal/config"
 	"loreviva.local/loreviva/internal/content"
+	"loreviva.local/loreviva/internal/delivery"
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/harness"
 	"loreviva.local/loreviva/internal/maintenance"
@@ -19,19 +20,22 @@ import (
 )
 
 type Runtime struct {
-	adminCursorOnce sync.Once
-	adminCursor     cipher.AEAD
-	adminCursorErr  error
-	Candidates      *harness.CandidateService
-	Turns           *harness.TurnService
-	Local           *Local
-	Memory          *memory.MemoryService
-	World           *world.Runtime
-	Store           *store.Store
-	Files           *files.Store
-	Auth            *auth.Operator
-	Content         *content.Service
-	Worker          *Worker
+	Delivery          *delivery.Service
+	deliveryBindError error
+	creationStore     *store.Store
+	adminCursorOnce   sync.Once
+	adminCursor       cipher.AEAD
+	adminCursorErr    error
+	Candidates        *harness.CandidateService
+	Turns             *harness.TurnService
+	Local             *Local
+	Memory            *memory.MemoryService
+	World             *world.Runtime
+	Store             *store.Store
+	Files             *files.Store
+	Auth              *auth.Operator
+	Content           *content.Service
+	Worker            *Worker
 }
 
 func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
@@ -60,7 +64,7 @@ func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
 	s.RehearsalInitializer = w
 	worker := NewWorker(s, f)
 	worker.Memory = m
-	return &Runtime{Turns: harness.NewTurnService(s), Store: s, Files: f, Auth: a, Content: content.New(s), World: w, Memory: m, Worker: worker}
+	return &Runtime{creationStore: s, Turns: harness.NewTurnService(s), Store: s, Files: f, Auth: a, Content: content.New(s), World: w, Memory: m, Worker: worker}
 }
 
 func (r *Runtime) BindLocal(local *Local) {
@@ -71,6 +75,19 @@ func (r *Runtime) BindLocal(local *Local) {
 		return
 	}
 	r.Memory.Ledger = local.Ledger
+	// The executable opens Local after NewRuntime. Bind the creation owners
+	// only here, after real admission exists; repeated calls cannot replace them.
+	if local.creationStore == r.creationStore && r.Store == r.creationStore && r.World.Store == r.creationStore && r.Memory.Store == r.creationStore {
+		r.deliveryBindError = r.Store.BindDeliveryAdmission(local.Participant)
+		_ = r.World.BindIntegrationCreation(r.Memory)
+		_ = r.Store.BindIntegrationConsentOwner(context.Background(), r.Memory)
+		if r.deliveryBindError == nil {
+			r.deliveryBindError = r.World.BindIntegrationDelivery(context.Background())
+		}
+		if r.deliveryBindError == nil && r.Turns.Store == r.Store && r.Files.DB == r.Store {
+			r.Delivery, r.deliveryBindError = delivery.New(r.Store, r.Turns, local.Participant, r.World)
+		}
+	}
 	r.Worker.Turns = &harness.Executor{Turns: r.Turns, Files: r.Files, Journal: local.Mock, Participant: local.Participant}
 	r.Candidates = &harness.CandidateService{Executor: r.Worker.Turns}
 }
@@ -79,6 +96,9 @@ func (r *Runtime) Readiness(ctx context.Context) error { return r.readiness(ctx,
 func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error {
 	if r == nil || r.Store == nil || r.Files == nil || r.Auth == nil || r.Worker == nil {
 		return errors.New("M1 dependencies unavailable")
+	}
+	if r.deliveryBindError != nil {
+		return r.deliveryBindError
 	}
 	if r.Local != nil {
 		if e := r.Local.Participant.Check(ctx); e != nil {

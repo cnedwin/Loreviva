@@ -9,11 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/generated"
 	store "loreviva.local/loreviva/internal/store/mysql"
-	"loreviva.local/loreviva/tests/integration/dbfixture"
 	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"os"
 	"path/filepath"
@@ -25,19 +23,8 @@ type interrupted struct{}
 
 func (interrupted) Read(p []byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 func TestPrivateFilesNeverStaticAndInterruptedStageCleaned(t *testing.T) {
-	ctx := context.Background()
-	s := store.New(dbfixture.Open(t))
-	if e := s.Migrate(ctx); e != nil {
-		t.Fatal(e)
-	}
-	for _, q := range []string{"INSERT INTO tenant_gates VALUES('t',1,1)", "INSERT INTO product_gates VALUES('t','p',1,1)", "INSERT INTO subject_governance(tenant_id,product_id,subject_id,permission_version,privacy_epoch,view_epoch,enabled) VALUES('t','p','owner',1,1,1,1)"} {
-		if _, e := s.DB.Exec(q); e != nil {
-			t.Fatal(e)
-		}
-	}
-	scope := domain.ProductScope{TenantID: "t", ProductID: "p", SubjectID: "owner"}
-	ctx = testprincipal.Register(t, s, scope)
-	root := t.TempDir()
+	s, scope, owner, root := testprincipal.FreshSyntheticOwner(t)
+	ctx := testprincipal.Register(t, s, owner, scope)
 	f, e := files.New(s, root)
 	if e != nil {
 		t.Fatal(e)
@@ -45,7 +32,7 @@ func TestPrivateFilesNeverStaticAndInterruptedStageCleaned(t *testing.T) {
 	t.Cleanup(func() { _ = f.Close() })
 	body := []byte("synthetic private file")
 	h := sha256.Sum256(body)
-	m := generated.AssetUploadMetadata{ProductID: "p", Name: "note.txt", Purpose: "KNOWLEDGE", DeclaredType: "text/plain", ExpectedSize: "22", ExpectedSha256: hex.EncodeToString(h[:]), AudiencePolicy: "PRODUCT_EDITORS", Rights: generated.SourceRights{OriginKind: "SYNTHETIC", SourceLabel: "test", License: "Apache-2.0", AllowedUses: []string{"EDIT", "COPY", "PUBLISH"}}}
+	m := generated.AssetUploadMetadata{ProductID: generated.Identity(scope.ProductID), Name: "note.txt", Purpose: "KNOWLEDGE", DeclaredType: "text/plain", ExpectedSize: "22", ExpectedSha256: hex.EncodeToString(h[:]), AudiencePolicy: "PRODUCT_EDITORS", Rights: generated.SourceRights{OriginKind: "SYNTHETIC", SourceLabel: "test", License: "Apache-2.0", AllowedUses: []string{"EDIT", "COPY", "PUBLISH"}}}
 	if len(body) != 22 {
 		t.Fatal("fixture size")
 	}

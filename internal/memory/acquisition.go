@@ -13,6 +13,7 @@ import (
 	world "loreviva.local/loreviva/internal/runtime"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -30,6 +31,10 @@ type Namespace struct {
 	DataSubjectID string
 }
 type MemoryService struct {
+	governanceMu sync.Mutex
+	governanceBinding *store.IntegrationGovernanceOwnerBinding
+	governanceLedger *DeletionLedger
+	governanceFiles *files.Store
 	Store  *store.Store
 	Ledger *DeletionLedger
 	Files  *files.Store
@@ -89,7 +94,21 @@ func authorizeTx(ctx context.Context, tx store.Tx, n Namespace, action string) e
 		return ErrInvalid
 	}
 	var current bool
-	e := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM runtime_instances i JOIN subject_governance g ON g.tenant_id=i.tenant_id AND g.product_id=i.product_id AND g.subject_id=? WHERE i.tenant_id=? AND i.product_id=? AND i.world_instance_id=? AND i.owner_subject_id=? AND g.enabled=1)", n.DataSubjectID, n.TenantID, n.ProductID, n.WorldInstanceID, n.SubjectID).Scan(&current)
+	if handled, e := store.IntegrationGovernanceCallerTx(ctx, tx, n.Scope, action); handled {
+		if e != nil || n.SubjectID != n.DataSubjectID { return store.ErrDenied }
+		var permitted bool
+		e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM memory_subject_permissions WHERE tenant_id=? AND product_id=? AND caller_subject_id=? AND data_subject_id=? AND action=? AND allowed_use='PRIVATE_RESPONSE' AND enabled=1 AND expires_at>UTC_TIMESTAMP(6))", n.TenantID, n.ProductID, n.SubjectID, n.DataSubjectID, action).Scan(&permitted)
+		if e != nil || !permitted { return store.ErrDenied }; return nil
+	}
+	_, integration, e := store.IntegrationTurnInitializationTx(ctx, tx, n.Scope)
+	if e != nil {
+		return e
+	}
+	if integration {
+		current = n.SubjectID == n.DataSubjectID
+	} else {
+		e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM runtime_instances i JOIN subject_governance g ON g.tenant_id=i.tenant_id AND g.product_id=i.product_id AND g.subject_id=? WHERE i.tenant_id=? AND i.product_id=? AND i.world_instance_id=? AND i.owner_subject_id=? AND g.enabled=1)", n.DataSubjectID, n.TenantID, n.ProductID, n.WorldInstanceID, n.SubjectID).Scan(&current)
+	}
 	if e != nil {
 		return e
 	}

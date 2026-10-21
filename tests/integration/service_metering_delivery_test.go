@@ -527,11 +527,18 @@ func TestOriginalMeterOpaqueEvidenceAndOrdinaryServiceReopen(t *testing.T) {
 			if e := r.Local.Participant.Close(ctx); e != nil {
 				t.Fatal(e)
 			}
-			local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+			// Only the successful disabled-service reopen needs a new process owner.
+			reopenedStore := r.Store
+			if mode == "DISABLED" {
+				reopenedStore = store.New(r.Store.DB)
+			}
+			local, e := app.OpenLocal(ctx, reopenedStore, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
 			if mode == "MISSING" {
 				if e == nil || local != nil {
 					if local != nil {
-						local.Participant.Close(ctx)
+						if closeErr := local.Participant.Close(context.Background()); closeErr != nil {
+							t.Error(closeErr)
+						}
 					}
 					t.Fatal("missing settlement service did not close ordinary reopen")
 				}
@@ -539,7 +546,11 @@ func TestOriginalMeterOpaqueEvidenceAndOrdinaryServiceReopen(t *testing.T) {
 				if e != nil {
 					t.Fatal("ordinary reopen", e)
 				}
-				defer local.Participant.Close(ctx)
+				t.Cleanup(func() {
+					if closeErr := local.Participant.Close(context.Background()); closeErr != nil {
+						t.Error(closeErr)
+					}
+				})
 			}
 			var available int
 			if e = r.Store.DB.QueryRow("SELECT COUNT(*) FROM harness_settlement_services WHERE enabled=1").Scan(&available); e != nil || available != 0 {
@@ -551,7 +562,7 @@ func TestOriginalMeterOpaqueEvidenceAndOrdinaryServiceReopen(t *testing.T) {
 				}
 				return
 			}
-			if _, e = r.Store.ReconcileOriginalServiceMetering(ctx, id); e == nil {
+			if _, e = reopenedStore.ReconcileOriginalServiceMetering(ctx, id); e == nil {
 				t.Fatal("disabled original service authorized metering")
 			}
 			var lines, unknown int

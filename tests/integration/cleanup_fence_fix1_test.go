@@ -16,17 +16,16 @@ import (
 )
 
 func TestFix1CleanupAcceptedContinuationRejectsOldFence(t *testing.T) {
-	s, _, request := fixture(t, false)
-	scope := request.ProductScope
-	ctx := testprincipal.RegisterActions(t, s, scope, []string{"asset.upload", "asset.read"})
-	f, e := files.New(s, t.TempDir())
+	s, scope, owner, filesRoot := testprincipal.FreshSyntheticOwner(t)
+	ctx := testprincipal.RegisterActions(t, s, owner, scope, []string{"asset.upload", "asset.read"})
+	f, e := files.New(s, filesRoot)
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer f.Close()
 	body := []byte("synthetic")
 	h := sha256.Sum256(body)
-	m := generated.AssetUploadMetadata{ProductID: "p", Name: "young.txt", Purpose: "KNOWLEDGE", DeclaredType: "text/plain", ExpectedSize: "9", ExpectedSha256: hex.EncodeToString(h[:]), AudiencePolicy: "PRODUCT_READERS", Rights: generated.SourceRights{OriginKind: "SYNTHETIC", SourceLabel: "test", License: "Apache-2.0", AllowedUses: []string{"EDIT", "PUBLISH"}}}
+	m := generated.AssetUploadMetadata{ProductID: generated.Identity(scope.ProductID), Name: "young.txt", Purpose: "KNOWLEDGE", DeclaredType: "text/plain", ExpectedSize: "9", ExpectedSha256: hex.EncodeToString(h[:]), AudiencePolicy: "PRODUCT_READERS", Rights: generated.SourceRights{OriginKind: "SYNTHETIC", SourceLabel: "test", License: "Apache-2.0", AllowedUses: []string{"EDIT", "PUBLISH"}}}
 	for i := 0; i < 101; i++ {
 		if _, e = f.Stage(ctx, scope, bytes.NewReader(body), m); e != nil {
 			t.Fatal(e)

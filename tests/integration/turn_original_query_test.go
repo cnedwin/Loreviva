@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"loreviva.local/loreviva/internal/app"
+	"loreviva.local/loreviva/internal/auth"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/domain"
+	"loreviva.local/loreviva/internal/files"
 	"loreviva.local/loreviva/internal/harness"
 	"loreviva.local/loreviva/internal/memory"
 	store "loreviva.local/loreviva/internal/store/mysql"
@@ -96,12 +98,28 @@ func TestOriginalMockLostReplyRestartQueriesOnce(t *testing.T) {
 			t.Fatal("bill mislabeled as provider request")
 		}
 	}
-	local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+	// Reconstruct process-local owners over the same persisted fixture database.
+	// The original Store's once-bound key and creation owners are never replaced.
+	restartedStore := store.New(r.Store.DB)
+	restartedFiles, e := files.New(restartedStore, r.Files.RootPath)
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer local.Participant.Close(ctx)
-	recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
+	t.Cleanup(func() {
+		if e := restartedFiles.Close(); e != nil {
+			t.Error(e)
+		}
+	})
+	local, e := app.OpenLocal(ctx, restartedStore, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		if e := local.Participant.Close(ctx); e != nil {
+			t.Error(e)
+		}
+	})
+	recovered := app.NewRuntime(restartedStore, restartedFiles, auth.New(restartedStore, r.Auth.Scope(), "owner", runtimeToken))
 	recovered.BindLocal(local)
 	if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", task); e != nil {
 		t.Fatal(e)

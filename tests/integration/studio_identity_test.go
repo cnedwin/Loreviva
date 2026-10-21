@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"loreviva.local/loreviva/internal/app"
@@ -10,11 +9,49 @@ import (
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
 	"loreviva.local/loreviva/internal/harness"
+	"loreviva.local/loreviva/internal/maintenance"
 	store "loreviva.local/loreviva/internal/store/mysql"
-	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"net/http/httptest"
 	"testing"
 )
+
+// These three positive identity fixtures use the real registration/delegation
+// ports. They preserve each old scope/action set and add no bootstrap rights.
+func studioRegisteredFixture(t *testing.T, r *app.Runtime, scope domain.ProductScope, id, secret string, actions []string) context.Context {
+	t.Helper()
+	owner := runtimeContext(t, r)
+	if e := maintenance.RegisterLocalCredential(owner, r.Store, scope, id, secret); e != nil {
+		t.Fatal(e)
+	}
+	sc := domain.SettingsScope{Kind: "PRODUCT", TenantID: scope.TenantID, ProductID: &scope.ProductID}
+	for _, action := range actions {
+		page, e := r.Store.ListMembers(owner, sc, 100, "")
+		if e != nil {
+			t.Fatal(e)
+		}
+		var revision string
+		for _, member := range page.Items {
+			if string(member.CredentialID) == id {
+				revision = string(member.GrantSetRevision)
+			}
+		}
+		if revision == "" {
+			t.Fatal("registered member missing from current snapshot")
+		}
+		raw, e := json.Marshal(map[string]any{"scope": sc, "kind": "SET_SCOPE_GRANT", "expected_revision": revision, "credential_id": id, "subject_id": scope.SubjectID, "grant": map[string]any{"scope": sc, "action": action, "use": "PRODUCT_ADMIN", "effect": "ALLOW", "enabled": true, "expires_at": nil}})
+		if e != nil {
+			t.Fatal(e)
+		}
+		if _, e = r.Store.ApplyMember(owner, "fixture-grant-"+id+"-"+action, raw); e != nil {
+			t.Fatal(e)
+		}
+	}
+	ctx, _, e := r.Auth.Authenticate(context.Background(), "Bearer "+secret)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return ctx
+}
 
 func TestStudioSecondSubjectOwnsRealContentAndCandidate(t *testing.T) {
 	r, original, request := candidateHTTPFixture(t)
@@ -29,7 +66,7 @@ func TestStudioSecondSubjectOwnsRealContentAndCandidate(t *testing.T) {
 	if _, e = r.Store.DB.Exec("INSERT INTO subject_governance(tenant_id,product_id,subject_id,permission_version,privacy_epoch,view_epoch,enabled) VALUES(?,?,?,1,1,1,1)", other.TenantID, other.ProductID, other.SubjectID); e != nil {
 		t.Fatal(e)
 	}
-	ctx := testprincipal.Register(t, r.Store, other)
+	ctx := studioRegisteredFixture(t, r, other, "second-creator-credential", "synthetic-second-creator-credential-0123456789", maintenance.OperatorActions)
 	if _, e = r.Content.GetDraft(ctx, other, original, ""); e == nil {
 		t.Fatal("other subject read original owner's draft")
 	}
@@ -143,13 +180,7 @@ func TestStudioSecondCredentialAuthenticatesCurrentRegistry(t *testing.T) {
 	r, scope, _ := runtimeFixture(t)
 	ctx := context.Background()
 	secret := "synthetic-second-credential-00000000000001"
-	h := sha256.Sum256([]byte(secret))
-	if _, e := r.Store.DB.Exec("INSERT INTO operator_credentials VALUES('second',?,?,?, ?,1)", scope.TenantID, scope.ProductID, scope.SubjectID, h[:]); e != nil {
-		t.Fatal(e)
-	}
-	if _, e := r.Store.DB.Exec("INSERT INTO operator_actions VALUES('second','content.read')"); e != nil {
-		t.Fatal(e)
-	}
+	studioRegisteredFixture(t, r, scope, "second", secret, []string{"content.read"})
 	got, e := r.Auth.Authorize(ctx, "Bearer "+secret, scope.ProductID, "content.read")
 	if e != nil || got != scope {
 		t.Fatal("actual second registry credential rejected", got, e)
@@ -208,19 +239,7 @@ func TestStudioDurableIssuerUsesActualCredential(t *testing.T) {
 	r, draft, request := candidateHTTPFixture(t)
 	scope := r.Auth.Scope()
 	secret := "synthetic-non-owner-credential-00000000001"
-	h := sha256.Sum256([]byte(secret))
-	if _, e := r.Store.DB.Exec("INSERT INTO operator_credentials VALUES('second',?,?,?, ?,1)", scope.TenantID, scope.ProductID, scope.SubjectID, h[:]); e != nil {
-		t.Fatal(e)
-	}
-	for _, a := range []string{"content.read", "asset.read", "content.assist", "task.read"} {
-		if _, e := r.Store.DB.Exec("INSERT INTO operator_actions VALUES('second',?)", a); e != nil {
-			t.Fatal(e)
-		}
-	}
-	ctx, _, e := r.Auth.Authenticate(context.Background(), "Bearer "+secret)
-	if e != nil {
-		t.Fatal(e)
-	}
+	ctx := studioRegisteredFixture(t, r, scope, "second", secret, []string{"content.read", "asset.read", "content.assist", "task.read"})
 	receipt, e := r.Store.AcceptDraftCandidate(ctx, scope, draft, "second-candidate", request)
 	if e != nil {
 		t.Fatal(e)

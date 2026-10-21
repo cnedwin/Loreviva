@@ -30,6 +30,12 @@ func validateRuntime(r BarrierRequest) error {
 	}
 	b := r.Runtime
 	if b.CreationID != "" {
+		if a := r.integrationCreation; a != nil {
+			if a.store == nil || !r.commandOnly || r.WorldScope != nil || r.Operation != "createInstance" || b.Action != "CREATE" || b.CreationID != a.id || r.ProductScope != (&IntegrationCreationPlan{a}).Scope().ProductScope || a.request.Mode != "PRIVATE" || len(a.request.InitialParticipants) != 1 {
+				return ErrDenied
+			}
+			return nil
+		}
 		if !r.commandOnly || r.WorldScope != nil || r.Operation != "createAdminInstance" || b.Action != "CREATE" || domain.ValidateID(b.CreationID) != nil {
 			return ErrDenied
 		}
@@ -41,6 +47,10 @@ func validateRuntime(r BarrierRequest) error {
 	switch r.Operation {
 	case "cancelInstanceMigration":
 		if !r.commandOnly || r.Purpose != MigrationPurpose || b.Action != "CANCEL_MIGRATION" || domain.ValidateID(b.TargetTaskID) != nil {
+			return ErrDenied
+		}
+	case "controlIntegrationInstance":
+		if r.integrationControl == nil || !r.commandOnly || r.Purpose != ControlPurpose || b.Action != r.integrationControl.document.Action {
 			return ErrDenied
 		}
 	case "controlAdminInstance", "INSTANCE_CONTROL":
@@ -96,7 +106,14 @@ func acquireRuntimeWorld(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Lo
 	if e != nil {
 		return e
 	}
-	if owner != r.OwnerSubjectID {
+	wantOwner := r.OwnerSubjectID
+	if a := r.integrationControl; a != nil {
+		if a.store == nil || a.document.Scope.WorldInstanceID != id {
+			return ErrDenied
+		}
+		wantOwner = a.service.principal.StableSubject
+	}
+	if owner != wantOwner {
 		return ErrDenied
 	}
 	if e = tx.QueryRowContext(ctx, "SELECT available FROM releases WHERE tenant_id=? AND product_id=? AND release_id=?", t, p, release).Scan(&available); e != nil {

@@ -41,6 +41,8 @@ func TestFix1CleanupDeletionIntentWinsLateUploadIntake(t *testing.T) {
 		t.Fatal(e)
 	}
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
+	root := t.TempDir()
+	initializeTestConfiguration(t, s, root)
 	if e := maintenance.BootstrapSynthetic(ctx, s, scope, "owner", "synthetic-test-private-operator-secret"); e != nil {
 		t.Fatal(e)
 	}
@@ -49,7 +51,6 @@ func TestFix1CleanupDeletionIntentWinsLateUploadIntake(t *testing.T) {
 		t.Fatal(authErr)
 	}
 	ctx = authenticated
-	root := t.TempDir()
 	f, e := files.New(s, root)
 	if e != nil {
 		t.Fatal(e)

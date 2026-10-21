@@ -2,15 +2,19 @@ package content_test
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"loreviva.local/loreviva/internal/app"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/generated"
+	"loreviva.local/loreviva/internal/maintenance"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/tests/integration/dbfixture"
-	"loreviva.local/loreviva/tests/integration/testprincipal"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -20,13 +24,50 @@ func fixture(t *testing.T) (*content.Service, domain.ProductScope, context.Conte
 	if e := s.Migrate(context.Background()); e != nil {
 		t.Fatal(e)
 	}
-	for _, q := range []string{"INSERT INTO tenant_gates VALUES('demo-local',1,1)", "INSERT INTO product_gates VALUES('demo-local','coffee',1,1)", "INSERT INTO subject_governance(tenant_id,product_id,subject_id,permission_version,privacy_epoch,view_epoch,enabled) VALUES('demo-local','coffee','creator',1,1,1,1)"} {
-		if _, e := s.DB.Exec(q); e != nil {
-			t.Fatal(e)
+	ctx := context.Background()
+	independent, private := t.TempDir(), t.TempDir()
+	if e := app.InitializeLocal(ctx, s, independent, private); e != nil {
+		t.Fatal(e)
+	}
+	local, e := app.OpenLocal(ctx, s, independent, private)
+	if e != nil {
+		t.Fatal(e)
+	}
+	// Return the local participant before the temporary roots and database.
+	t.Cleanup(func() {
+		if e := local.Participant.Close(ctx); e != nil {
+			t.Error(e)
+		}
+	})
+	var material [32]byte
+	if _, e = rand.Read(material[:]); e != nil {
+		t.Fatal(e)
+	}
+	bearer := hex.EncodeToString(material[:])
+	// The owned capture retains this bearer for scan-before-read, without minting a Session.
+	if channel := os.Getenv("LOREVIVA_TEST_CUSTODY_FILE"); channel != "" {
+		if filepath.Dir(channel) != os.Getenv("TMP") {
+			t.Fatal("private credential custody location")
+		}
+		f, err := os.OpenFile(channel, os.O_WRONLY|os.O_APPEND, 0600)
+		if err != nil {
+			t.Fatal("private credential custody unavailable")
+		}
+		err = json.NewEncoder(f).Encode([]string{bearer})
+		closeErr := f.Close()
+		if err != nil || closeErr != nil {
+			t.Fatal("private credential custody failed")
 		}
 	}
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
-	return content.New(s), scope, testprincipal.Register(t, s, scope)
+	if e = maintenance.BootstrapSynthetic(ctx, s, scope, "owner", bearer); e != nil {
+		t.Fatal(e)
+	}
+	operator, _, e := s.AuthenticateOperator(ctx, "Bearer "+bearer)
+	if e != nil {
+		t.Fatal("synthetic owner authentication", e)
+	}
+	return content.New(s), scope, operator
 }
 func coffee(t *testing.T) generated.DraftInput {
 	t.Helper()

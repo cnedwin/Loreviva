@@ -16,10 +16,11 @@ import (
 )
 
 type Local struct {
-	Mock        *harness.MockJournal
-	Coordinator *maintenance.Coordinator
-	Participant *maintenance.Participant
-	Ledger      *memory.DeletionLedger
+	creationStore *store.Store
+	Mock          *harness.MockJournal
+	Coordinator   *maintenance.Coordinator
+	Participant   *maintenance.Participant
+	Ledger        *memory.DeletionLedger
 }
 
 func bindings(ctx context.Context, s *store.Store, root, files string) (string, string, string, error) {
@@ -138,7 +139,7 @@ func OpenLocal(ctx context.Context, s *store.Store, root, files string) (*Local,
 	if _, e = rand.Read(nonce[:]); e != nil {
 		return nil, e
 	}
-	p, e := c.Register(ctx, "process-"+hex.EncodeToString(nonce[:]), []maintenance.Writer{maintenance.APIWriter, maintenance.StoreWriter, maintenance.WorkerWriter, maintenance.FileWriter, maintenance.GovernanceWriter, maintenance.HarnessWriter, maintenance.MockWriter, maintenance.QueryWriter, maintenance.CleanupWriter, maintenance.DeadlineWriter})
+	p, e := c.Register(ctx, "process-"+hex.EncodeToString(nonce[:]), []maintenance.Writer{maintenance.APIWriter, maintenance.StoreWriter, maintenance.WorkerWriter, maintenance.FileWriter, maintenance.GovernanceWriter, maintenance.HarnessWriter, maintenance.MockWriter, maintenance.QueryWriter, maintenance.CleanupWriter, maintenance.DeadlineWriter, maintenance.NotificationWriter, maintenance.ConfigWriter})
 	if e != nil {
 		return nil, e
 	}
@@ -168,7 +169,17 @@ func OpenLocal(ctx context.Context, s *store.Store, root, files string) (*Local,
 	s.WorldAccountingAuthority = p
 	s.SettlementAuthority = p
 	s.Guard = p
+	s.ConfigGuard = p
 	s.QueryAuthority = p
 	s.ProviderEvidence = j
-	return &Local{Coordinator: c, Participant: p, Ledger: l, Mock: j}, nil
+	keys, e := localstate.Open(root, false)
+	if e != nil {
+		_ = p.Close(ctx)
+		return nil, e
+	}
+	if e = s.BindIntegrationSessionKeys(ctx, keys); e != nil {
+		_ = p.Close(ctx)
+		return nil, e
+	}
+	return &Local{creationStore: s, Coordinator: c, Participant: p, Ledger: l, Mock: j}, nil
 }

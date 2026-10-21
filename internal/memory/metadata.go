@@ -92,64 +92,7 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 	br.Locks = append(br.Locks, store.LockKey{Rank: 50, IDs: []string{n.TenantID, n.ProductID, id}})
 	// Apply the selected revisions or policy revision inside the namespace transaction; REVOKE removes only the selected uses when provided, while blocking and derived-asset intent stay bound to the same governance task.
 	_, e = s.Store.WithCommandBarrier(ctx, br, func(tx store.Tx) error {
-		if e := authorizeUserTx(ctx, tx, n, "memory.govern"); e != nil {
-			return e
-		}
-		if c.Selector.TargetKind == "SOURCE" {
-			if e := authorizeUserTx(ctx, tx, n, "memory.source.govern"); e != nil {
-				return e
-			}
-		}
-		if c.Action == "CORRECT" {
-			if e := authorizeUserTx(ctx, tx, n, "memory.correct"); e != nil {
-				return e
-			}
-		}
-		a, e := loadTx(ctx, tx, n)
-		if e != nil {
-			return e
-		}
-		replacementID := ""
-		if c.Action == "CORRECT" {
-			replacementID = content.Identity(id, "replacement")
-		}
-		var binding Binding
-		if c.Action == "SET_USE_POLICY" {
-			if e = authorizeUserTx(ctx, tx, n, "memory.policy"); e != nil {
-				return e
-			}
-			if e = a.SetUsePolicy(c.PolicyRevision, c.PolicyAction, c.Uses); e != nil {
-				return e
-			}
-			binding = Binding{SelectorHash: digest(c), SourceEpoch: a.Epoch, Cutoff: a.Intake, Action: c.Action, TargetKind: c.PolicyAction, Uses: c.Uses}
-		} else {
-			binding, e = a.Block(c.Selector, c.Action, c.Uses, replacementID, c.Replacement)
-			if e != nil {
-				return e
-			}
-		}
-		completion, _ := json.Marshal(LedgerEntry{Sequence: ^uint64(0), PrevHash: strings.Repeat("0", 64), Hash: strings.Repeat("0", 64), Kind: "APPENDED", Reservation: Reservation{ID: id, RequestHash: hex.EncodeToString(hash[:]), Scope: []string{n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID}}, Binding: &binding})
-		if len(completion)+1 > CompletionAllowance {
-			return ErrInvalid
-		}
-		if e = tx.CreateRegisteredTask(ctx, domain.TaskIntake{TaskScope: domain.TaskScope{ProductScope: n.ProductScope, WorldScope: &n.Scope, OwnerSubjectID: n.SubjectID}, TaskID: id, NextRunAt: time.Now().UTC(), Kind: "GOVERNANCE"}, "MEMORY_GOVERNANCE"); e != nil {
-			return e
-		}
-		if e = tx.AdvanceMemoryPrivacy(ctx, n.DataSubjectID); e != nil {
-			return e
-		}
-		if e = s.blockAssets(ctx, tx, n, a, assetIDs); e != nil {
-			return e
-		}
-		if e = saveTx(ctx, tx, n, a); e != nil {
-			return e
-		}
-		b, _ := json.Marshal(binding)
-		if e = tx.RequireLock(n.Key()); e != nil {
-			return e
-		}
-		_, e = tx.ExecContext(ctx, "INSERT INTO memory_governance(tenant_id,product_id,task_id,world_instance_id,data_subject_id,owner_subject_id,request_hash,binding,preservation,cleanup) VALUES(?,?,?,?,?,?,?,?,'PENDING','PENDING')", n.TenantID, n.ProductID, id, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, hash[:], b)
-		return e
+		return s.applyGovernanceTx(ctx, tx, n, c, id, hash, assetIDs)
 	})
 	// Keep an uncertain blocking outcome pending under its original task; seal rejection only with the Store's rejection proof, and append preservation after the DB unit of work ends.
 	if e != nil {
@@ -206,6 +149,75 @@ func (s *MemoryService) Govern(ctx context.Context, scope domain.RelationshipSco
 		return status, pending
 	}
 	return status, nil
+}
+
+func (s *MemoryService) applyGovernanceTx(ctx context.Context, tx store.Tx, n Namespace, c MemoryGovernanceCommand, id string, hash [32]byte, assetIDs []assetRef, written ...*store.IntegrationGovernanceWritten) error {
+	if e := authorizeUserTx(ctx, tx, n, "memory.govern"); e != nil {
+		return e
+	}
+	if c.Selector.TargetKind == "SOURCE" {
+		if e := authorizeUserTx(ctx, tx, n, "memory.source.govern"); e != nil {
+			return e
+		}
+	}
+	if c.Action == "CORRECT" {
+		if e := authorizeUserTx(ctx, tx, n, "memory.correct"); e != nil {
+			return e
+		}
+	}
+	a, e := loadTx(ctx, tx, n)
+	if e != nil {
+		return e
+	}
+	replacementID := ""
+	if c.Action == "CORRECT" {
+		replacementID = content.Identity(id, "replacement")
+	}
+	var binding Binding
+	if c.Action == "SET_USE_POLICY" {
+		if e = authorizeUserTx(ctx, tx, n, "memory.policy"); e != nil {
+			return e
+		}
+		if e = a.SetUsePolicy(c.PolicyRevision, c.PolicyAction, c.Uses); e != nil {
+			return e
+		}
+		binding = Binding{SelectorHash: digest(c), SourceEpoch: a.Epoch, Cutoff: a.Intake, Action: c.Action, TargetKind: c.PolicyAction, Uses: c.Uses}
+	} else {
+		binding, e = a.Block(c.Selector, c.Action, c.Uses, replacementID, c.Replacement)
+		if e != nil {
+			return e
+		}
+	}
+	completion, _ := json.Marshal(LedgerEntry{Sequence: ^uint64(0), PrevHash: strings.Repeat("0", 64), Hash: strings.Repeat("0", 64), Kind: "APPENDED", Reservation: Reservation{ID: id, RequestHash: hex.EncodeToString(hash[:]), Scope: []string{n.TenantID, n.ProductID, n.WorldInstanceID, n.DataSubjectID, n.SubjectID}}, Binding: &binding})
+	if len(completion)+1 > CompletionAllowance {
+		return ErrInvalid
+	}
+	nextRun := time.Now().UTC().Truncate(time.Microsecond)
+	if e = tx.CreateRegisteredTask(ctx, domain.TaskIntake{TaskScope: domain.TaskScope{ProductScope: n.ProductScope, WorldScope: &n.Scope, OwnerSubjectID: n.SubjectID}, TaskID: id, NextRunAt: nextRun, Kind: "GOVERNANCE"}, "MEMORY_GOVERNANCE"); e != nil {
+		return e
+	}
+	if e = tx.AdvanceMemoryPrivacy(ctx, n.DataSubjectID); e != nil {
+		return e
+	}
+	if e = s.blockAssets(ctx, tx, n, a, assetIDs); e != nil {
+		return e
+	}
+	if e = saveTx(ctx, tx, n, a); e != nil {
+		return e
+	}
+	b, _ := json.Marshal(binding)
+	if len(written) > 1 { return store.ErrDenied }
+	if len(written) == 1 {
+		if written[0] == nil { return store.ErrDenied }
+		written[0].Document, e = json.Marshal(a); if e != nil { return e }
+		written[0].Binding = append([]byte(nil), b...)
+		written[0].NextRun = nextRun
+	}
+	if e = tx.RequireLock(n.Key()); e != nil {
+		return e
+	}
+	_, e = tx.ExecContext(ctx, "INSERT INTO memory_governance(tenant_id,product_id,task_id,world_instance_id,data_subject_id,owner_subject_id,request_hash,binding,preservation,cleanup) VALUES(?,?,?,?,?,?,?,?,'PENDING','PENDING')", n.TenantID, n.ProductID, id, n.WorldInstanceID, n.DataSubjectID, n.SubjectID, hash[:], b)
+	return e
 }
 
 // Process resumes exactly the existing task. It does not create a new command,

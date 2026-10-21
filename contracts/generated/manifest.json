@@ -1,11 +1,15 @@
 {
-  "source_hash": "d7ebdd17e6a4b125d6ac290f0d318f65c6277ab945caa22265e3d1e35b77bd2b",
+  "source_hash": "cdff948efad24ca548e966e86878a27af8f45c17000e3e17cd3f2cd3352aad97",
   "source_hashes": {
-    "openapi.yaml": "ed9bb1567c8fc218763aba64ab73b81145788afe9fea892f6658ef90a76b28ac",
+    "openapi.yaml": "7598875f4c1fc4e284e955b29bd22e9321a30b98eaee32515c05b1629a4d0e3f",
     "wepkg.schema.json": "d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03"
   },
+  "profile_hashes": {
+    "contracts/generated/profiles/public_v1.openapi.json": "2efeeb3b4ca01739ab4e2f6b05e7f4980550a476c314732ac38c7ec39987c815",
+    "contracts/generated/profiles/integration_r0_v1.openapi.json": "5ad519fe48dc86d8debc3e2a29e3f26c916b1cd2ab42a2bdff1e9629acff3817"
+  },
   "generator_versions": {
-    "loreviva": "1.4.0",
+    "loreviva": "1.5.0",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "go-jsonschema": "6.0.2"
@@ -53,6 +57,8 @@
     "readAuthorizedAsset",
     "createPaymentIntent",
     "exchangeClientSession",
+    "getCustomerNotifications",
+    "recordCustomerNotificationReceipt",
     "createInstance",
     "getInstance",
     "controlInstance",
@@ -62,8 +68,13 @@
     "getMemory",
     "governMemories",
     "getSnapshot",
+    "getOriginalTurnIntakeReceipt",
     "submitTurn",
+    "getIntegrationCapabilities",
     "createQuote",
+    "readRuntimeMedia",
+    "getPlayerSelfConsent",
+    "commandPlayerSelfConsent",
     "getTask",
     "cancelTask",
     "getTurn",
@@ -74,5 +85,19 @@
     "Go top-level raw JSON DTOs alias json.RawMessage to preserve JSON methods; validate original wire JSON via generated.Decode before domain use.",
     "TypeScript retains allOf sibling shapes and translates required finite enum discriminants with const/enum if predicates, then/else field requirements, single-field not(required), and small array bounds. Regex, formats, string/number ranges, uniqueness, propertyNames, array upper bounds above 16, arbitrary if predicates and general not/dependent constraints still require full JSON Schema validation.",
     "OpenAPI source must use JSON syntax (valid YAML); no alternate authority or runtime timestamps."
-  ]
+  ],
+  "transport_artifacts": {
+    "packages/sdk-ts/src/generated/transport.ts": {
+      "bytes": 415454,
+      "sha256": "4825e63c8211b33095bf9127828996a161656a66c6a6db520a1875eb56a89df9"
+    },
+    "packages/sdk-ts/src/generated/validators.cjs": {
+      "bytes": 22772393,
+      "sha256": "dfaa0ef322771a7b5eeba65e993ff4c3c39c98c6b40bbb936644cc6806bc080a"
+    },
+    "packages/sdk-ts/src/generated/validators.d.cts": {
+      "bytes": 120282,
+      "sha256": "bd931e43466d030187c81c390e2b267b3d46f2f6db218f7de83dd6dcb8a8a0fc"
+    }
+  }
 }

@@ -52,6 +52,8 @@ func originalCostHoldState(h Reservation, costs []domain.MockResultMetadata) str
 // Only the fixed business owners invoke this while holding their original
 // root/tasks/attempts/accounts/holds/append locks. No caller-provided amounts.
 func bindOriginalServiceMeteringTx(ctx context.Context, u *unit, r BarrierRequest, service string, costs []domain.MockResultMetadata) error {
+	// This reference comes from the owning unit, never a public metering DTO.
+	r.integrationTurn = u.integrationTurn
 	if len(costs) < 1 || len(costs) > 40 {
 		return ErrDenied
 	}
@@ -222,6 +224,9 @@ func checkJointServiceHoldsTx(ctx context.Context, u *unit, m *originalServiceMe
 			return ErrDenied
 		}
 		accounts = r0Accounts(*r.WorldScope, project)
+		if r.integrationTurn != nil {
+			accounts = r.integrationTurn.accounts(project)
+		}
 	}
 	var expected []Reservation
 	for _, h := range accounts {

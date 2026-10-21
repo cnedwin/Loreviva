@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"loreviva.local/loreviva/internal/domain"
+	"reflect"
 )
 
 var errApprovedInspected = errors.New("approved result inspected; rollback read")
@@ -20,6 +21,18 @@ func (s *Store) InspectApprovedTurn(ctx context.Context, scope domain.Scope, tas
 		return out, e
 	}
 	defer release()
+	var integration *integrationTurnPlan
+	if _, ok := ctx.Value(integrationContextKey{}).(currentIntegration); ok {
+		integration, e = s.integrationTaskPlan(ctx, s.DB, task)
+		if e != nil || integration.scope != scope {
+			return out, ErrDenied
+		}
+		integration.action = "APPROVED_READ"
+		if e = integration.planApprovedChoice(ctx, s.DB); e != nil {
+			return out, e
+		}
+		ctx = context.WithValue(ctx, integrationTurnKey{}, integration)
+	}
 	if s.WorldAccountingAuthority == nil {
 		return out, ErrDenied
 	}
@@ -45,6 +58,10 @@ func (s *Store) InspectApprovedTurn(ctx context.Context, scope domain.Scope, tas
 	}
 	key := turnIdentity(task, "approved-read")
 	r := BarrierRequest{approvedHistoryRead: true, approvedInstallation: &installation, ExpectedWorldStatus: status, ProductScope: scope.ProductScope, WorldScope: &scope, Versions: &v, OwnerSubjectID: scope.SubjectID, Operation: "HARNESS_APPROVED_READ", CommandKey: key, CommitKey: key, GateVersions: g, commandOnly: true, TaskID: task, Locks: []LockKey{{Rank: 50, IDs: []string{scope.TenantID, scope.ProductID, task}}}}
+	if integration != nil {
+		r.integrationTurn = integration
+		r.Locks = append(r.Locks, integration.keys...)
+	}
 	rows, e := s.DB.QueryContext(ctx, "SELECT a.attempt_id,z.authorization_id FROM attempts a JOIN dispatch_authorizations z USING(tenant_id,product_id,task_id,attempt_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? ORDER BY a.slot LIMIT 3", scope.TenantID, scope.ProductID, task)
 	if e != nil {
 		return out, e
@@ -86,6 +103,23 @@ func (s *Store) InspectApprovedTurn(ctx context.Context, scope domain.Scope, tas
 		if !allOriginalUsageKnown(costs) {
 			if e = checkOriginalServiceMeteringTx(ctx, tx.(*unit), scope.ProductScope, task, turnIdentity(task, "service"), turnIdentity(task, "world-commit"), costs); e != nil {
 				return e
+			}
+		}
+		if integration != nil {
+			if s.BeforeReadFinish != nil {
+				if e = s.BeforeReadFinish(ctx, tx.(*unit).tx); e != nil {
+					return e
+				}
+			}
+			if e = s.checkIntegrationApprovedRead(ctx, tx.(*unit).tx, r); e != nil {
+				return e
+			}
+			after, e := s.GenerationContext.InspectApprovedTurnTx(ctx, tx, scope, task, v)
+			if e != nil {
+				return e
+			}
+			if !reflect.DeepEqual(after, out) {
+				return ErrDenied
 			}
 		}
 		return errApprovedInspected

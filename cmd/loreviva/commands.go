@@ -31,7 +31,8 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 		return errors.New("maintenance command required")
 	}
 	switch args[0] {
-	// Local admin registration authenticates the configured bearer against the current registry; constructing the runtime does not authorize later requests.
+	case "integration":
+		return integrationCommand(ctx, cfg, s, args[1:], out)
 	case "initialize-local-administration", "register-local-credential":
 		local, e := app.OpenLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot)
 		if e != nil {
@@ -112,9 +113,16 @@ func command(ctx context.Context, cfg config.Config, args []string, out io.Write
 			return errors.New("bootstrap requires --mock --tenant demo-local")
 		}
 		a := operator(cfg, s)
-		if e = app.InitializeLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot); e != nil {
+		// Existing-install validation binds and closes a temporary owner; keep
+		// the command Store unbound for its single OpenLocal below. Share the pool.
+		if e = app.InitializeLocal(ctx, store.New(s.DB), cfg.GovernanceRoot, cfg.FilesRoot); e != nil {
 			return errors.New("independent fresh bootstrap unavailable")
 		}
+		local, e := app.OpenLocal(ctx, s, cfg.GovernanceRoot, cfg.FilesRoot)
+		if e != nil {
+			return e
+		}
+		defer local.Participant.Close(context.WithoutCancel(ctx))
 		if e = maintenance.BootstrapSyntheticWithConsent(ctx, s, a.Scope(), cfg.OperatorCredentialID, cfg.OperatorSecret.Reveal(), *consent); e != nil {
 			return errors.New("synthetic bootstrap refused; existing governance and credentials are preserved")
 		}

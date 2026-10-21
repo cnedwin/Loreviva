@@ -127,6 +127,11 @@ func (s *Store) InitializeLocalAdministration(ctx context.Context) error {
 
 // Register only under current tenant maintenance authority for an existing live subject. Reusing an identity requires the same secret hash; this operation does not grant actions, and authority is checked again before commit.
 func (s *Store) RegisterLocalCredential(ctx context.Context, scope domain.ProductScope, id, secret string) error {
+	ctx, installation, release, e := s.EnterConfiguration(ctx)
+	if e != nil {
+		return e
+	}
+	defer release()
 	ctx, done, e := s.EnterOperation(ctx)
 	if e != nil {
 		return e
@@ -137,7 +142,9 @@ func (s *Store) RegisterLocalCredential(ctx context.Context, scope domain.Produc
 		return ErrDenied
 	}
 	tenant := domain.SettingsScope{Kind: "TENANT", TenantID: p.TenantID}
+	h := sha256.Sum256([]byte(secret))
 	keys := []LockKey{{Rank: 10, IDs: []string{p.TenantID}}, {Rank: 15, Kind: domain.StudioCredentialLock, IDs: []string{p.TenantID, p.CredentialID}}, {Rank: 15, Kind: domain.StudioCredentialLock, IDs: []string{p.TenantID, id}}, studioGrantKey(p, tenant), {Rank: 30, IDs: []string{scope.TenantID, scope.ProductID, scope.SubjectID}}}
+	keys = append(keys, credentialHashKey(h))
 	tx, e := s.studioLocalTx(ctx, keys)
 	if e != nil {
 		return e
@@ -150,7 +157,12 @@ func (s *Store) RegisterLocalCredential(ctx context.Context, scope domain.Produc
 	if e = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM subject_governance WHERE tenant_id=? AND product_id=? AND subject_id=? AND enabled=1)", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&exists); e != nil || !exists {
 		return ErrDenied
 	}
-	h := sha256.Sum256([]byte(secret))
+	if e = checkConfigurationInstallationTx(ctx, tx, installation); e != nil {
+		return e
+	}
+	if e = reserveCredentialHashTx(ctx, tx, h, "OPERATOR", id, installation.Installation, true); e != nil {
+		return e
+	}
 	var old []byte
 	e = tx.QueryRowContext(ctx, "SELECT token_sha256 FROM operator_credentials WHERE credential_id=? AND tenant_id=? AND product_id=? AND subject_id=?", id, scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&old)
 	if e == nil {
@@ -212,7 +224,23 @@ func lockStudioRows(ctx context.Context, tx *sql.Tx, k LockKey) error {
 	for _, id := range k.IDs {
 		args = append(args, id)
 	}
+	switch k.Kind {
+	case "integration_registrar":
+		return studioLockRows(ctx, tx, "SELECT credential_id FROM integration_registrars WHERE tenant_id=? AND credential_id=? AND product_id=? FOR UPDATE", args...)
+	case "integration_principal":
+		return studioLockRows(ctx, tx, "SELECT principal_id FROM integration_principals WHERE principal_id=? FOR UPDATE", args...)
+	case "integration_customer":
+		return studioLockRows(ctx, tx, "SELECT customer_id FROM integration_customers WHERE tenant_id=? AND product_id=? AND customer_id=? FOR UPDATE", args...)
+	case "integration_entitlement":
+		return studioLockRows(ctx, tx, "SELECT entitlement_id FROM integration_entitlements WHERE tenant_id=? AND product_id=? AND customer_id=? AND entitlement_id=? FOR UPDATE", args...)
+	case "integration_mapping":
+		return studioLockRows(ctx, tx, "SELECT player_subject_id FROM integration_external_subjects WHERE tenant_id=? AND product_id=? AND customer_id=? AND SHA2(external_id,256)=? FOR UPDATE", args...)
+	case "integration_command", "integration_receipt":
+		return studioLockRows(ctx, tx, "SELECT original_key FROM integration_receipts WHERE tenant_id=? AND product_id=? AND owner_id=? AND original_key=? AND scope_kind='REGISTRY' FOR UPDATE", args...)
+	}
 	switch k.Rank {
+	case 5:
+		return studioLockRows(ctx, tx, "SELECT token_hash FROM integration_credential_hashes WHERE token_hash=UNHEX(?) FOR UPDATE", k.IDs[0])
 	case 10:
 		query = "SELECT tenant_id FROM tenant_gates WHERE tenant_id=? FOR UPDATE"
 	case 15:
@@ -231,8 +259,12 @@ func lockStudioRows(ctx context.Context, tx *sql.Tx, k LockKey) error {
 		return studioLockRows(ctx, tx, "SELECT action FROM memory_subject_permissions WHERE tenant_id=? AND product_id=? AND data_subject_id=? ORDER BY caller_subject_id,action,allowed_use FOR UPDATE", args...)
 	case 45, 110:
 		query = "SELECT command_key FROM studio_settings_commands WHERE tenant_id=? AND scope_type=? AND scope_address=? AND credential_id=? AND family=? AND command_key=? FOR UPDATE"
+	case 70:
+		return studioLockRows(ctx, tx, "SELECT account_id FROM budget_accounts WHERE kind=? AND scope_key=? AND account_id=? FOR UPDATE", k.Kind, k.IDs[0], k.IDs[1])
 	case 90:
 		switch k.Kind {
+		case "content_release":
+			return studioLockRows(ctx, tx, "SELECT release_id FROM releases WHERE tenant_id=? AND product_id=? AND release_id=? FOR UPDATE", args...)
 		case domain.StudioSettingsLock:
 			query = "SELECT section FROM studio_scoped_settings WHERE tenant_id=? AND scope_type=? AND scope_address=? AND section=? FOR UPDATE"
 		case domain.StudioConnectionLock:

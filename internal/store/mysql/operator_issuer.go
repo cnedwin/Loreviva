@@ -66,6 +66,13 @@ func checkDraftIssuerProof(ctx context.Context, q rowQuerier, p currentOperator)
 }
 
 func (s *Store) EnterControlTaskIssuer(ctx context.Context, lease RegisteredLease, worker string) (context.Context, error) {
+	var provenance string
+	if e := s.DB.QueryRowContext(ctx, "SELECT issuer_provenance FROM registered_jobs WHERE tenant_id=? AND product_id=? AND task_id=?", lease.TenantID, lease.ProductID, lease.TaskID).Scan(&provenance); e != nil {
+		return ctx, e
+	}
+	if provenance == "DIRECT_INTEGRATION" {
+		return s.enterIntegrationControlIssuer(ctx, lease, worker)
+	}
 	if lease.WorldInstanceID == nil || lease.SubjectID != lease.OwnerSubjectID || worker == "" || lease.Fence == 0 || !(lease.Kind == "CONTROL" && lease.Operation == "INSTANCE_CONTROL" || lease.Kind == "MIGRATION" && lease.Operation == "INSTANCE_MIGRATION") {
 		return ctx, ErrDenied
 	}

@@ -11511,6 +11511,2895 @@
           "assertions"
         ],
         "additionalProperties": false
+      },
+      "IntegrationProjectionRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "const": "getTurn"
+              },
+              "status": {
+                "type": "string",
+                "const": "200"
+              },
+              "media_type": {
+                "type": "string",
+                "const": "application/json"
+              },
+              "schema_name": {
+                "type": "string",
+                "const": "IntegrationTurnView"
+              },
+              "parameter": {
+                "type": "string",
+                "const": "NONE"
+              },
+              "value": {
+                "type": "string",
+                "const": "DEFAULT"
+              }
+            },
+            "required": [
+              "operation_id",
+              "status",
+              "media_type",
+              "schema_name",
+              "parameter",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "const": "getEvents"
+              },
+              "status": {
+                "type": "string",
+                "const": "200"
+              },
+              "media_type": {
+                "type": "string",
+                "const": "application/json"
+              },
+              "schema_name": {
+                "type": "string",
+                "const": "IntegrationEventPage"
+              },
+              "parameter": {
+                "type": "string",
+                "const": "NONE"
+              },
+              "value": {
+                "type": "string",
+                "const": "DEFAULT"
+              }
+            },
+            "required": [
+              "operation_id",
+              "status",
+              "media_type",
+              "schema_name",
+              "parameter",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "const": "streamEvents"
+              },
+              "status": {
+                "type": "string",
+                "const": "200"
+              },
+              "media_type": {
+                "type": "string",
+                "const": "text/event-stream"
+              },
+              "schema_name": {
+                "type": "string",
+                "const": "IntegrationSSEUpdate"
+              },
+              "parameter": {
+                "type": "string",
+                "const": "NONE"
+              },
+              "value": {
+                "type": "string",
+                "const": "DEFAULT"
+              },
+              "sse_data_schema": {
+                "type": "string",
+                "const": "IntegrationSSEUpdate"
+              }
+            },
+            "required": [
+              "operation_id",
+              "status",
+              "media_type",
+              "schema_name",
+              "parameter",
+              "value",
+              "sse_data_schema"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "const": "listMemories"
+              },
+              "status": {
+                "type": "string",
+                "const": "200"
+              },
+              "media_type": {
+                "type": "string",
+                "const": "application/json"
+              },
+              "schema_name": {
+                "type": "string",
+                "const": "PlayerMemoryMetadataPage"
+              },
+              "parameter": {
+                "type": "string",
+                "const": "include"
+              },
+              "value": {
+                "type": "string",
+                "const": "DEFAULT"
+              }
+            },
+            "required": [
+              "operation_id",
+              "status",
+              "media_type",
+              "schema_name",
+              "parameter",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "const": "getMemory"
+              },
+              "status": {
+                "type": "string",
+                "const": "200"
+              },
+              "media_type": {
+                "type": "string",
+                "const": "application/json"
+              },
+              "schema_name": {
+                "type": "string",
+                "const": "PlayerMemoryMetadata"
+              },
+              "parameter": {
+                "type": "string",
+                "const": "include"
+              },
+              "value": {
+                "type": "string",
+                "const": "DEFAULT"
+              }
+            },
+            "required": [
+              "operation_id",
+              "status",
+              "media_type",
+              "schema_name",
+              "parameter",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "examples": [
+          {
+            "operation_id": "getTurn",
+            "status": "200",
+            "media_type": "application/json",
+            "schema_name": "IntegrationTurnView",
+            "parameter": "NONE",
+            "value": "DEFAULT"
+          },
+          {
+            "operation_id": "getEvents",
+            "status": "200",
+            "media_type": "application/json",
+            "schema_name": "IntegrationEventPage",
+            "parameter": "NONE",
+            "value": "DEFAULT"
+          },
+          {
+            "operation_id": "streamEvents",
+            "status": "200",
+            "media_type": "text/event-stream",
+            "schema_name": "IntegrationSSEUpdate",
+            "parameter": "NONE",
+            "value": "DEFAULT",
+            "sse_data_schema": "IntegrationSSEUpdate"
+          },
+          {
+            "operation_id": "listMemories",
+            "status": "200",
+            "media_type": "application/json",
+            "schema_name": "PlayerMemoryMetadataPage",
+            "parameter": "include",
+            "value": "DEFAULT"
+          },
+          {
+            "operation_id": "getMemory",
+            "status": "200",
+            "media_type": "application/json",
+            "schema_name": "PlayerMemoryMetadata",
+            "parameter": "include",
+            "value": "DEFAULT"
+          }
+        ]
+      },
+      "IntegrationContractProfile": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "profile": {
+                "type": "string",
+                "const": "public_v1"
+              },
+              "selector_header": {
+                "type": "string",
+                "const": "Loreviva-Client-Contract"
+              },
+              "default": {
+                "type": "boolean",
+                "const": true
+              },
+              "openapi_ref": {
+                "type": "string",
+                "const": "/contracts/profiles/public_v1.openapi.json"
+              },
+              "openapi_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "projections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntegrationProjectionRule"
+                },
+                "minItems": 0,
+                "maxItems": 0,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "profile",
+              "selector_header",
+              "default",
+              "openapi_ref",
+              "openapi_sha256",
+              "projections"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "profile": {
+                "type": "string",
+                "const": "integration_r0_v1"
+              },
+              "selector_header": {
+                "type": "string",
+                "const": "Loreviva-Client-Contract"
+              },
+              "default": {
+                "type": "boolean",
+                "const": false
+              },
+              "openapi_ref": {
+                "type": "string",
+                "const": "/contracts/profiles/integration_r0_v1.openapi.json"
+              },
+              "openapi_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "projections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntegrationProjectionRule"
+                },
+                "minItems": 5,
+                "maxItems": 5,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "profile",
+              "selector_header",
+              "default",
+              "openapi_ref",
+              "openapi_sha256",
+              "projections"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "examples": [
+          {
+            "profile": "public_v1",
+            "selector_header": "Loreviva-Client-Contract",
+            "default": true,
+            "openapi_ref": "/contracts/profiles/public_v1.openapi.json",
+            "openapi_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "projections": []
+          },
+          {
+            "profile": "integration_r0_v1",
+            "selector_header": "Loreviva-Client-Contract",
+            "default": false,
+            "openapi_ref": "/contracts/profiles/integration_r0_v1.openapi.json",
+            "openapi_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "projections": [
+              {
+                "operation_id": "getTurn",
+                "status": "200",
+                "media_type": "application/json",
+                "schema_name": "IntegrationTurnView",
+                "parameter": "NONE",
+                "value": "DEFAULT"
+              },
+              {
+                "operation_id": "getEvents",
+                "status": "200",
+                "media_type": "application/json",
+                "schema_name": "IntegrationEventPage",
+                "parameter": "NONE",
+                "value": "DEFAULT"
+              },
+              {
+                "operation_id": "streamEvents",
+                "status": "200",
+                "media_type": "text/event-stream",
+                "schema_name": "IntegrationSSEUpdate",
+                "parameter": "NONE",
+                "value": "DEFAULT",
+                "sse_data_schema": "IntegrationSSEUpdate"
+              },
+              {
+                "operation_id": "listMemories",
+                "status": "200",
+                "media_type": "application/json",
+                "schema_name": "PlayerMemoryMetadataPage",
+                "parameter": "include",
+                "value": "DEFAULT"
+              },
+              {
+                "operation_id": "getMemory",
+                "status": "200",
+                "media_type": "application/json",
+                "schema_name": "PlayerMemoryMetadata",
+                "parameter": "include",
+                "value": "DEFAULT"
+              }
+            ]
+          }
+        ]
+      },
+      "IntegrationChallenge": {
+        "type": "object",
+        "properties": {
+          "challenge_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 128
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notification_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "notification_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "consumer_ref": {
+            "$ref": "#/components/schemas/Identity"
+          }
+        },
+        "required": [
+          "challenge_ref",
+          "nonce",
+          "expires_at",
+          "notification_ref",
+          "notification_revision",
+          "consumer_ref"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "challenge_ref": "challenge_demo",
+            "nonce": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+            "expires_at": "2026-10-13T00:00:00Z",
+            "notification_ref": "notice_demo",
+            "notification_revision": "1",
+            "consumer_ref": "consumer_demo"
+          }
+        ]
+      },
+      "IntegrationReceipt": {
+        "type": "object",
+        "properties": {
+          "receipt_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "notification_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "notification_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "consumer_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "customer_message_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "customer_message_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "payload_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "state": {
+            "type": "string",
+            "const": "RECORDED"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customer_persistence_evidence": {
+            "type": "string",
+            "const": "AUTHENTICATED_CUSTOMER_STATEMENT"
+          }
+        },
+        "required": [
+          "receipt_ref",
+          "notification_ref",
+          "notification_revision",
+          "consumer_ref",
+          "customer_message_ref",
+          "customer_message_hash",
+          "payload_hash",
+          "state",
+          "recorded_at",
+          "customer_persistence_evidence"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "receipt_ref": "receipt_demo",
+            "notification_ref": "notice_demo",
+            "notification_revision": "1",
+            "consumer_ref": "consumer_demo",
+            "customer_message_ref": "message_demo",
+            "customer_message_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "payload_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "state": "RECORDED",
+            "recorded_at": "2026-10-13T00:00:00Z",
+            "customer_persistence_evidence": "AUTHENTICATED_CUSTOMER_STATEMENT"
+          }
+        ]
+      },
+      "IntegrationReceiptRequest": {
+        "type": "object",
+        "properties": {
+          "notification_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "payload_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "customer_message_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "customer_message_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "challenge_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "challenge_nonce": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 128
+          },
+          "customer_status": {
+            "type": "string",
+            "const": "PERSISTED"
+          }
+        },
+        "required": [
+          "notification_revision",
+          "payload_hash",
+          "customer_message_ref",
+          "customer_message_hash",
+          "challenge_ref",
+          "challenge_nonce",
+          "customer_status"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "notification_revision": "1",
+            "payload_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "customer_message_ref": "message_demo",
+            "customer_message_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "challenge_ref": "challenge_demo",
+            "challenge_nonce": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+            "customer_status": "PERSISTED"
+          }
+        ]
+      },
+      "IntegrationNotification": {
+        "type": "object",
+        "properties": {
+          "notification_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "notification_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "consumer_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "message_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "RESULT_COMMITTED",
+              "CONTROL_COMMITTED"
+            ]
+          },
+          "safe_summary": {
+            "type": "string",
+            "enum": [
+              "SYNTHETIC_RESULT_COMMITTED",
+              "SYNTHETIC_CONTROL_COMMITTED"
+            ]
+          },
+          "payload_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "challenge": {
+            "$ref": "#/components/schemas/IntegrationChallenge"
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "notification_ref",
+          "scope",
+          "notification_revision",
+          "consumer_ref",
+          "message_ref",
+          "kind",
+          "safe_summary",
+          "payload_hash",
+          "challenge",
+          "receipt"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "notification_ref": "notice_demo",
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "notification_revision": "1",
+            "consumer_ref": "consumer_demo",
+            "message_ref": "message_demo",
+            "kind": "RESULT_COMMITTED",
+            "safe_summary": "SYNTHETIC_RESULT_COMMITTED",
+            "payload_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "challenge": {
+              "challenge_ref": "challenge_demo",
+              "nonce": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+              "expires_at": "2026-10-13T00:00:00Z",
+              "notification_ref": "notice_demo",
+              "notification_revision": "1",
+              "consumer_ref": "consumer_demo"
+            },
+            "receipt": null
+          }
+        ]
+      },
+      "IntegrationNotificationPage": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationNotification"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "scope",
+          "notifications",
+          "next_cursor"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "notifications": [
+              {
+                "notification_ref": "notice_demo",
+                "scope": {
+                  "tenant_id": "tenant_demo",
+                  "product_id": "product_coffee",
+                  "world_instance_id": "instance_demo"
+                },
+                "notification_revision": "1",
+                "consumer_ref": "consumer_demo",
+                "message_ref": "message_demo",
+                "kind": "RESULT_COMMITTED",
+                "safe_summary": "SYNTHETIC_RESULT_COMMITTED",
+                "payload_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "challenge": {
+                  "challenge_ref": "challenge_demo",
+                  "nonce": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+                  "expires_at": "2026-10-13T00:00:00Z",
+                  "notification_ref": "notice_demo",
+                  "notification_revision": "1",
+                  "consumer_ref": "consumer_demo"
+                },
+                "receipt": null
+              }
+            ],
+            "next_cursor": "opaque_notice_cursor_demo"
+          }
+        ]
+      },
+      "PlayerSelfConsentState": {
+        "type": "string",
+        "enum": [
+          "NOT_GRANTED",
+          "ACTIVE",
+          "EXPIRED",
+          "REVOKED"
+        ],
+        "examples": [
+          "NOT_GRANTED",
+          "ACTIVE",
+          "EXPIRED",
+          "REVOKED"
+        ]
+      },
+      "PlayerSelfConsentSnapshot": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "object",
+            "properties": {
+              "tenant_id": {
+                "$ref": "#/components/schemas/Identity"
+              },
+              "product_id": {
+                "$ref": "#/components/schemas/Identity"
+              }
+            },
+            "required": [
+              "tenant_id",
+              "product_id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "policy_id": {
+            "type": "string",
+            "const": "R0_PLAYER_PRIVATE_GENERATION_30D"
+          },
+          "consent_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PlayerSelfConsentState"
+          },
+          "accepted_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current_use_enabled": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "scope",
+          "subject_id",
+          "policy_id",
+          "consent_revision",
+          "state",
+          "accepted_at",
+          "expires_at",
+          "server_now",
+          "current_use_enabled",
+          "eligible"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee"
+            },
+            "subject_id": "player_demo",
+            "policy_id": "R0_PLAYER_PRIVATE_GENERATION_30D",
+            "consent_revision": "0",
+            "state": "NOT_GRANTED",
+            "accepted_at": null,
+            "expires_at": null,
+            "server_now": "2026-10-13T00:00:00Z",
+            "current_use_enabled": false,
+            "eligible": true
+          }
+        ]
+      },
+      "PlayerSelfConsentCommandRequest": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "INITIAL",
+              "RENEW",
+              "REVOKE"
+            ]
+          },
+          "expected_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "policy_id": {
+            "type": "string",
+            "const": "R0_PLAYER_PRIVATE_GENERATION_30D"
+          }
+        },
+        "required": [
+          "command",
+          "expected_revision",
+          "policy_id"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "INITIAL"
+                }
+              },
+              "required": [
+                "command"
+              ]
+            },
+            "then": {
+              "properties": {
+                "expected_revision": {
+                  "const": "0"
+                }
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "command": "INITIAL",
+            "expected_revision": "0",
+            "policy_id": "R0_PLAYER_PRIVATE_GENERATION_30D"
+          }
+        ]
+      },
+      "PlayerSelfConsentReceipt": {
+        "type": "object",
+        "properties": {
+          "original_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "receipt_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "state": {
+            "type": "string",
+            "const": "COMMITTED"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/PlayerSelfConsentSnapshot"
+          }
+        },
+        "required": [
+          "original_key",
+          "receipt_ref",
+          "state",
+          "snapshot"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "original_key": "consent-demo-0001",
+            "receipt_ref": "receipt_demo",
+            "state": "COMMITTED",
+            "snapshot": {
+              "scope": {
+                "tenant_id": "tenant_demo",
+                "product_id": "product_coffee"
+              },
+              "subject_id": "player_demo",
+              "policy_id": "R0_PLAYER_PRIVATE_GENERATION_30D",
+              "consent_revision": "0",
+              "state": "NOT_GRANTED",
+              "accepted_at": null,
+              "expires_at": null,
+              "server_now": "2026-10-13T00:00:00Z",
+              "current_use_enabled": false,
+              "eligible": true
+            }
+          }
+        ]
+      },
+      "RuntimeMediaRef": {
+        "type": "object",
+        "properties": {
+          "media_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "media_kind": {
+            "type": "string",
+            "const": "AUDIO"
+          },
+          "media_state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "READY",
+              "FAILED",
+              "WITHDRAWN"
+            ]
+          },
+          "resource_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "asset_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "mime_type": {
+            "type": "string",
+            "const": "audio/wav"
+          },
+          "byte_length": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "content_path": {
+            "type": "string",
+            "pattern": "^/world/v1/runtime-media/[A-Za-z0-9][A-Za-z0-9._-]{0,63}/content$"
+          }
+        },
+        "required": [
+          "media_id",
+          "media_kind",
+          "media_state",
+          "resource_revision"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "media_state": {
+                  "const": "READY"
+                }
+              },
+              "required": [
+                "media_state"
+              ]
+            },
+            "then": {
+              "required": [
+                "asset_id",
+                "mime_type",
+                "byte_length",
+                "content_sha256",
+                "content_path"
+              ]
+            },
+            "else": {
+              "properties": {
+                "asset_id": false,
+                "mime_type": false,
+                "byte_length": false,
+                "content_sha256": false,
+                "content_path": false
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "media_id": "audio_demo",
+            "media_kind": "AUDIO",
+            "media_state": "PENDING",
+            "resource_revision": "1"
+          },
+          {
+            "media_id": "audio_demo",
+            "media_kind": "AUDIO",
+            "media_state": "READY",
+            "resource_revision": "1",
+            "asset_id": "asset_demo",
+            "mime_type": "audio/wav",
+            "byte_length": "160044",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "content_path": "/world/v1/runtime-media/asset_demo/content"
+          }
+        ]
+      },
+      "IntegrationApprovedPacket": {
+        "type": "object",
+        "properties": {
+          "packet_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "turn_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/Versions"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "text_segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TextSegment"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprovedAction"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuntimeMediaRef"
+            }
+          }
+        },
+        "required": [
+          "packet_id",
+          "turn_id",
+          "scope",
+          "versions",
+          "audience",
+          "text_segments",
+          "actions",
+          "media"
+        ],
+        "additionalProperties": false,
+        "description": "Only approved output. Media updates retain packet/action/event identities. Private original reasoning and other-player details excluded.",
+        "examples": [
+          {
+            "packet_id": "packet_demo",
+            "turn_id": "turn_demo",
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "versions": {
+              "release_id": "release_mock_1",
+              "world_revision": "2",
+              "control_version": "1",
+              "privacy_epoch": "1",
+              "view_epoch": "1"
+            },
+            "audience": {
+              "kind": "PRIVATE_RELATIONSHIP",
+              "subject_ids": [
+                "player_demo"
+              ]
+            },
+            "text_segments": [
+              {
+                "segment_id": "segment_demo",
+                "speaker_actor_id": "actor_alex",
+                "kind": "OPERATION_RESULT",
+                "text": "The sign is ready for you to borrow.",
+                "committed_event_ids": [
+                  "event_borrow_demo"
+                ]
+              }
+            ],
+            "actions": [
+              {
+                "action_id": "action_borrow_demo",
+                "kind": "BORROW_SIGN",
+                "committed_event_ids": [
+                  "event_borrow_demo"
+                ],
+                "parameters": {
+                  "item_id": "wood_sign"
+                }
+              }
+            ],
+            "media": [
+              {
+                "media_id": "audio_demo",
+                "media_kind": "AUDIO",
+                "media_state": "READY",
+                "resource_revision": "1",
+                "asset_id": "asset_demo",
+                "mime_type": "audio/wav",
+                "byte_length": "160044",
+                "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "content_path": "/world/v1/runtime-media/asset_demo/content"
+              }
+            ]
+          }
+        ]
+      },
+      "IntegrationDeliveryUpdate": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "packet_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "packet_revision": {
+            "type": "string",
+            "description": "Exact unsigned integer; never parse using floating point.",
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "delivery_state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "ACKNOWLEDGED",
+              "WITHDRAWN"
+            ]
+          },
+          "media_state": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PENDING",
+              "READY",
+              "PARTIAL_FAILED",
+              "FAILED",
+              "WITHDRAWN"
+            ]
+          },
+          "available_packet": {
+            "$ref": "#/components/schemas/IntegrationApprovedPacket"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "packet_id",
+          "packet_revision",
+          "delivery_state",
+          "media_state"
+        ],
+        "additionalProperties": false,
+        "description": "Dedup by delivery_id + packet_revision; older revisions cannot overwrite newer. ACK does not establish a world event.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "delivery_state": {
+                  "const": "AVAILABLE"
+                }
+              },
+              "required": [
+                "delivery_state"
+              ]
+            },
+            "then": {
+              "required": [
+                "available_packet"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "delivery_state": {
+                  "const": "WITHDRAWN"
+                }
+              },
+              "required": [
+                "delivery_state"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "available_packet"
+                ]
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "delivery_id": "delivery_demo",
+            "packet_id": "packet_demo",
+            "packet_revision": "1",
+            "delivery_state": "AVAILABLE",
+            "media_state": "READY",
+            "available_packet": {
+              "packet_id": "packet_demo",
+              "turn_id": "turn_demo",
+              "scope": {
+                "tenant_id": "tenant_demo",
+                "product_id": "product_coffee",
+                "world_instance_id": "instance_demo"
+              },
+              "versions": {
+                "release_id": "release_mock_1",
+                "world_revision": "2",
+                "control_version": "1",
+                "privacy_epoch": "1",
+                "view_epoch": "1"
+              },
+              "audience": {
+                "kind": "PRIVATE_RELATIONSHIP",
+                "subject_ids": [
+                  "player_demo"
+                ]
+              },
+              "text_segments": [
+                {
+                  "segment_id": "segment_demo",
+                  "speaker_actor_id": "actor_alex",
+                  "kind": "OPERATION_RESULT",
+                  "text": "The sign is ready for you to borrow.",
+                  "committed_event_ids": [
+                    "event_borrow_demo"
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "action_id": "action_borrow_demo",
+                  "kind": "BORROW_SIGN",
+                  "committed_event_ids": [
+                    "event_borrow_demo"
+                  ],
+                  "parameters": {
+                    "item_id": "wood_sign"
+                  }
+                }
+              ],
+              "media": [
+                {
+                  "media_id": "audio_demo",
+                  "media_kind": "AUDIO",
+                  "media_state": "READY",
+                  "resource_revision": "1",
+                  "asset_id": "asset_demo",
+                  "mime_type": "audio/wav",
+                  "byte_length": "160044",
+                  "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "content_path": "/world/v1/runtime-media/asset_demo/content"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "IntegrationTurnView": {
+        "type": "object",
+        "properties": {
+          "turn_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "task": {
+            "$ref": "#/components/schemas/TaskReceipt"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/Versions"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttemptSummary"
+            }
+          },
+          "approved_packets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationApprovedPacket"
+            }
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDeliveryUpdate"
+            }
+          },
+          "billing": {
+            "$ref": "#/components/schemas/BillingSummary"
+          }
+        },
+        "required": [
+          "turn_id",
+          "task",
+          "versions",
+          "attempts",
+          "approved_packets",
+          "deliveries",
+          "billing"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "turn_id": "turn_demo",
+            "task": {
+              "task_id": "task_turn_demo",
+              "task_kind": "TURN",
+              "task_state": "COMMITTED",
+              "scope": {
+                "tenant_id": "tenant_demo",
+                "product_id": "product_coffee",
+                "world_instance_id": "instance_demo"
+              },
+              "correlation_id": "corr_demo"
+            },
+            "versions": {
+              "release_id": "release_mock_1",
+              "world_revision": "2",
+              "control_version": "1",
+              "privacy_epoch": "1",
+              "view_epoch": "1"
+            },
+            "attempts": [
+              {
+                "attempt_id": "attempt_demo",
+                "attempt_state": "SUCCEEDED",
+                "purchase_responsibility": "MOCK",
+                "route_id": "route_mock",
+                "query_capability": "SUPPORTED",
+                "cancel_state": "NOT_REQUESTED",
+                "usage_state": "AUTHORITATIVE"
+              }
+            ],
+            "approved_packets": [
+              {
+                "packet_id": "packet_demo",
+                "turn_id": "turn_demo",
+                "scope": {
+                  "tenant_id": "tenant_demo",
+                  "product_id": "product_coffee",
+                  "world_instance_id": "instance_demo"
+                },
+                "versions": {
+                  "release_id": "release_mock_1",
+                  "world_revision": "2",
+                  "control_version": "1",
+                  "privacy_epoch": "1",
+                  "view_epoch": "1"
+                },
+                "audience": {
+                  "kind": "PRIVATE_RELATIONSHIP",
+                  "subject_ids": [
+                    "player_demo"
+                  ]
+                },
+                "text_segments": [
+                  {
+                    "segment_id": "segment_demo",
+                    "speaker_actor_id": "actor_alex",
+                    "kind": "OPERATION_RESULT",
+                    "text": "The sign is ready for you to borrow.",
+                    "committed_event_ids": [
+                      "event_borrow_demo"
+                    ]
+                  }
+                ],
+                "actions": [
+                  {
+                    "action_id": "action_borrow_demo",
+                    "kind": "BORROW_SIGN",
+                    "committed_event_ids": [
+                      "event_borrow_demo"
+                    ],
+                    "parameters": {
+                      "item_id": "wood_sign"
+                    }
+                  }
+                ],
+                "media": [
+                  {
+                    "media_id": "audio_demo",
+                    "media_kind": "AUDIO",
+                    "media_state": "READY",
+                    "resource_revision": "1",
+                    "asset_id": "asset_demo",
+                    "mime_type": "audio/wav",
+                    "byte_length": "160044",
+                    "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "content_path": "/world/v1/runtime-media/asset_demo/content"
+                  }
+                ]
+              }
+            ],
+            "deliveries": [
+              {
+                "delivery_id": "delivery_demo",
+                "packet_id": "packet_demo",
+                "packet_revision": "1",
+                "delivery_state": "AVAILABLE",
+                "media_state": "READY",
+                "available_packet": {
+                  "packet_id": "packet_demo",
+                  "turn_id": "turn_demo",
+                  "scope": {
+                    "tenant_id": "tenant_demo",
+                    "product_id": "product_coffee",
+                    "world_instance_id": "instance_demo"
+                  },
+                  "versions": {
+                    "release_id": "release_mock_1",
+                    "world_revision": "2",
+                    "control_version": "1",
+                    "privacy_epoch": "1",
+                    "view_epoch": "1"
+                  },
+                  "audience": {
+                    "kind": "PRIVATE_RELATIONSHIP",
+                    "subject_ids": [
+                      "player_demo"
+                    ]
+                  },
+                  "text_segments": [
+                    {
+                      "segment_id": "segment_demo",
+                      "speaker_actor_id": "actor_alex",
+                      "kind": "OPERATION_RESULT",
+                      "text": "The sign is ready for you to borrow.",
+                      "committed_event_ids": [
+                        "event_borrow_demo"
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action_id": "action_borrow_demo",
+                      "kind": "BORROW_SIGN",
+                      "committed_event_ids": [
+                        "event_borrow_demo"
+                      ],
+                      "parameters": {
+                        "item_id": "wood_sign"
+                      }
+                    }
+                  ],
+                  "media": [
+                    {
+                      "media_id": "audio_demo",
+                      "media_kind": "AUDIO",
+                      "media_state": "READY",
+                      "resource_revision": "1",
+                      "asset_id": "asset_demo",
+                      "mime_type": "audio/wav",
+                      "byte_length": "160044",
+                      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "content_path": "/world/v1/runtime-media/asset_demo/content"
+                    }
+                  ]
+                }
+              }
+            ],
+            "billing": {
+              "service_settlement_state": "NOT_APPLICABLE",
+              "service_unit": "WE_CREDIT",
+              "customer_reserved_units": "0",
+              "customer_consumed_units": "0",
+              "supplier_safety_reserved_units": "0",
+              "supplier_cost_currency": "USD",
+              "risk_bearer": "SELF_HOSTED"
+            }
+          }
+        ]
+      },
+      "IntegrationEventPage": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "view_epoch": {
+            "type": "string",
+            "description": "Exact unsigned integer; never parse using floating point.",
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VisibleEvent"
+            }
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDeliveryUpdate"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "description": "Opaque signed/encrypted continuation token. No raw watermark. Binds subject, scope, view_epoch and expiry.",
+            "minLength": 16,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "scope",
+          "view_epoch",
+          "events",
+          "deliveries",
+          "next_cursor"
+        ],
+        "additionalProperties": false,
+        "description": "Internal scan watermark advances even when every scanned event is invisible. No raw scanned sequence/count is exposed.",
+        "examples": [
+          {
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "view_epoch": "1",
+            "events": [
+              {
+                "event_id": "event_borrow_demo",
+                "event_kind": "ITEM_BORROWED",
+                "turn_id": "turn_demo",
+                "world_revision": "2",
+                "occurred_at": "2026-10-10T02:00:00Z",
+                "payload": {
+                  "item_id": "wood_sign",
+                  "custodian_actor_id": "actor_alex",
+                  "holder_subject_id": "player_demo"
+                }
+              }
+            ],
+            "deliveries": [
+              {
+                "delivery_id": "delivery_demo",
+                "packet_id": "packet_demo",
+                "packet_revision": "1",
+                "delivery_state": "AVAILABLE",
+                "media_state": "READY",
+                "available_packet": {
+                  "packet_id": "packet_demo",
+                  "turn_id": "turn_demo",
+                  "scope": {
+                    "tenant_id": "tenant_demo",
+                    "product_id": "product_coffee",
+                    "world_instance_id": "instance_demo"
+                  },
+                  "versions": {
+                    "release_id": "release_mock_1",
+                    "world_revision": "2",
+                    "control_version": "1",
+                    "privacy_epoch": "1",
+                    "view_epoch": "1"
+                  },
+                  "audience": {
+                    "kind": "PRIVATE_RELATIONSHIP",
+                    "subject_ids": [
+                      "player_demo"
+                    ]
+                  },
+                  "text_segments": [
+                    {
+                      "segment_id": "segment_demo",
+                      "speaker_actor_id": "actor_alex",
+                      "kind": "OPERATION_RESULT",
+                      "text": "The sign is ready for you to borrow.",
+                      "committed_event_ids": [
+                        "event_borrow_demo"
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "action_id": "action_borrow_demo",
+                      "kind": "BORROW_SIGN",
+                      "committed_event_ids": [
+                        "event_borrow_demo"
+                      ],
+                      "parameters": {
+                        "item_id": "wood_sign"
+                      }
+                    }
+                  ],
+                  "media": [
+                    {
+                      "media_id": "audio_demo",
+                      "media_kind": "AUDIO",
+                      "media_state": "READY",
+                      "resource_revision": "1",
+                      "asset_id": "asset_demo",
+                      "mime_type": "audio/wav",
+                      "byte_length": "160044",
+                      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "content_path": "/world/v1/runtime-media/asset_demo/content"
+                    }
+                  ]
+                }
+              }
+            ],
+            "next_cursor": "opaque_synthetic_cursor_0002"
+          }
+        ]
+      },
+      "IntegrationSSEUpdate": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "update"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 16,
+                "maxLength": 4096
+              },
+              "data": {
+                "$ref": "#/components/schemas/IntegrationEventPage"
+              }
+            },
+            "required": [
+              "event",
+              "id",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "view_reset"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "const": "VIEW_RESET"
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "correlation_id": {
+                    "type": "string",
+                    "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+                  },
+                  "retryable": {
+                    "type": "boolean"
+                  },
+                  "recovery_action": {
+                    "type": "string",
+                    "enum": [
+                      "FIX_REQUEST",
+                      "AUTHENTICATE",
+                      "USE_ORIGINAL_KEY",
+                      "QUERY_ORIGINAL_TASK",
+                      "QUERY_ORIGINAL_ATTEMPT",
+                      "FETCH_NEW_SNAPSHOT",
+                      "WAIT_RETRY_AFTER",
+                      "CONTACT_OPERATOR",
+                      "NONE"
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "correlation_id",
+                  "retryable",
+                  "recovery_action"
+                ],
+                "additionalProperties": false,
+                "description": "retryable does not authorize a new purchase or a new idempotency key. EXTERNAL_UNKNOWN requires original attempt query."
+              }
+            },
+            "required": [
+              "event",
+              "data"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "examples": [
+          {
+            "event": "update",
+            "id": "opaque_update_demo",
+            "data": {
+              "scope": {
+                "tenant_id": "tenant_demo",
+                "product_id": "product_coffee",
+                "world_instance_id": "instance_demo"
+              },
+              "view_epoch": "1",
+              "events": [
+                {
+                  "event_id": "event_borrow_demo",
+                  "event_kind": "ITEM_BORROWED",
+                  "turn_id": "turn_demo",
+                  "world_revision": "2",
+                  "occurred_at": "2026-10-10T02:00:00Z",
+                  "payload": {
+                    "item_id": "wood_sign",
+                    "custodian_actor_id": "actor_alex",
+                    "holder_subject_id": "player_demo"
+                  }
+                }
+              ],
+              "deliveries": [
+                {
+                  "delivery_id": "delivery_demo",
+                  "packet_id": "packet_demo",
+                  "packet_revision": "1",
+                  "delivery_state": "AVAILABLE",
+                  "media_state": "READY",
+                  "available_packet": {
+                    "packet_id": "packet_demo",
+                    "turn_id": "turn_demo",
+                    "scope": {
+                      "tenant_id": "tenant_demo",
+                      "product_id": "product_coffee",
+                      "world_instance_id": "instance_demo"
+                    },
+                    "versions": {
+                      "release_id": "release_mock_1",
+                      "world_revision": "2",
+                      "control_version": "1",
+                      "privacy_epoch": "1",
+                      "view_epoch": "1"
+                    },
+                    "audience": {
+                      "kind": "PRIVATE_RELATIONSHIP",
+                      "subject_ids": [
+                        "player_demo"
+                      ]
+                    },
+                    "text_segments": [
+                      {
+                        "segment_id": "segment_demo",
+                        "speaker_actor_id": "actor_alex",
+                        "kind": "OPERATION_RESULT",
+                        "text": "The sign is ready for you to borrow.",
+                        "committed_event_ids": [
+                          "event_borrow_demo"
+                        ]
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action_id": "action_borrow_demo",
+                        "kind": "BORROW_SIGN",
+                        "committed_event_ids": [
+                          "event_borrow_demo"
+                        ],
+                        "parameters": {
+                          "item_id": "wood_sign"
+                        }
+                      }
+                    ],
+                    "media": [
+                      {
+                        "media_id": "audio_demo",
+                        "media_kind": "AUDIO",
+                        "media_state": "READY",
+                        "resource_revision": "1",
+                        "asset_id": "asset_demo",
+                        "mime_type": "audio/wav",
+                        "byte_length": "160044",
+                        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "content_path": "/world/v1/runtime-media/asset_demo/content"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "next_cursor": "opaque_synthetic_cursor_0002"
+            }
+          },
+          {
+            "event": "view_reset",
+            "data": {
+              "code": "VIEW_RESET",
+              "message": "Current authorization view changed. Rebuild snapshot.",
+              "correlation_id": "corr_demo",
+              "retryable": false,
+              "recovery_action": "FETCH_NEW_SNAPSHOT"
+            }
+          }
+        ]
+      },
+      "PlayerMemoryMetadata": {
+        "type": "object",
+        "properties": {
+          "memory_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "actor_instance_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "target_subject_id": {
+            "type": "string",
+            "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "memory_kind": {
+            "type": "string",
+            "enum": [
+              "EPISODE",
+              "PREFERENCE",
+              "PROMISE",
+              "RELATIONSHIP_INTERPRETATION",
+              "BELIEF"
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "description": "Exact unsigned integer; never parse using floating point.",
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "privacy_epoch": {
+            "type": "string",
+            "description": "Exact unsigned integer; never parse using floating point.",
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CORRECTED",
+              "EXPIRED",
+              "REVOKED",
+              "DELETION_PENDING"
+            ]
+          },
+          "allowed_uses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PRIVATE_RESPONSE",
+                "PUBLIC_RESPONSE",
+                "RELATIONSHIP",
+                "RESEARCH_OPT_IN"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "body_readable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "memory_id",
+          "scope",
+          "actor_instance_id",
+          "target_subject_id",
+          "memory_kind",
+          "revision",
+          "privacy_epoch",
+          "validity",
+          "allowed_uses",
+          "body_readable"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "memory_id": "memory_demo",
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "actor_instance_id": "actor_alex",
+            "target_subject_id": "player_demo",
+            "memory_kind": "PREFERENCE",
+            "revision": "1",
+            "privacy_epoch": "1",
+            "validity": "ACTIVE",
+            "allowed_uses": [
+              "PRIVATE_RESPONSE",
+              "RELATIONSHIP"
+            ],
+            "body_readable": false
+          }
+        ]
+      },
+      "PlayerMemoryMetadataPage": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "memories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerMemoryMetadata"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 16,
+                "maxLength": 4096
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "view_epoch": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          }
+        },
+        "required": [
+          "scope",
+          "memories",
+          "next_cursor",
+          "view_epoch"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "memories": [
+              {
+                "memory_id": "memory_demo",
+                "scope": {
+                  "tenant_id": "tenant_demo",
+                  "product_id": "product_coffee",
+                  "world_instance_id": "instance_demo"
+                },
+                "actor_instance_id": "actor_alex",
+                "target_subject_id": "player_demo",
+                "memory_kind": "PREFERENCE",
+                "revision": "1",
+                "privacy_epoch": "1",
+                "validity": "ACTIVE",
+                "allowed_uses": [
+                  "PRIVATE_RESPONSE",
+                  "RELATIONSHIP"
+                ],
+                "body_readable": false
+              }
+            ],
+            "next_cursor": null,
+            "view_epoch": "1"
+          }
+        ]
+      },
+      "OriginalTurnIntakeReceipt": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/WorldScope"
+          },
+          "customer_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "caller_subject_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "operation_id": {
+            "type": "string",
+            "const": "submitTurn"
+          },
+          "original_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "intake_receipt_ref": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "acceptance": {
+            "$ref": "#/components/schemas/TurnAccepted"
+          }
+        },
+        "required": [
+          "scope",
+          "customer_id",
+          "caller_subject_id",
+          "operation_id",
+          "original_key",
+          "intake_receipt_ref",
+          "acceptance"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "scope": {
+              "tenant_id": "tenant_demo",
+              "product_id": "product_coffee",
+              "world_instance_id": "instance_demo"
+            },
+            "customer_id": "customer_demo",
+            "caller_subject_id": "player_demo",
+            "operation_id": "submitTurn",
+            "original_key": "turn-demo-0001",
+            "intake_receipt_ref": "intake_demo",
+            "acceptance": {
+              "turn_id": "turn_demo",
+              "task": {
+                "task_id": "task_turn_demo",
+                "task_kind": "TURN",
+                "task_state": "ACCEPTED",
+                "scope": {
+                  "tenant_id": "tenant_demo",
+                  "product_id": "product_coffee",
+                  "world_instance_id": "instance_demo"
+                },
+                "correlation_id": "corr_demo"
+              },
+              "quote_id": "quote_demo"
+            }
+          }
+        ]
+      },
+      "IntegrationCapabilities": {
+        "type": "object",
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "1.5.0"
+          },
+          "source_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "selected_profile": {
+            "type": "string",
+            "enum": [
+              "public_v1",
+              "integration_r0_v1"
+            ]
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationContractProfile"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "public_v1"
+                    }
+                  },
+                  "required": [
+                    "profile"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "integration_r0_v1"
+                    }
+                  },
+                  "required": [
+                    "profile"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ]
+          },
+          "operations": {
+            "type": "object",
+            "properties": {
+              "exchangeClientSession": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "controlInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getSnapshot": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "submitTurn": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getTurn": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getTask": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "cancelTurn": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "cancelTask": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getEvents": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "streamEvents": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listMemories": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getMemory": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "governMemories": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getUsage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createQuote": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createPaymentIntent": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listContentDrafts": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "saveContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listDraftRevisions": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "checkDraftImpact": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "commandContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "checkDraftForPublish": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "rehearseContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createDraftCandidate": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "publishContentDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listContentReleases": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getContentRelease": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminTask": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "cancelAdminTask": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "uploadContentAsset": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getContentAsset": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getCreatorCapabilities": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "readAuthorizedAsset": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "previewInstanceMigration": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "executeInstanceMigration": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "createAdminInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listAdminInstances": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "controlAdminInstance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listAdminActorInstances": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listAdminMemoryMetadata": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminMemoryBody": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "governAdminMemory": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "setAdminMemoryUsePolicy": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminMemoryGovernance": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "resolveDraftGeneration": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listAdminTasks": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminSettings": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "commandAdminSettings": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "listAdminMembers": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "commandAdminMembers": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminSelfConsent": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "commandAdminSelfConsent": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getAdminSettingsCommand": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getIntegrationCapabilities": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getCustomerNotifications": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "recordCustomerNotificationReceipt": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPlayerSelfConsent": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "commandPlayerSelfConsent": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "readRuntimeMedia": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getOriginalTurnIntakeReceipt": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              }
+            },
+            "required": [
+              "exchangeClientSession",
+              "createInstance",
+              "getInstance",
+              "controlInstance",
+              "getSnapshot",
+              "submitTurn",
+              "getTurn",
+              "getTask",
+              "cancelTurn",
+              "cancelTask",
+              "getEvents",
+              "streamEvents",
+              "listMemories",
+              "getMemory",
+              "governMemories",
+              "getUsage",
+              "createQuote",
+              "createPaymentIntent",
+              "listContentDrafts",
+              "createContentDraft",
+              "getContentDraft",
+              "saveContentDraft",
+              "listDraftRevisions",
+              "checkDraftImpact",
+              "commandContentDraft",
+              "checkDraftForPublish",
+              "rehearseContentDraft",
+              "createDraftCandidate",
+              "publishContentDraft",
+              "listContentReleases",
+              "getContentRelease",
+              "getAdminTask",
+              "cancelAdminTask",
+              "uploadContentAsset",
+              "getContentAsset",
+              "getCreatorCapabilities",
+              "readAuthorizedAsset",
+              "previewInstanceMigration",
+              "executeInstanceMigration",
+              "createAdminInstance",
+              "listAdminInstances",
+              "getAdminInstance",
+              "controlAdminInstance",
+              "listAdminActorInstances",
+              "listAdminMemoryMetadata",
+              "getAdminMemoryBody",
+              "governAdminMemory",
+              "setAdminMemoryUsePolicy",
+              "getAdminMemoryGovernance",
+              "resolveDraftGeneration",
+              "listAdminTasks",
+              "getAdminSettings",
+              "commandAdminSettings",
+              "listAdminMembers",
+              "commandAdminMembers",
+              "getAdminSelfConsent",
+              "commandAdminSelfConsent",
+              "getAdminSettingsCommand",
+              "getIntegrationCapabilities",
+              "getCustomerNotifications",
+              "recordCustomerNotificationReceipt",
+              "getPlayerSelfConsent",
+              "commandPlayerSelfConsent",
+              "readRuntimeMedia",
+              "getOriginalTurnIntakeReceipt"
+            ],
+            "additionalProperties": false
+          },
+          "runtime_media_mime_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "const": "audio/wav"
+            },
+            "minItems": 0,
+            "maxItems": 1,
+            "uniqueItems": true
+          },
+          "commercial_status": {
+            "type": "string",
+            "const": "SYNTHETIC_MOCK"
+          }
+        },
+        "required": [
+          "contract_version",
+          "source_hash",
+          "selected_profile",
+          "profiles",
+          "operations",
+          "runtime_media_mime_types",
+          "commercial_status"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "contract_version": "1.5.0",
+            "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "selected_profile": "public_v1",
+            "profiles": [
+              {
+                "profile": "public_v1",
+                "selector_header": "Loreviva-Client-Contract",
+                "default": true,
+                "openapi_ref": "/contracts/profiles/public_v1.openapi.json",
+                "openapi_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "projections": []
+              },
+              {
+                "profile": "integration_r0_v1",
+                "selector_header": "Loreviva-Client-Contract",
+                "default": false,
+                "openapi_ref": "/contracts/profiles/integration_r0_v1.openapi.json",
+                "openapi_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "projections": [
+                  {
+                    "operation_id": "getTurn",
+                    "status": "200",
+                    "media_type": "application/json",
+                    "schema_name": "IntegrationTurnView",
+                    "parameter": "NONE",
+                    "value": "DEFAULT"
+                  },
+                  {
+                    "operation_id": "getEvents",
+                    "status": "200",
+                    "media_type": "application/json",
+                    "schema_name": "IntegrationEventPage",
+                    "parameter": "NONE",
+                    "value": "DEFAULT"
+                  },
+                  {
+                    "operation_id": "streamEvents",
+                    "status": "200",
+                    "media_type": "text/event-stream",
+                    "schema_name": "IntegrationSSEUpdate",
+                    "parameter": "NONE",
+                    "value": "DEFAULT",
+                    "sse_data_schema": "IntegrationSSEUpdate"
+                  },
+                  {
+                    "operation_id": "listMemories",
+                    "status": "200",
+                    "media_type": "application/json",
+                    "schema_name": "PlayerMemoryMetadataPage",
+                    "parameter": "include",
+                    "value": "DEFAULT"
+                  },
+                  {
+                    "operation_id": "getMemory",
+                    "status": "200",
+                    "media_type": "application/json",
+                    "schema_name": "PlayerMemoryMetadata",
+                    "parameter": "include",
+                    "value": "DEFAULT"
+                  }
+                ]
+              }
+            ],
+            "operations": {
+              "exchangeClientSession": "UNAVAILABLE",
+              "createInstance": "UNAVAILABLE",
+              "getInstance": "UNAVAILABLE",
+              "controlInstance": "UNAVAILABLE",
+              "getSnapshot": "UNAVAILABLE",
+              "submitTurn": "UNAVAILABLE",
+              "getTurn": "UNAVAILABLE",
+              "getTask": "UNAVAILABLE",
+              "cancelTurn": "UNAVAILABLE",
+              "cancelTask": "UNAVAILABLE",
+              "getEvents": "UNAVAILABLE",
+              "streamEvents": "UNAVAILABLE",
+              "listMemories": "UNAVAILABLE",
+              "getMemory": "UNAVAILABLE",
+              "governMemories": "UNAVAILABLE",
+              "getUsage": "UNAVAILABLE",
+              "createQuote": "UNAVAILABLE",
+              "createPaymentIntent": "UNAVAILABLE",
+              "listContentDrafts": "UNAVAILABLE",
+              "createContentDraft": "UNAVAILABLE",
+              "getContentDraft": "UNAVAILABLE",
+              "saveContentDraft": "UNAVAILABLE",
+              "listDraftRevisions": "UNAVAILABLE",
+              "checkDraftImpact": "UNAVAILABLE",
+              "commandContentDraft": "UNAVAILABLE",
+              "checkDraftForPublish": "UNAVAILABLE",
+              "rehearseContentDraft": "UNAVAILABLE",
+              "createDraftCandidate": "UNAVAILABLE",
+              "publishContentDraft": "UNAVAILABLE",
+              "listContentReleases": "UNAVAILABLE",
+              "getContentRelease": "UNAVAILABLE",
+              "getAdminTask": "UNAVAILABLE",
+              "cancelAdminTask": "UNAVAILABLE",
+              "uploadContentAsset": "UNAVAILABLE",
+              "getContentAsset": "UNAVAILABLE",
+              "getCreatorCapabilities": "UNAVAILABLE",
+              "readAuthorizedAsset": "UNAVAILABLE",
+              "previewInstanceMigration": "UNAVAILABLE",
+              "executeInstanceMigration": "UNAVAILABLE",
+              "createAdminInstance": "UNAVAILABLE",
+              "listAdminInstances": "UNAVAILABLE",
+              "getAdminInstance": "UNAVAILABLE",
+              "controlAdminInstance": "UNAVAILABLE",
+              "listAdminActorInstances": "UNAVAILABLE",
+              "listAdminMemoryMetadata": "UNAVAILABLE",
+              "getAdminMemoryBody": "UNAVAILABLE",
+              "governAdminMemory": "UNAVAILABLE",
+              "setAdminMemoryUsePolicy": "UNAVAILABLE",
+              "getAdminMemoryGovernance": "UNAVAILABLE",
+              "resolveDraftGeneration": "UNAVAILABLE",
+              "listAdminTasks": "UNAVAILABLE",
+              "getAdminSettings": "UNAVAILABLE",
+              "commandAdminSettings": "UNAVAILABLE",
+              "listAdminMembers": "UNAVAILABLE",
+              "commandAdminMembers": "UNAVAILABLE",
+              "getAdminSelfConsent": "UNAVAILABLE",
+              "commandAdminSelfConsent": "UNAVAILABLE",
+              "getAdminSettingsCommand": "UNAVAILABLE",
+              "getIntegrationCapabilities": "UNAVAILABLE",
+              "getCustomerNotifications": "UNAVAILABLE",
+              "recordCustomerNotificationReceipt": "UNAVAILABLE",
+              "getPlayerSelfConsent": "UNAVAILABLE",
+              "commandPlayerSelfConsent": "UNAVAILABLE",
+              "readRuntimeMedia": "UNAVAILABLE",
+              "getOriginalTurnIntakeReceipt": "UNAVAILABLE"
+            },
+            "runtime_media_mime_types": [],
+            "commercial_status": "SYNTHETIC_MOCK"
+          }
+        ]
       }
     }
   }

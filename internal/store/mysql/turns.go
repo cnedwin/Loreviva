@@ -70,7 +70,7 @@ func typedJSON(schema string, v any) error {
 
 func (s *Store) QuoteTurn(ctx context.Context, c CommandBarrierRequest, request generated.QuoteRequest) (generated.Quote, error) {
 	var out generated.Quote
-	if c.WorldScope == nil || !r0Owner(*c.WorldScope) || c.Purpose != ExecutionPurpose || s.TurnOwner == nil || request.PrimaryActorID == nil || request.Scope != turnScope(*c.WorldScope) || request.ServiceKind != "TURN_TEXT" || request.PurchaseResponsibility != "MOCK" {
+	if c.WorldScope == nil || (!r0Owner(*c.WorldScope) && c.integrationTurn == nil) || c.Purpose != ExecutionPurpose || s.TurnOwner == nil || request.PrimaryActorID == nil || request.Scope != turnScope(*c.WorldScope) || request.ServiceKind != "TURN_TEXT" || request.PurchaseResponsibility != "MOCK" {
 		return out, ErrDenied
 	}
 	if e := s.ordinaryTurnScope(ctx, *c.WorldScope); e != nil {
@@ -138,10 +138,16 @@ func (s *Store) QuoteTurn(ctx context.Context, c CommandBarrierRequest, request 
 			return e
 		}
 		_, e = u.tx.ExecContext(ctx, "INSERT INTO harness_turn_quotes VALUES(?,?,?,?,?,?,?)", c.ProductScope.TenantID, c.ProductScope.ProductID, id, route.ActorID, input, output, public)
+		if e == nil && c.integrationTurn != nil {
+			e = c.integrationTurn.writeQuote(ctx, u, r, request, out, route.ProjectID, expiry)
+		}
 		return e
 	})
 	if e != nil {
 		return generated.Quote{}, e
+	}
+	if c.integrationTurn != nil {
+		return c.integrationTurn.output, nil
 	}
 	var raw []byte
 	e = s.DB.QueryRowContext(ctx, "SELECT public_document FROM harness_turn_quotes WHERE tenant_id=? AND product_id=? AND quote_id=?", c.ProductScope.TenantID, c.ProductScope.ProductID, id).Scan(&raw)
@@ -168,7 +174,7 @@ func TurnCommandHash(scope domain.Scope, request generated.TurnRequest) ([32]byt
 // An exact original acceptance is returned before the new-intake revision comparison; its current scope gates and command hash still have to match.
 func (s *Store) AcceptR0Turn(ctx context.Context, c CommandBarrierRequest, request generated.TurnRequest) (generated.TurnAccepted, error) {
 	var out generated.TurnAccepted
-	if c.WorldScope == nil || !r0Owner(*c.WorldScope) || s.TurnOwner == nil || request.RequestedAudience != "PRIVATE_RELATIONSHIP" {
+	if c.WorldScope == nil || (!r0Owner(*c.WorldScope) && c.integrationTurn == nil) || s.TurnOwner == nil || request.RequestedAudience != "PRIVATE_RELATIONSHIP" {
 		return out, ErrDenied
 	}
 	if e := typedJSON("TurnRequest", request); e != nil {
@@ -178,7 +184,7 @@ func (s *Store) AcceptR0Turn(ctx context.Context, c CommandBarrierRequest, reque
 	if e != nil {
 		return out, e
 	}
-	if original, e := s.OriginalTurn(ctx, *c.WorldScope, c.CommandKey, hash); e == nil {
+	if original, e := s.integrationOriginalTurn(ctx, c, c.CommandKey, hash); e == nil {
 		return original, nil
 	} else if !errors.Is(e, sql.ErrNoRows) {
 		return out, e
@@ -209,13 +215,16 @@ func (s *Store) AcceptR0Turn(ctx context.Context, c CommandBarrierRequest, reque
 	}
 	id := turnIdentity(c.ProductScope.TenantID, c.ProductScope.ProductID, c.OwnerSubjectID, c.WorldScope.WorldInstanceID, "TURN", c.CommandKey)
 	in := HarnessIntake{TaskID: id, QuoteID: quote.ID, RequestHash: quote.RequestHash, RouteHash: quote.RouteHash, ParentHolds: r0ParentHolds(*c.WorldScope, quote.ProjectID, id)}
+	if c.integrationTurn != nil {
+		in.ParentHolds = c.integrationTurn.parentHolds(quote.ProjectID, id)
+	}
 	turn := &turnIntake{Request: request, Hash: hash, InputHash: sha256.Sum256(canonical), Body: string(canonical), SourceID: turnIdentity(id, "input"), ProjectID: quote.ProjectID}
 	c.Operation = "HARNESS_INTAKE"
 	c.CommitKey = turnIdentity(id, "accepted")
 	if _, e = s.acceptHarness(ctx, c, in, turn); e != nil {
 		return out, e
 	}
-	return s.OriginalTurn(ctx, *c.WorldScope, c.CommandKey, hash)
+	return s.integrationOriginalTurn(ctx, c, c.CommandKey, hash)
 }
 
 func (s *Store) OriginalTurn(ctx context.Context, scope domain.Scope, key string, hash [32]byte) (generated.TurnAccepted, error) {
@@ -257,6 +266,9 @@ func r0ParentHolds(s domain.Scope, project, task string) []Reservation {
 
 // R0 account provisioning is limited to the owning intake plan, current generation consent and the quote's bound project; these inserted accounts start with zero balance and held amounts.
 func provisionR0TurnAccount(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
+	if r.integrationTurn != nil {
+		return provisionIntegrationTurnAccount(ctx, tx, r, k)
+	}
 	if !r.r0TurnProvision || !r.commandOnly || r.WorldScope == nil || !r0Owner(*r.WorldScope) || r.Operation != "HARNESS_INTAKE" {
 		return ErrDenied
 	}
@@ -297,6 +309,19 @@ func provisionR0TurnAccount(ctx context.Context, tx *sql.Tx, r BarrierRequest, k
 // ReadTurn projects only the original owner's task metadata. No source body is
 // reconstructed by a read or replay; narrative packets require their own gate.
 func (s *Store) ReadTurn(ctx context.Context, scope domain.Scope, id string) (generated.TurnView, error) {
+	if _, ok := ctx.Value(integrationContextKey{}).(currentIntegration); ok {
+		actual, e := s.IntegrationTurnScope(ctx, id)
+		if e != nil || actual != scope {
+			return generated.TurnView{}, ErrDenied
+		}
+		v, e := s.ReadIntegrationTask(ctx, id)
+		if e != nil {
+			return generated.TurnView{}, e
+		}
+		out := generated.TurnView{TurnID: id, Task: v.Task, Versions: v.Versions, Billing: v.Billing, Attempts: v.Attempts, ApprovedPackets: []generated.ApprovedPacket{}, Deliveries: []generated.DeliveryUpdate{}}
+		return out, typedJSON("TurnView", out)
+	}
+
 	out := generated.TurnView{ApprovedPackets: []generated.ApprovedPacket{}, Attempts: []generated.AttemptSummary{}, Deliveries: []generated.DeliveryUpdate{}}
 	if scope.Validate() != nil || domain.ValidateID(id) != nil {
 		return out, ErrDenied
@@ -359,9 +384,12 @@ func (s *Store) ReadTurn(ctx context.Context, scope domain.Scope, id string) (ge
 // current context, holds, lease and original identity under the closed barrier.
 func (s *Store) OriginalTurnDispatch(ctx context.Context, r BarrierRequest) (DispatchRequest, error) {
 	var out DispatchRequest
+	if e := s.prepareIntegrationExecution(ctx, &r); e != nil {
+		return out, e
+	}
 	// Isolated rehearsal uses its private, lease-bound owning plan. The online
 	// R0 turn path retains its original owner-only policy.
-	if r.WorldScope == nil || (r.rehearsalExecution == nil && !r0Owner(*r.WorldScope)) || r.TaskID == "" {
+	if r.WorldScope == nil || (r.rehearsalExecution == nil && r.integrationTurn == nil && !r0Owner(*r.WorldScope)) || r.TaskID == "" {
 		return out, ErrDenied
 	}
 	var quote, project string

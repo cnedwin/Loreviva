@@ -84,7 +84,7 @@ func TestPinnedRoleResolvesDutyAndInheritedRouteWithoutInlining(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
-	otherCtx := testprincipal.Register(t, s.Store, other)
+	otherCtx := testprincipal.Register(t, s.Store, ctx, other)
 	od, e := s.Create(otherCtx, other, "ROLE", "", resource, "outside-role")
 	if e != nil {
 		t.Fatal(e)

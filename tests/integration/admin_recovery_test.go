@@ -301,28 +301,23 @@ func TestProductCandidateRepairRestartKnownMarker(t *testing.T) {
 					}
 				}
 			}
-			local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+			fresh := reopenRuntimeFixture(t, ctx, r)
+			ctx = runtimeContextWithParent(t, fresh, ctx)
+			if _, e = fresh.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", l.TaskID); e != nil {
+				t.Fatal(e)
+			}
+			next, e := fresh.Store.ClaimRegistered(ctx, "candidate-takeover", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "CANDIDATE"}})
 			if e != nil {
 				t.Fatal(e)
 			}
-			defer local.Participant.Close(ctx)
-			fresh := app.NewRuntime(r.Store, r.Files, r.Auth)
-			fresh.BindLocal(local)
-			if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", l.TaskID); e != nil {
-				t.Fatal(e)
-			}
-			next, e := r.Store.ClaimRegistered(ctx, "candidate-takeover", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "CANDIDATE"}})
-			if e != nil {
-				t.Fatal(e)
-			}
-			if _, e = r.Store.StartSend(ctx, d, d.AttemptID); e == nil {
+			if _, e = fresh.Store.StartSend(ctx, d, d.AttemptID); e == nil {
 				t.Fatal("old fence")
 			}
-			resumed, e := r.Store.PrepareDraftCandidateSend(ctx, next.TaskLease, "candidate-takeover")
+			resumed, e := fresh.Store.PrepareDraftCandidateSend(ctx, next.TaskLease, "candidate-takeover")
 			if e != nil || resumed.AttemptID != d.AttemptID || resumed.RequestHash != d.RequestHash || resumed.Slot != 1 {
 				t.Fatal(resumed, e)
 			}
-			a, e := r.Store.StartSend(ctx, resumed, resumed.AttemptID)
+			a, e := fresh.Store.StartSend(ctx, resumed, resumed.AttemptID)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -333,23 +328,23 @@ func TestProductCandidateRepairRestartKnownMarker(t *testing.T) {
 				if e = fresh.Worker.Turns.GenerateDraftCandidate(ctx, a.OriginalSend()); e != nil {
 					t.Fatal(e)
 				}
-				if _, e = r.Store.ObserveOriginalReply(ctx, a.OriginalSend()); e != nil {
+				if _, e = fresh.Store.ObserveOriginalReply(ctx, a.OriginalSend()); e != nil {
 					t.Fatal(e)
 				}
 			} else {
 				if a.CanSend || !a.QueryOriginal || a.OriginalSend() != nil {
 					t.Fatal("new purchase for original marker", a)
 				}
-				id, e := r.Store.CandidateAttemptMockIdentity(ctx, l.ProductScope, l.TaskID, d.AttemptID)
+				id, e := fresh.Store.CandidateAttemptMockIdentity(ctx, l.ProductScope, l.TaskID, d.AttemptID)
 				if e != nil {
 					t.Fatal(e)
 				}
-				queryDue(t, r, l.TaskID)
-				q, e := r.Store.BeginOriginalQuery(ctx, id)
+				queryDue(t, fresh, l.TaskID)
+				q, e := fresh.Store.BeginOriginalQuery(ctx, id)
 				if e != nil {
 					t.Fatal(e)
 				}
-				m, e := r.Store.RecordOriginalQuery(ctx, q)
+				m, e := fresh.Store.RecordOriginalQuery(ctx, q)
 				if e != nil {
 					t.Fatal(e)
 				}
@@ -362,15 +357,15 @@ func TestProductCandidateRepairRestartKnownMarker(t *testing.T) {
 				}
 			}
 			if mode != "SEND_ACK_UNKNOWN" {
-				if e = r.Store.ValidateDraftCandidate(ctx, next.TaskLease, "candidate-takeover"); e != nil {
+				if e = fresh.Store.ValidateDraftCandidate(ctx, next.TaskLease, "candidate-takeover"); e != nil {
 					t.Fatal(e)
 				}
 			}
 			var n int
-			if e = r.Store.DB.QueryRow("SELECT calls_used FROM tasks WHERE task_id=?", l.TaskID).Scan(&n); e != nil || n != 2 {
+			if e = fresh.Store.DB.QueryRow("SELECT calls_used FROM tasks WHERE task_id=?", l.TaskID).Scan(&n); e != nil || n != 2 {
 				t.Fatal(n, e)
 			}
-			if _, e = r.Store.CandidateAttemptMockIdentity(ctx, l.ProductScope, l.TaskID, content.Identity(l.TaskID, "not-owned-attempt")); e == nil {
+			if _, e = fresh.Store.CandidateAttemptMockIdentity(ctx, l.ProductScope, l.TaskID, content.Identity(l.TaskID, "not-owned-attempt")); e == nil {
 				t.Fatal("foreign attempt")
 			}
 		})

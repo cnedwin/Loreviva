@@ -12,12 +12,13 @@ import (
 )
 
 var rankKinds = map[int][]string{
-	15: {domain.StudioCredentialLock}, 25: {domain.StudioGrantsLock}, 35: {domain.StudioScopeLock},
-	10: {""}, 20: {""}, 30: {""}, 40: {""}, 45: {"", "studio_command"}, 50: {""}, 60: {""},
+	5:  {"credential_hash"},
+	15: {domain.StudioCredentialLock, "integration_principal"}, 25: {domain.StudioGrantsLock, "integration_registrar", "integration_entitlement"}, 35: {domain.StudioScopeLock, "integration_customer", "integration_mapping", "integration_participant"},
+	10: {""}, 20: {""}, 30: {""}, 40: {""}, 45: {"", "studio_command", "integration_command"}, 50: {""}, 60: {""},
 	70: {"supplier_global", "supplier_tenant", "platform_risk", "customer", "project", "world"},
 	80: {"supplier_global", "supplier_tenant", "platform_risk", "customer", "project", "world"},
-	90: {"item", "actor", "relationship", "memory", "content_project", "content_draft", "content_release", "asset", "content_check", domain.StudioSettingsLock, domain.StudioConnectionLock, domain.StudioConsentLock}, 100: {""},
-	110: {"events", "approved_results", "service_events", "postings", "outbox", "commit_receipts", "studio_receipt"},
+	90: {"item", "actor", "relationship", "memory", "content_project", "content_draft", "content_release", "asset", "content_check", domain.StudioSettingsLock, domain.StudioConnectionLock, domain.StudioConsentLock, "integration_consent", "delivery_media", "integration_challenge"}, 100: {""},
+	110: {"events", "approved_results", "service_events", "postings", "outbox", "commit_receipts", "studio_receipt", "delivery_update", "integration_notice", "integration_receipt"},
 }
 
 func kindOrder(k LockKey) int {
@@ -92,6 +93,13 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 }
 
 type unit struct {
+ integrationMemoryBirth *integrationMemoryBirthPlan
+	integrationDelivery     *integrationDeliveryPlan
+	contentWithdrawal       *contentWithdrawalPlan
+	integrationControl      *integrationControlPlan
+	integrationTurn         *integrationTurnPlan
+	integrationConsent      *integrationConsentWrite
+	integrationCreation     *integrationCreationState
 	routePolicy             *domain.RoutePolicySnapshot
 	routePolicyFrozen       bool
 	newRouteAdmission       bool
@@ -187,6 +195,7 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 		return nil, u.err
 	}
 	res, e := u.tx.ExecContext(ctx, q, args...)
+ if e==nil{e=u.recordIntegrationBirthSave(table)}
 	if e != nil {
 		u.err = e
 	}
@@ -194,6 +203,7 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 }
 
 type trackedRow struct {
+ query string
 	row *sql.Row
 	u   *unit
 }
@@ -203,6 +213,7 @@ func (r failureRow) Scan(...any) error { return r.err }
 
 func (r trackedRow) Scan(args ...any) error {
 	e := r.row.Scan(args...)
+ if e==nil {e=r.u.observeIntegrationBirthUTC(r.query,args)}
 	if e != nil && !errors.Is(e, sql.ErrNoRows) {
 		r.u.err = e
 	}
@@ -218,7 +229,7 @@ func (u *unit) QueryRowContext(ctx context.Context, q string, args ...any) Row {
 		u.err = ErrReplan
 		return failureRow{u.err}
 	}
-	return trackedRow{row: u.tx.QueryRowContext(ctx, q, args...), u: u}
+	return trackedRow{row: u.tx.QueryRowContext(ctx, q, args...), u: u,query:normal}
 }
 func (u *unit) RequireLock(k LockKey) error {
 	if !u.plan[string(lockBytes(k))] {

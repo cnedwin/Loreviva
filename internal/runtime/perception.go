@@ -15,7 +15,12 @@ import (
 func PerceptionLocks(ctx context.Context, s *store.Store, scope domain.Scope, actor string) ([]store.LockKey, error) {
 	var raw []byte
 	var init Initialization
-	if e := s.DB.QueryRowContext(ctx, "SELECT initialization FROM runtime_instances WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND owner_subject_id=?", scope.TenantID, scope.ProductID, scope.WorldInstanceID, scope.SubjectID).Scan(&raw); e != nil {
+	if body, handled, e := s.IntegrationTurnPrecollection(ctx, scope); handled {
+		if e != nil {
+			return nil, e
+		}
+		raw = body
+	} else if e := s.DB.QueryRowContext(ctx, "SELECT initialization FROM runtime_instances WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND owner_subject_id=?", scope.TenantID, scope.ProductID, scope.WorldInstanceID, scope.SubjectID).Scan(&raw); e != nil {
 		return nil, e
 	}
 	if json.Unmarshal(raw, &init) != nil || len(init.Actors) > 32 || len(init.Items) > 32 {

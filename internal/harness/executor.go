@@ -90,6 +90,10 @@ func (x *Executor) Execute(ctx context.Context, lease domain.TaskLease, worker s
 		return e
 	}
 	defer release()
+	ctx, e = x.Turns.Store.EnterIntegrationTaskIssuer(ctx, lease, worker)
+	if e != nil {
+		return e
+	}
 	scope := domain.Scope{ProductScope: lease.ProductScope, WorldInstanceID: *lease.WorldInstanceID}
 	if d, e := x.Turns.Store.RecoveryTurnDispatch(ctx, lease, worker); e == nil {
 		return x.executeRecoveryDispatch(ctx, lease, worker, d)

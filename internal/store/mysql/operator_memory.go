@@ -47,6 +47,7 @@ func CheckMemoryCallerTx(ctx context.Context, tx Tx, scope domain.ProductScope, 
 	if !ok || u.operatorStore == nil {
 		return ErrDenied
 	}
+	if handled, e := IntegrationGovernanceCallerTx(ctx, tx, domain.Scope{ProductScope: scope, WorldInstanceID: u.world}, action); handled { return e }
 	p, e := currentOperatorTx(ctx, u.tx, u.operatorStore, scope)
 	if e != nil || p.job != "" {
 		return ErrDenied

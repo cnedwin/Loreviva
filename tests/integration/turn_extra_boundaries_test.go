@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"loreviva.local/loreviva/internal/app"
 	"loreviva.local/loreviva/internal/content"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/harness"
@@ -195,32 +194,26 @@ func TestExtraLostReplyRestartUsesActiveOriginalRequest(t *testing.T) {
 			}
 		}
 	}
-	local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-	if e != nil {
+	recovered := reopenRuntimeFixture(t, ctx, r)
+	if _, e = recovered.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", task); e != nil {
 		t.Fatal(e)
 	}
-	defer local.Participant.Close(ctx)
-	recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-	recovered.BindLocal(local)
-	if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", task); e != nil {
-		t.Fatal(e)
-	}
-	queryDue(t, r, task)
+	queryDue(t, recovered, task)
 	if e = recovered.Worker.Once(ctx); e != nil {
 		t.Fatal(e)
 	}
-	if !bytes.Equal(before, journalBytes(t, r)) {
+	if !bytes.Equal(before, journalBytes(t, recovered)) {
 		t.Fatal("restart purchased another request")
 	}
 	var state string
 	var calls int
-	if e = r.Store.DB.QueryRow("SELECT state,calls_used FROM tasks WHERE task_id=?", task).Scan(&state, &calls); e != nil || state != "COMMITTED" || calls != 2 {
+	if e = recovered.Store.DB.QueryRow("SELECT state,calls_used FROM tasks WHERE task_id=?", task).Scan(&state, &calls); e != nil || state != "COMMITTED" || calls != 2 {
 		t.Fatal("restart failed to continue actual active1", state, calls, e)
 	}
 	if _, _, e = recovered.Files.ReadApprovedTurn(ctx, scope, task); e != nil {
 		t.Fatal(e)
 	}
-	if e = r.Store.ApproveOriginalTurn(ctx, lease, worker); e == nil {
+	if e = recovered.Store.ApproveOriginalTurn(ctx, lease, worker); e == nil {
 		t.Fatal("retired original candidate or old fence approved")
 	}
 }
@@ -453,26 +446,20 @@ func TestExtraMarkedUnsentAndUnknownACKRestartNeverGenerates(t *testing.T) {
 			}
 			// Deliberately never consume the known permit: durable marker alone only permits query.
 			before := journalBytes(t, r)
-			local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-			if e != nil {
+			recovered := reopenRuntimeFixture(t, ctx, r)
+			if _, e = recovered.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", task); e != nil {
 				t.Fatal(e)
 			}
-			defer local.Participant.Close(ctx)
-			recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-			recovered.BindLocal(local)
-			if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", task); e != nil {
-				t.Fatal(e)
-			}
-			queryDue(t, r, task)
+			queryDue(t, recovered, task)
 			if e = recovered.Worker.Once(ctx); e == nil {
 				t.Fatal("provider UNKNOWN was falsely completed")
 			}
-			if !bytes.Equal(before, journalBytes(t, r)) {
+			if !bytes.Equal(before, journalBytes(t, recovered)) {
 				t.Fatal("known marker caused Generate on restart")
 			}
 			var state, provider string
 			var calls, queries, commits int
-			if e = r.Store.DB.QueryRow("SELECT t.state,t.calls_used,q.provider_state,q.queries_used,(SELECT COUNT(*) FROM harness_turn_commits WHERE task_id=?) FROM tasks t JOIN attempts a USING(tenant_id,product_id,task_id) JOIN harness_original_queries q USING(tenant_id,product_id,task_id,attempt_id) WHERE t.task_id=? AND a.slot=1", task, task).Scan(&state, &calls, &provider, &queries, &commits); e != nil {
+			if e = recovered.Store.DB.QueryRow("SELECT t.state,t.calls_used,q.provider_state,q.queries_used,(SELECT COUNT(*) FROM harness_turn_commits WHERE task_id=?) FROM tasks t JOIN attempts a USING(tenant_id,product_id,task_id) JOIN harness_original_queries q USING(tenant_id,product_id,task_id,attempt_id) WHERE t.task_id=? AND a.slot=1", task, task).Scan(&state, &calls, &provider, &queries, &commits); e != nil {
 				t.Fatal(e)
 			}
 			if state != "RUNNING" || calls != 2 || provider != "UNKNOWN" || queries != 1 || commits != 0 {

@@ -3,6 +3,7 @@ package mysql
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -202,6 +203,21 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		copy := *r.Versions
 		r.Versions = &copy
 	}
+	if a, ok := ctx.Value(integrationControlKey{}).(*integrationControlPlan); ok {
+		if a.store != s || a.lease == nil || r.integrationControl != nil || r.commandOnly || r.Operation != "INSTANCE_CONTROL" || r.TaskID != a.document.Task || r.PayloadHash != sha256.Sum256(a.raw) {
+			return receipt, false, ErrDenied
+		}
+		r.integrationControl = a
+		r.Locks = append(r.Locks, a.keys...)
+		r.Locks = append(r.Locks, LockKey{Rank: 110, Kind: "commit_receipts", IDs: []string{a.document.Receipt}}, LockKey{Rank: 90, Kind: "content_check", IDs: []string{r.ProductScope.TenantID, r.ProductScope.ProductID, a.document.Task}})
+	}
+	if e := s.prepareIntegrationExecution(ctx, &r); e != nil {
+		return receipt, false, e
+	}
+ if e:=s.planIntegrationMemoryBirth(&r);e!=nil{return receipt,false,e}
+	if e := s.planIntegrationDelivery(ctx, &r); e != nil {
+		return receipt, false, e
+	}
 	if e := validateBarrier(r); e != nil {
 		return receipt, false, e
 	}
@@ -216,8 +232,10 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	if e := s.planBoundGeneration(ctx, &r); e != nil {
 		return receipt, false, e
 	}
-	if e := s.prepareOperatorBarrier(ctx, &r); e != nil {
-		return receipt, false, e
+	if r.integrationGovernance == nil {
+		if e := s.prepareOperatorBarrier(ctx, &r); e != nil { return receipt, false, e }
+	} else if p := r.integrationGovernance; !p.active || !p.executing || p.store != s || p.owner != s.integrationGovernanceOwner || ctx.Value(integrationGovernanceContextKey{}) != p || r.Operation != "MEMORY_GOVERNANCE_ACCEPT" || !r.commandOnly || p.hash != r.PayloadHash {
+		return receipt, false, ErrDenied
 	}
 	plan, e := PlanLocks(append(baseLocks(r), r.Locks...))
 	if e != nil {
@@ -238,6 +256,20 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}()
 	u := &unit{tx: tx, plan: map[string]bool{}, scope: r.ProductScope, taskID: r.TaskID, commandOnly: r.commandOnly, fence: r.Fence, purpose: r.Purpose, world: worldKey(r)}
 	u.operatorStore = s
+ u.integrationMemoryBirth=r.integrationMemoryBirth
+ if p:=r.integrationMemoryBirth;p!=nil {if p.unit!=nil||p.closed{return receipt,false,ErrDenied};p.unit=u;defer func(){p.closed=true;p.active=false;p.beforeRaw=nil;p.afterRaw=nil;p.input.Body=""}()}
+	if p := r.integrationGovernance; p != nil { if p.unit != nil { return receipt, false, ErrDenied }; p.unit = u }
+	u.integrationDelivery = r.integrationDelivery
+	if r.integrationDelivery != nil {
+		r.integrationDelivery.unit = u
+	}
+	u.contentWithdrawal = r.contentWithdrawal
+	if r.contentWithdrawal != nil {
+		r.contentWithdrawal.unit = u
+	}
+	u.integrationCreation = r.integrationCreation
+	u.integrationControl = r.integrationControl
+	u.integrationTurn = r.integrationTurn
 	u.operation = r.Operation
 	u.runtime = r.Runtime
 	u.rehearsalInitialization = r.rehearsalInitialization
@@ -256,6 +288,10 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}
 	for _, k := range plan {
 		if e = s.acquire(ctx, tx, r, k); e != nil {
+			if r.integrationGovernance != nil { return receipt, false, fmt.Errorf("integration governance lock rank %d: %w", k.Rank, e) }
+			if r.integrationTurn != nil {
+				return receipt, false, fmt.Errorf("integration turn lock rank %d: %w", k.Rank, e)
+			}
 			if r.rehearsalReport != nil {
 				return receipt, false, fmt.Errorf("report rank %d root=%t: %w", k.Rank, len(k.IDs) > 2 && k.IDs[2] == r.TaskID, e)
 			}
@@ -266,7 +302,11 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 			s.Trace(k)
 		}
 	}
+	if e = s.checkIntegrationGovernance(ctx, u, r, false); e != nil { return receipt, false, fmt.Errorf("integration governance current: %w", e) }
 	if e = s.checkOperatorBarrier(ctx, tx, r); e != nil {
+		if r.integrationTurn != nil {
+			return receipt, false, fmt.Errorf("integration turn current: %w", e)
+		}
 		return receipt, false, e
 	}
 	if r.rehearsalExecution != nil {
@@ -283,6 +323,15 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		if e = s.checkRehearsalClaim(ctx, u, r); e != nil {
 			return receipt, false, e
 		}
+	}
+	if r.integrationCreation != nil {
+		r.integrationCreation.unit = u
+		if e = s.checkIntegrationCreationTx(ctx, u, r.integrationCreation, "PRE_BODY"); e != nil {
+			return receipt, false, e
+		}
+	}
+	if e = s.checkContentWithdrawal(ctx, u, r, false); e != nil {
+		return receipt, false, e
 	}
 	existing, e := queryReceipt(ctx, tx, r.CommitKey)
 	if e == nil {
@@ -324,9 +373,16 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		}
 	}
 	if e = s.checkHarnessContext(ctx, u, r); e != nil {
+		if r.integrationTurn != nil {
+			return receipt, false, fmt.Errorf("integration %s harness context: %w", r.Operation, e)
+		}
 		return receipt, false, e
 	}
 	if e = body(u); e != nil {
+		if r.integrationGovernance != nil { return receipt, false, fmt.Errorf("integration governance body: %w", e) }
+		if r.integrationTurn != nil {
+			return receipt, false, fmt.Errorf("integration %s body: %w", r.Operation, e)
+		}
 		return receipt, false, e
 	}
 	if u.err != nil {
@@ -345,6 +401,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		return receipt, false, e
 	}
 	if e = s.finish(ctx, tx, r, u); e != nil {
+		if r.integrationTurn != nil {
+			return receipt, false, fmt.Errorf("integration %s final: %w", r.Operation, e)
+		}
 		return receipt, false, e
 	}
 	return CommitReceipt{Key: r.CommitKey, TaskID: r.TaskID, OwnerSubjectID: r.OwnerSubjectID, Committed: true}, false, nil
@@ -381,6 +440,17 @@ func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error 
 }
 // Planned keys do not replace current row checks: base gates and task locks validate their owned identities, while specialized branches retain their own validators.
 func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
+ if handled,e:=s.acquireIntegrationMemoryBirth(ctx,tx,r,k);handled{return e}
+	if handled, e := s.acquireGovernanceIdentityKey(ctx, tx, r, k); handled { return e }
+	if handled, e := s.acquireIntegrationTurnKey(ctx, tx, r, k); handled {
+		return e
+	}
+	if handled, e := s.acquireIntegrationControlKey(ctx, tx, r, k); handled {
+		return e
+	}
+	if handled, e := s.acquireIntegrationCreationKey(ctx, tx, r, k); handled {
+		return e
+	}
 	if k.Rank == 35 || k.Rank == 90 && (k.Kind == domain.StudioSettingsLock || k.Kind == domain.StudioConnectionLock) {
 		found := false
 		for _, want := range RoutePolicyLocks(r.ProductScope) {
@@ -501,7 +571,7 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 					return ErrDenied
 				}
 			case ControlPurpose:
-				if !control {
+				if !control && !r.integrationControl.clientControl(r.ProductScope, worldKey(r)) {
 					return ErrDenied
 				}
 			case GovernancePurpose:
@@ -758,6 +828,24 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 		case 110:
 			if k.Kind == "commit_receipts" {
 				e = tx.QueryRowContext(ctx, "SELECT commit_key FROM commit_receipts WHERE commit_key=? FOR UPDATE", k.IDs[0]).Scan(&id)
+			} else if k.Kind == "delivery_update" || k.Kind == "integration_notice" {
+				// These existing lock kinds name closed delivery identities, not
+				// arbitrary tables or the generic record_id schema.
+				d := r.integrationDelivery
+				if d == nil || d.store != s || d.scope.WorldInstanceID != worldKey(r) {
+					return ErrDenied
+				}
+				if k.Kind == "delivery_update" {
+					if k.IDs[2] != d.update {
+						return ErrDenied
+					}
+					e = tx.QueryRowContext(ctx, "SELECT business_update_id FROM delivery_updates WHERE tenant_id=? AND product_id=? AND world_instance_id=? AND business_update_id=? FOR UPDATE", t, p, d.scope.WorldInstanceID, d.update).Scan(&id)
+				} else {
+					if k.IDs[2] != d.notice {
+						return ErrDenied
+					}
+					e = tx.QueryRowContext(ctx, "SELECT notice_ref FROM integration_notifications WHERE tenant_id=? AND product_id=? AND customer_id=? AND notice_ref=? FOR UPDATE", t, p, d.customer, d.notice).Scan(&id)
+				}
 			} else {
 				e = tx.QueryRowContext(ctx, fmt.Sprintf("SELECT record_id FROM %s WHERE tenant_id=? AND product_id=? AND record_id=? FOR UPDATE", k.Kind), t, p, k.IDs[2]).Scan(&id)
 			}

@@ -73,19 +73,13 @@ func TestAutomaticBillsScanACKUnknownAndRestart(t *testing.T) {
 	if e := r.Local.Participant.Close(ctx); e != nil {
 		t.Fatal(e)
 	}
-	local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer local.Participant.Close(ctx)
-	recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-	recovered.BindLocal(local)
+	recovered := reopenRuntimeFixture(t, ctx, r)
 	done, failed, e := recovered.Store.RunOriginalBills(ctx)
 	if e != nil || done != 1 || failed != 0 {
 		t.Fatal(done, failed, e)
 	}
 	var pages, items int
-	if e = r.Store.DB.QueryRow("SELECT (SELECT COUNT(*) FROM harness_bill_scan_receipts),(SELECT COUNT(*) FROM harness_bill_items)").Scan(&pages, &items); e != nil || pages != 1 || items != 1 {
+	if e = recovered.Store.DB.QueryRow("SELECT (SELECT COUNT(*) FROM harness_bill_scan_receipts),(SELECT COUNT(*) FROM harness_bill_items)").Scan(&pages, &items); e != nil || pages != 1 || items != 1 {
 		t.Fatal(pages, items, e)
 	}
 }
@@ -167,11 +161,15 @@ func TestAutomaticBillsAuthorityAndOrdinaryOpenNeverReseed(t *testing.T) {
 				t.Fatal("current authority missing yet scanned")
 			}
 			if mode == "disabled" {
-				local, openErr := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+				local, openErr := app.OpenLocal(ctx, store.New(r.Store.DB), filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
 				if openErr != nil {
 					t.Fatal(openErr)
 				}
-				defer local.Participant.Close(ctx)
+				t.Cleanup(func() {
+					if e := local.Participant.Close(context.Background()); e != nil {
+						t.Error(e)
+					}
+				})
 				var enabled bool
 				if e = r.Store.DB.QueryRow("SELECT enabled FROM harness_settlement_services").Scan(&enabled); e != nil || enabled {
 					t.Fatal("ordinary open reenabled disabled service", enabled, e)

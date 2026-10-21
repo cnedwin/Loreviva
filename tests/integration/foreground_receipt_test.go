@@ -9,7 +9,6 @@ import (
 	"loreviva.local/loreviva/internal/app"
 	"loreviva.local/loreviva/internal/domain"
 	store "loreviva.local/loreviva/internal/store/mysql"
-	"path/filepath"
 	"testing"
 )
 
@@ -61,14 +60,8 @@ func TestForegroundReceiptWorkerRestartDoesNotQueryKnownOriginalAgain(t *testing
 		t.Fatal(e)
 	}
 	before := journalBytes(t, r)
-	local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer local.Participant.Close(ctx)
-	recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-	recovered.BindLocal(local)
-	if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", id.TaskID); e != nil {
+	recovered := reopenRuntimeFixture(t, ctx, r)
+	if _, e = recovered.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", id.TaskID); e != nil {
 		t.Fatal(e)
 	}
 	if e = recovered.Worker.Once(ctx); e != nil {
@@ -76,10 +69,10 @@ func TestForegroundReceiptWorkerRestartDoesNotQueryKnownOriginalAgain(t *testing
 	}
 	var used, calls int
 	var state string
-	if e = r.Store.DB.QueryRow("SELECT q.queries_used,t.calls_used,t.state FROM harness_original_queries q JOIN tasks t USING(tenant_id,product_id,task_id) WHERE task_id=? AND attempt_id=?", id.TaskID, id.AttemptID).Scan(&used, &calls, &state); e != nil || used != 1 || calls != 1 || state != "COMMITTED" {
+	if e = recovered.Store.DB.QueryRow("SELECT q.queries_used,t.calls_used,t.state FROM harness_original_queries q JOIN tasks t USING(tenant_id,product_id,task_id) WHERE task_id=? AND attempt_id=?", id.TaskID, id.AttemptID).Scan(&used, &calls, &state); e != nil || used != 1 || calls != 1 || state != "COMMITTED" {
 		t.Fatal(used, calls, state, e)
 	}
-	if !bytes.Equal(before, journalBytes(t, r)) {
+	if !bytes.Equal(before, journalBytes(t, recovered)) {
 		t.Fatal("recovery generated provider request")
 	}
 }

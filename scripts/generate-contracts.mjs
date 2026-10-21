@@ -5,8 +5,9 @@ import {createHash} from 'node:crypto';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import standaloneCode from 'ajv/dist/standalone/index.js';
+import {resolveIntegrationProfiles} from './integration-profiles.mjs';
 
-export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.4.0',ajv:'8.17.1','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
+export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.5.0',ajv:'8.17.1','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
 const repo=fileURLToPath(new URL('../',import.meta.url));
 export const canonicalSourceRoot=path.resolve(repo,'contracts/source');
 const methods=new Set(['get','put','post','delete','options','head','patch','trace']);
@@ -82,7 +83,11 @@ function discriminatedBranches(s) {
 }
 function tsType(s) {
  if(s===true||s===undefined)return 'unknown'; if(s===false)return 'never';
- if(s.$ref)return refName(s);
+ if(s.$ref){
+  // JSON Schema siblings constrain the reference; preserve finite scalar consts.
+  const name=refName(s),literal=s.const;
+  return literal===null||['string','number','boolean'].includes(typeof literal)?'('+name+' & '+JSON.stringify(literal)+')':name;
+ }
  if(s.const!==undefined)return JSON.stringify(s.const);
  if(s.enum)return s.enum.map(x=>JSON.stringify(x)).join(' | ');
  if(s.oneOf||s.anyOf)return '('+(s.oneOf??s.anyOf).map(tsType).join(' | ')+')';
@@ -160,30 +165,82 @@ export async function validateExamples(sourceRoot=canonicalSourceRoot) {
  return {count,errors};
 }
 
-function browserValidators(openapi,ops,header) {
+function browserValidators(openapi,ops,profiles,header) {
  const base='https://schemas.loreviva.invalid/generated/browser';
  const ajv=new Ajv2020({strict:false,allErrors:true,validateFormats:true,inlineRefs:false,code:{source:true}});addFormats(ajv);ajv.addSchema({...openapi,$id:base});
  const exports={};
  function anchor(value){if(Array.isArray(value))return value.map(anchor);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,v])=>[key,key==='$ref'&&typeof v==='string'&&v.startsWith('#')?base+v:anchor(v)]));return value}
  function add(name,schema){const id=base+'/'+name;ajv.addSchema({...anchor(schema),$id:id});exports[name]=id}
  for(const name of Object.keys(openapi.components.schemas).sort())add('schema_'+name,{$ref:base+'#/components/schemas/'+name});
- for(const op of ops.filter(o=>o.route.startsWith('/world/v1/admin/'))){
+ for(const [prefix,doc,list] of [['',openapi,ops],...Object.entries(profiles).map(([p,d])=>['profile_'+p+'_',d,operations(d)])])for(const op of list){
   const input={type:'object',properties:{},required:[],additionalProperties:false};
   for(const raw of op.parameters){const p=resolve(openapi,raw);const group=p.in==='header'?'headers':p.in;const shape=input.properties[group]??={type:'object',properties:{},required:[],additionalProperties:false};shape.properties[p.name]=p.schema;if(p.required){shape.required.push(p.name);if(!input.required.includes(group))input.required.push(group)}}
   const body=resolve(openapi,op.requestBody);if(body){const media=body.content['application/json']??Object.values(body.content)[0];input.properties.body=media.schema;if(body.required)input.required.push('body')}
-  add('input_'+op.operationId,input);
-  for(const [status,raw]of Object.entries(op.responses)){if(!status.startsWith('2'))continue;const response=resolve(openapi,raw);const schema=response.content?.['application/json']?.schema;if(schema)add('response_'+op.operationId+'_'+status,schema)}
+  add(prefix+'input_'+op.operationId,input);
+  for(const [status,raw]of Object.entries(op.responses)){
+   const response=resolve(doc,raw);const projection=op['x-loreviva-response-projection'];
+   const schema=prefix&&projection?.status===status?projection.default_schema:response.content?.['application/json']?.schema;
+   if(schema)add(prefix+'response_'+op.operationId+'_'+status,schema);
+   if(prefix&&projection?.status===status)add(prefix+'provenance_'+op.operationId+'_'+status,projection.projection_schema);
+   if(response['x-sse-data-schema'])add(prefix+'sse_data_'+op.operationId,response['x-sse-data-schema']);
+   if(response['x-sse-frame-schema'])add(prefix+'sse_frame_'+op.operationId,response['x-sse-frame-schema']);
+  }
  }
  const code='// '+header+'\n'+standaloneCode(ajv,exports)+'\n';
  const types='// '+header+'\ninterface ValidationError {instancePath:string;keyword:string;message?:string}\ninterface Validator {(value:unknown):boolean;errors?:ValidationError[]|null}\ndeclare const validators: {\n'+Object.keys(exports).map(name=>'  '+JSON.stringify(name)+': Validator;').join('\n')+'\n};\nexport = validators;\n';
  return {code,types};
 }
+// Runtime routing and authority roles are derived from the same source as DTOs.
+function transportDescriptors(openapi,profiles,header){
+ const roleNames={ClientSessionBearer:'CLIENT',ServiceBearer:'SERVICE',OperatorBearer:'OPERATOR'};
+ const out={};
+ for(const [profile,doc]of Object.entries(profiles)){
+  out[profile]={};
+  for(const op of operations(doc)){
+   const roles=[...new Set((op.security??doc.security??[]).flatMap(s=>{
+    const names=Object.keys(s);if(names.length!==1||!roleNames[names[0]])throw Error('unsupported source security alternative');return roleNames[names[0]];
+   }))];
+   if(!roles.length)throw Error('source operation has no explicit credential role');
+   const parameters=op.parameters.map(p=>resolve(doc,p));
+   const body=resolve(doc,op.requestBody);const requestMime=body?Object.keys(body.content)[0]:null;
+   const responses=Object.fromEntries(Object.entries(op.responses).map(([status,raw])=>{
+    const response=resolve(doc,raw);const contents=Object.keys(response.content??{});
+    if(contents.length>1)throw Error('ambiguous response content protocol');
+    const mime=contents[0]??null;
+    const protocol=mime===null?'EMPTY':mime==='application/json'?'JSON':mime==='text/event-stream'?'SSE':'BINARY';
+    return [status,{mime,protocol,validator:protocol==='JSON'?'profile_'+profile+'_response_'+op.operationId+'_'+status:null,sseData:response['x-sse-data-schema']?'profile_'+profile+'_sse_data_'+op.operationId:null,sseFrame:response['x-sse-frame-schema']?'profile_'+profile+'_sse_frame_'+op.operationId:null}];
+   }));
+   out[profile][op.operationId]={method:op.method.toUpperCase(),path:op.route,roles,parameters:parameters.map(p=>({name:p.name,in:p.in,required:p.required===true,schema:p.schema})),requestMime,bodyRequired:body?.required===true,inputValidator:'profile_'+profile+'_input_'+op.operationId,responses,projection:op['x-loreviva-response-projection']??null};
+  }
+ }
+ const roles=Object.fromEntries(operations(openapi).map(op=>[op.operationId,out[Object.keys(out)[0]][op.operationId].roles]));
+ const protocols=Object.fromEntries(Object.entries(out).map(([p,ops])=>[p,Object.fromEntries(Object.entries(ops).map(([id,op])=>[id,Object.fromEntries(Object.entries(op.responses).map(([status,r])=>[status,r.protocol]))]))]));
+ const multipart=operations(openapi).filter(op=>resolve(openapi,op.requestBody)?.content?.['multipart/form-data']);
+ const overlay=multipart.map(op=>{
+  const schema=resolve(openapi,op.requestBody).content['multipart/form-data'].schema;
+  const fields=Object.entries(schema.properties??{}).map(([k,v])=>JSON.stringify(k)+(schema.required?.includes(k)?'':'?')+': '+(v.type==='string'&&v.format==='binary'?'Blob':tsType(v))+';').join(' ');
+  return JSON.stringify(op.operationId)+': { '+fields+' };';
+ }).join('\n');
+ return '// '+header+'\nimport type * as Contracts from "./contracts.ts";\n'+
+ 'export const transportDescriptors = '+JSON.stringify(out,null,2)+' as const;\n'+
+ 'export const operationRoles = '+JSON.stringify(roles,null,2)+' as const;\n'+
+ 'export const responseProtocols = '+JSON.stringify(protocols,null,2)+' as const;\n'+
+ 'export type OperationRoles = { [O in keyof typeof operationRoles]: (typeof operationRoles)[O][number] };\n'+
+ 'export type ResponseProtocols = typeof responseProtocols;\n'+
+ 'export interface MultipartBodies { '+overlay.replace(/(?<![\w.])AssetUploadMetadata/g,'Contracts.AssetUploadMetadata')+' }\n';
+}
+// Validate the entire prepared output set before the first mkdir/write; never repair CR while hashing or writing.
+export function assertGeneratedLF(files){
+ for(const [name,body] of Object.entries(files))if(typeof body!=='string'||body.includes('\r'))throw Error('Generated output must be LF without CR: '+name);
+}
 export async function generateContracts({sourceRoot=canonicalSourceRoot,outputRoot=repo}={}) {
  const {openapi,wepkg,source_hash,source_hashes}=await loadSources(sourceRoot);const ops=operations(openapi);
+ const profiles=resolveIntegrationProfiles(openapi);
  const header='Code generated by Loreviva contracts '+GENERATOR_VERSIONS.loreviva+'; DO NOT EDIT. Source SHA-256: '+source_hash;
- const browser=browserValidators(openapi,ops,header);
+ const browser=browserValidators(openapi,ops,profiles,header);
  const schemas=Object.entries(sorted(openapi.components.schemas));
- const ts='// '+header+'\nexport const sourceHash = '+JSON.stringify(source_hash)+' as const;\n'+schemas.map(([name,s])=>'export type '+name+' = '+tsType(s)+';').join('\n')+'\n\nexport interface Operations {\n'+ops.map(op=>'  '+tsOperation(openapi,op)).join('\n')+'\n}\n\nexport interface ProjectionResponses {\n'+ops.filter(op=>op['x-loreviva-response-projection']).map(op=>{const p=op['x-loreviva-response-projection'];return '  '+JSON.stringify(op.operationId)+': { '+JSON.stringify(p.value)+': '+tsType(p.projection_schema)+'; };'}).join('\n')+'\n}\n\nexport const operationRoutes = '+JSON.stringify(Object.fromEntries(ops.map(op=>[op.operationId,{method:op.method.toUpperCase(),path:op.route}])),null,2)+' as const;\n';
+ const profileTypes=Object.keys(profiles).length?'\nexport interface ProfileOperations {\n'+Object.entries(profiles).map(([name,doc])=>'  '+JSON.stringify(name)+': {\n'+operations(doc).map(op=>'    '+tsOperation(doc,op)).join('\n')+'\n  };').join('\n')+'\n}\nexport type ProfileResponses = { [P in keyof ProfileOperations]: { [O in keyof ProfileOperations[P]]: ProfileOperations[P][O] extends { responses: infer R } ? R : never } };\nexport type ParsedSSEFrame = IntegrationSSEUpdate;\n':'';
+ const ts='// '+header+'\nexport const sourceHash = '+JSON.stringify(source_hash)+' as const;\n'+schemas.map(([name,s])=>'export type '+name+' = '+tsType(s)+';').join('\n')+'\n\nexport interface Operations {\n'+ops.map(op=>'  '+tsOperation(openapi,op)).join('\n')+'\n}\n\nexport interface ProjectionResponses {\n'+ops.filter(op=>op['x-loreviva-response-projection']).map(op=>{const p=op['x-loreviva-response-projection'];return '  '+JSON.stringify(op.operationId)+': { '+JSON.stringify(p.value)+': '+tsType(p.projection_schema)+'; };'}).join('\n')+'\n}\n'+profileTypes+'\nexport const operationRoutes = '+JSON.stringify(Object.fromEntries(ops.map(op=>[op.operationId,{method:op.method.toUpperCase(),path:op.route}])),null,2)+' as const;\n';
  const goTypes=schemas.map(([name,s])=>{const type=goType(s);return 'type '+name+(type==='json.RawMessage'?' = ':' ')+type}).join('\n\n');
  const go='// '+header+'\npackage generated\n\n'+(goTypes.includes('json.RawMessage')?'import "encoding/json"\n\n':'')+'const SourceHash = '+JSON.stringify(source_hash)+'\nconst GeneratorVersion = '+JSON.stringify(GENERATOR_VERSIONS.loreviva)+'\n\n'+goTypes+'\n';
  const validator=`// ${header}
@@ -242,12 +299,16 @@ func Decode(name string,data []byte,target any) error {
   'packages/sdk-ts/src/generated/contracts.ts':ts,
   'packages/sdk-ts/src/generated/validators.cjs':browser.code,
   'packages/sdk-ts/src/generated/validators.d.cts':browser.types,
+  'packages/sdk-ts/src/generated/transport.ts':transportDescriptors(openapi,profiles,header),
  };
- const manifest={source_hash,source_hashes,generator_versions:GENERATOR_VERSIONS,operation_ids:ops.map(op=>op.operationId),limitations:['Go top-level raw JSON DTOs alias json.RawMessage to preserve JSON methods; validate original wire JSON via generated.Decode before domain use.','TypeScript retains allOf sibling shapes and translates required finite enum discriminants with const/enum if predicates, then/else field requirements, single-field not(required), and small array bounds. Regex, formats, string/number ranges, uniqueness, propertyNames, array upper bounds above 16, arbitrary if predicates and general not/dependent constraints still require full JSON Schema validation.','OpenAPI source must use JSON syntax (valid YAML); no alternate authority or runtime timestamps.']};
+ const profile_hashes={};
+ for(const [name,doc]of Object.entries(profiles)){const output='contracts/generated/profiles/'+name+'.openapi.json';files[output]=json(doc);profile_hashes[output]=createHash('sha256').update(files[output]).digest('hex');}
+ const manifest={source_hash,source_hashes,profile_hashes,generator_versions:GENERATOR_VERSIONS,operation_ids:ops.map(op=>op.operationId),limitations:['Go top-level raw JSON DTOs alias json.RawMessage to preserve JSON methods; validate original wire JSON via generated.Decode before domain use.','TypeScript retains allOf sibling shapes and translates required finite enum discriminants with const/enum if predicates, then/else field requirements, single-field not(required), and small array bounds. Regex, formats, string/number ranges, uniqueness, propertyNames, array upper bounds above 16, arbitrary if predicates and general not/dependent constraints still require full JSON Schema validation.','OpenAPI source must use JSON syntax (valid YAML); no alternate authority or runtime timestamps.']};
+ manifest.transport_artifacts=Object.fromEntries(['packages/sdk-ts/src/generated/transport.ts','packages/sdk-ts/src/generated/validators.cjs','packages/sdk-ts/src/generated/validators.d.cts'].map(p=>[p,{bytes:Buffer.byteLength(files[p]),sha256:createHash('sha256').update(files[p]).digest('hex')}]));
  files['contracts/generated/manifest.json']=json(manifest);
+ assertGeneratedLF(files);
  const outputs=Object.keys(files).sort();
- // Reject CR before writing generated UTF-8 bytes; fingerprints always bind the actual LF output, never a normalized hash view.
- for(const output of outputs){if(files[output].includes('\r'))throw new Error('Generated text must be LF: '+output);const target=path.join(outputRoot,output);await mkdir(path.dirname(target),{recursive:true});await writeFile(target,files[output],'utf8')}
+ for(const output of outputs){const target=path.join(outputRoot,output);await mkdir(path.dirname(target),{recursive:true});await writeFile(target,files[output],'utf8')}
  return {source_hash,generator_versions:GENERATOR_VERSIONS,outputs};
 }
 

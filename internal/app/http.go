@@ -219,6 +219,7 @@ func labels(v []generated.SupportLabel) []string {
 	return out
 }
 func (r *Runtime) Handler() http.Handler {
+	if r.Memory != nil { _ = r.Memory.BindIntegrationGovernance() }
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, q *http.Request) { response(w, 200, map[string]any{"status": "alive"}) })
 	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, q *http.Request) {
@@ -337,8 +338,14 @@ func (r *Runtime) Handler() http.Handler {
 	r.assetRoutes(mux)
 	mux.HandleFunc("GET "+root+"/capabilities", r.admin("", "content.read", r.capabilities))
 	r.instanceRoutes(mux)
+	mux.HandleFunc("POST /world/v1/instances", r.createIntegrationInstance)
+	r.integrationMemoryRoutes(mux)
+	r.integrationSessionRoutes(mux)
+	r.integrationRuntimeRoutes(mux)
+	r.integrationDeliveryRoutes(mux)
 	r.memoryRoutes(mux)
 	r.unsupportedRoutes(mux)
+	r.integrationCapabilitiesRoutes(mux)
 	studio := studioHandler()
 	// Static Studio and health/version routes bypass this operation wrapper. Other requests enter the runtime guard, and admin requests attach the authenticated principal before dispatch.
 	return http.HandlerFunc(func(w http.ResponseWriter, q *http.Request) {
@@ -347,6 +354,10 @@ func (r *Runtime) Handler() http.Handler {
 			return
 		}
 		if q.URL.Path == "/health" || q.URL.Path == "/version" {
+			mux.ServeHTTP(w, q)
+			return
+		}
+		if deliveryPattern(q, mux) {
 			mux.ServeHTTP(w, q)
 			return
 		}

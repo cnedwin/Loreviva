@@ -13,8 +13,25 @@ func operatorKeys(p domain.OperatorPrincipal) []LockKey {
 
 // This preparation captures the private principal and actions for the mapped operator branches; other branches retain their own barrier checks. The captured identity is checked again in the owning transaction.
 func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) error {
+	if e := s.prepareContentWithdrawal(ctx, r); e != nil {
+		return e
+	}
+	if r.integrationTurn != nil {
+		if r.integrationTurn.store != s {
+			return ErrDenied
+		}
+		return nil
+	}
+	if r.integrationControl != nil {
+		if r.integrationControl.store != s {
+			return ErrDenied
+		}
+		return nil // Exact private plan is checked before body/replay and final commit.
+	}
 	var actions []string
 	switch r.Operation {
+	case withdrawalOperation:
+		actions = []string{"content.archive"}
 	case "createContentDraft", "saveContentDraft":
 		actions = []string{"content.edit"}
 	case "checkDraftImpact", "checkDraftForPublish":
@@ -81,6 +98,12 @@ func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) e
 }
 
 func (s *Store) checkOperatorBarrier(ctx context.Context, tx *sql.Tx, r BarrierRequest) error {
+	if e := s.checkIntegrationTurn(ctx, tx, r); e != nil {
+		return e
+	}
+	if e := s.checkIntegrationControl(ctx, tx, r); e != nil {
+		return e
+	}
 	if e := checkProgramBarrier(ctx, tx, r); e != nil {
 		return e
 	}

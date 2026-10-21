@@ -133,7 +133,7 @@ func recordResult(ctx context.Context, tx store.Tx, s domain.Scope, task, id str
 			return e
 		}
 	}
-	return nil
+	return tx.AppendIntegrationControlResult(ctx, s, task, id)
 }
 func (r *Runtime) Process(ctx context.Context, lease store.RegisteredLease, worker string) error {
 	if lease.WorldInstanceID == nil || !((lease.Kind == "CONTROL" && lease.Operation == "INSTANCE_CONTROL") || (lease.Kind == "MIGRATION" && lease.Operation == "INSTANCE_MIGRATION")) {

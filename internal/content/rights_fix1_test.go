@@ -107,7 +107,7 @@ func TestFix1PersistedAudienceEligibilityForDifferentCreator(t *testing.T) {
 			raw, _ := json.Marshal(asset)
 			in := coffee(t)
 			in.Objects = append(in.Objects, raw)
-			otherCtx := testprincipal.Register(t, s.Store, other)
+			otherCtx := testprincipal.Register(t, s.Store, ctx, other)
 			d, e := s.Create(otherCtx, other, "WORLD", "", in, "different-owner-create")
 			if e != nil {
 				t.Fatal(e)

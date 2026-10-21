@@ -12,7 +12,7 @@ func (o *Operator) RegistryReady(ctx context.Context) error {
 		return ErrUnauthenticated
 	}
 	var ready bool
-	e := o.store.DB.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN tenant_gates t ON t.tenant_id=c.tenant_id LEFT JOIN studio_credential_state v USING(credential_id) WHERE c.enabled=1 AND t.enabled=1 AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)))`).Scan(&ready)
+	e := o.store.DB.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN integration_credential_hashes h ON h.token_hash=c.token_sha256 AND h.kind='OPERATOR' AND h.principal_id=c.credential_id JOIN memory_installation i ON i.singleton=1 AND i.installation_id=h.installation_id JOIN tenant_gates t ON t.tenant_id=c.tenant_id LEFT JOIN studio_credential_state v USING(credential_id) WHERE c.enabled=1 AND t.enabled=1 AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)))`).Scan(&ready)
 	if e != nil || !ready {
 		return ErrUnauthenticated
 	}
