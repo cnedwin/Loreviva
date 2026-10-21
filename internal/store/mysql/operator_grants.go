@@ -32,7 +32,7 @@ func (s *Store) AuthenticateOperator(ctx context.Context, authorization string) 
 		return ctx, p, ErrDenied
 	}
 	h := sha256.Sum256([]byte(secret))
-	e := s.DB.QueryRowContext(ctx, `SELECT c.credential_id,c.tenant_id,c.product_id,c.subject_id FROM operator_credentials c LEFT JOIN studio_credential_state v USING(credential_id) JOIN tenant_gates t ON t.tenant_id=c.tenant_id WHERE c.token_sha256=? AND c.enabled=1 AND t.enabled=1 AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6))`, h[:]).Scan(&p.CredentialID, &p.TenantID, &p.ProductID, &p.SubjectID)
+	e := s.DB.QueryRowContext(ctx, `SELECT c.credential_id,c.tenant_id,c.product_id,c.subject_id FROM operator_credentials c JOIN integration_credential_hashes h ON h.token_hash=c.token_sha256 AND h.kind='OPERATOR' AND h.principal_id=c.credential_id JOIN memory_installation i ON i.singleton=1 AND i.installation_id=h.installation_id LEFT JOIN studio_credential_state v USING(credential_id) JOIN tenant_gates t ON t.tenant_id=c.tenant_id WHERE c.token_sha256=? AND c.enabled=1 AND t.enabled=1 AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6))`, h[:]).Scan(&p.CredentialID, &p.TenantID, &p.ProductID, &p.SubjectID)
 	if e != nil {
 		return ctx, domain.OperatorPrincipal{}, ErrDenied
 	}
@@ -55,7 +55,7 @@ func currentOperatorTx(ctx context.Context, q rowQuerier, s *Store, scope domain
 	}
 	var h []byte
 	var enabled bool
-	e := q.QueryRowContext(ctx, `SELECT c.token_sha256,c.enabled AND t.enabled AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)) FROM operator_credentials c JOIN tenant_gates t ON t.tenant_id=c.tenant_id LEFT JOIN studio_credential_state v USING(credential_id) WHERE c.credential_id=? AND c.tenant_id=? AND c.product_id=? AND c.subject_id=?`, p.principal.CredentialID, scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&h, &enabled)
+	e := q.QueryRowContext(ctx, `SELECT c.token_sha256,c.enabled AND t.enabled AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)) FROM operator_credentials c JOIN integration_credential_hashes h ON h.token_hash=c.token_sha256 AND h.kind='OPERATOR' AND h.principal_id=c.credential_id JOIN memory_installation i ON i.singleton=1 AND i.installation_id=h.installation_id JOIN tenant_gates t ON t.tenant_id=c.tenant_id LEFT JOIN studio_credential_state v USING(credential_id) WHERE c.credential_id=? AND c.tenant_id=? AND c.product_id=? AND c.subject_id=?`, p.principal.CredentialID, scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&h, &enabled)
 	if e != nil || !enabled || subtle.ConstantTimeCompare(h, p.bearerHash[:]) != 1 {
 		return p, ErrDenied
 	}

@@ -1,0 +1,15 @@
+:root{font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;color:#1b2927;background:#eff3ee;font-synthesis:none;line-height:1.65}
+*{box-sizing:border-box}body{margin:0}main{max-width:960px;margin:auto;padding:40px 20px 72px}
+header{margin-bottom:28px}h1{font-size:clamp(1.8rem,5vw,2.75rem);line-height:1.2;margin:8px 0 18px}
+h2{font-size:1.25rem;margin:0 0 16px}h3{font-size:1rem;overflow-wrap:anywhere}p{overflow-wrap:anywhere}
+.eyebrow{letter-spacing:.16em;font-size:.75rem;color:#476358;font-weight:700}
+section{background:#fff;border:1px solid #d3ddd5;border-radius:16px;padding:24px;margin:20px 0}
+form{margin:16px 0}label{display:block;margin:12px 0 5px;font-weight:600}
+input,select,textarea{font:inherit;width:100%;padding:10px 12px;border:1px solid #718779;border-radius:7px;background:#fff;color:inherit}
+button{font:inherit;font-weight:600;border:1px solid #254d40;border-radius:7px;background:#254d40;color:#fff;padding:9px 15px;min-height:44px;cursor:pointer;margin:8px 8px 8px 0}
+button:disabled{background:#e4e9e4;color:#657168;border-color:#c4cec5;cursor:not-allowed}
+:focus-visible{outline:3px solid #af6209;outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:4px}.notice,.error{padding:12px 16px;border-radius:8px}.notice{background:#e1ebdf}.error{background:#ffe9e0;border:1px solid #ac4a26;color:#762b15}
+.packet{border-left:3px solid #749482;padding:8px 16px;margin:16px 0;background:#f6f8f5}.body-text{white-space:pre-wrap;overflow-wrap:anywhere}
+summary{cursor:pointer;padding:12px 0}.originals{padding-left:24px}.originals li{margin:12px 0;overflow-wrap:anywhere}
+@media(max-width:520px){main{padding:24px 12px 48px}section{padding:18px 14px}button{max-width:100%;white-space:normal}.actions button{flex:1 1 140px}}

@@ -265,6 +265,14 @@ func (c *Coordinator) Drain(ctx context.Context, key string) error {
 func (p *Participant) EnterStore(ctx context.Context) (context.Context, func(), error) {
 	return p.Enter(ctx, StoreWriter)
 }
+
+func (p *Participant) EnterConfiguration(ctx context.Context) (context.Context, store.WorldAccountingIdentity, func(), error) {
+	ctx, release, e := p.Enter(ctx, ConfigWriter)
+	if e != nil {
+		return ctx, store.WorldAccountingIdentity{}, nil, e
+	}
+	return ctx, store.WorldAccountingIdentity{Installation: p.coordinator.installation, Generation: p.generation}, release, nil
+}
 func (p *Participant) Check(ctx context.Context) error { return p.check(ctx, StoreWriter) }
 func (p *Participant) Close(ctx context.Context) error {
 	// Called only after the executable's HTTP and worker servers have stopped.

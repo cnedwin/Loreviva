@@ -86,6 +86,12 @@ func (s *Store) planBoundGeneration(ctx context.Context, r *BarrierRequest) erro
 // Only this fixed owning call can populate the private release lock allowlist.
 // It is rebuilt per operation, never deserialized from a request or receipt.
 func (s *Store) planPerception(ctx context.Context, r *BarrierRequest, actor string) error {
+	if e := s.prepareIntegrationExecution(ctx, r); e != nil {
+		return e
+	}
+	if r.integrationTurn != nil {
+		ctx = context.WithValue(ctx, integrationTurnKey{}, r.integrationTurn)
+	}
 	if s.GenerationContext == nil || r.WorldScope == nil {
 		return ErrDenied
 	}

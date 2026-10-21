@@ -72,7 +72,12 @@ func (u *unit) CreateRegisteredTask(ctx context.Context, in domain.TaskIntake, o
 	}
 	var credential any
 	provenance := "DIRECT_OPERATOR"
-	if operation == "FILE_CLEANUP" && u.operation == "queueFileCleanup" || operation == "MEMORY_GOVERNANCE" && u.operation == "MEMORY_GOVERNANCE_ACCEPT" {
+	if a := u.integrationControl; a != nil {
+		if a.store != u.operatorStore || a.lease != nil || !u.commandOnly || u.operation != "controlIntegrationInstance" || in.Kind != "CONTROL" || operation != "INSTANCE_CONTROL" || in.TaskID != a.document.Task || in.ProductScope != a.document.Scope.ProductScope {
+			return ErrDenied
+		}
+		provenance = "DIRECT_INTEGRATION"
+	} else if operation == "FILE_CLEANUP" && u.operation == "queueFileCleanup" || operation == "MEMORY_GOVERNANCE" && u.operation == "MEMORY_GOVERNANCE_ACCEPT" {
 		provenance = "PROGRAM_OWNED"
 	} else {
 		p, e := currentOperatorTx(ctx, u.tx, u.operatorStore, in.ProductScope)

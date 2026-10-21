@@ -65,6 +65,7 @@ func (s *Store) WithCommandBarrier(ctx context.Context, c CommandBarrierRequest,
 	r := BarrierRequest{ProductScope: c.ProductScope, WorldScope: c.WorldScope, Versions: c.Versions, Purpose: c.Purpose, ExpectedWorldStatus: c.ExpectedWorldStatus, OwnerSubjectID: c.OwnerSubjectID, Operation: c.Operation, CommandKey: c.CommandKey, CommitKey: c.CommitKey, GateVersions: c.GateVersions, PayloadHash: c.PayloadHash, Locks: c.Locks, commandOnly: true}
 	r.Runtime = c.Runtime
 	r.contentAction = c.ContentAction
+	r.contentWithdrawal = c.contentWithdrawal
 	receipt, _, e := s.barrier(ctx, r, body)
 	return receipt, e
 }
@@ -132,7 +133,7 @@ func (u *unit) CreateTask(ctx context.Context, input domain.TaskIntake) error {
 	if e := u.tx.QueryRowContext(ctx, "SELECT "+permissionColumn+" FROM subject_governance WHERE tenant_id=? AND product_id=? AND subject_id=?", u.scope.TenantID, u.scope.ProductID, u.scope.SubjectID).Scan(&allowed); e != nil {
 		return fail(e)
 	}
-	if !allowed {
+	if !allowed && !(taskKind == "CONTROL" && u.integrationControl.clientControl(u.scope, u.world)) {
 		return fail(ErrDenied)
 	}
 	key := LockKey{Rank: 50, IDs: []string{input.TenantID, input.ProductID, input.TaskID}}

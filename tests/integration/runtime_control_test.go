@@ -14,6 +14,7 @@ import (
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/tests/integration/dbfixture"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 )
 
@@ -83,6 +84,16 @@ func runtimeFixtureWithConsent(t *testing.T, optIn bool) (*app.Runtime, domain.P
 	if e := app.InitializeLocal(ctx, s, independentRoot, privateRoot); e != nil {
 		t.Fatal(e)
 	}
+	// Bootstrap now writes the global bearer namespace under real CONFIG admission.
+	local, e := app.OpenLocal(ctx, s, independentRoot, privateRoot)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		if e := local.Participant.Close(context.Background()); e != nil {
+			t.Error(e)
+		}
+	})
 	if e := maintenance.BootstrapSyntheticWithConsent(ctx, s, scope, "owner", runtimeToken, optIn); e != nil {
 		t.Fatal(e)
 	}
@@ -92,21 +103,12 @@ func runtimeFixtureWithConsent(t *testing.T, optIn bool) (*app.Runtime, domain.P
 	}
 	t.Cleanup(func() { f.Close() })
 	r := app.NewRuntime(s, f, auth.New(s, scope, "owner", runtimeToken))
-	local, e := app.OpenLocal(ctx, s, independentRoot, privateRoot)
-	if e != nil {
-		t.Fatal(e)
-	}
 	r.BindLocal(local)
 	r.Memory.Ledger = local.Ledger
 	ctx, _, e = r.Auth.Authenticate(ctx, "Bearer "+runtimeToken)
 	if e != nil {
 		t.Fatal(e)
 	}
-	t.Cleanup(func() {
-		if e := local.Participant.Close(context.Background()); e != nil {
-			t.Error(e)
-		}
-	})
 	seed, e := content.New(s).SeedCoffee(ctx, scope, "coffee-v1")
 	if e != nil {
 		t.Fatal(e)
@@ -245,4 +247,32 @@ func TestRuntimeAdvertisesRegisteredJobs(t *testing.T) {
 			t.Fatal("registered runtime job absent", kind)
 		}
 	}
+}
+
+// reopenRuntimeFixture reconstructs process-local owners over the same persisted
+// installation. It does not retire the old participant or reset durable state.
+func reopenRuntimeFixture(t *testing.T, parent context.Context, previous *app.Runtime) *app.Runtime {
+	t.Helper()
+	s := store.New(previous.Store.DB)
+	f, e := files.New(s, previous.Files.RootPath)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		if e := f.Close(); e != nil {
+			t.Error(e)
+		}
+	})
+	local, e := app.OpenLocal(parent, s, filepath.Dir(previous.Local.Coordinator.Directory()), previous.Files.RootPath)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		if e := local.Participant.Close(context.Background()); e != nil {
+			t.Error(e)
+		}
+	})
+	r := app.NewRuntime(s, f, auth.New(s, previous.Auth.Scope(), "owner", runtimeToken))
+	r.BindLocal(local)
+	return r
 }

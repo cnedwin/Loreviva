@@ -8,11 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	driver "github.com/go-sql-driver/mysql"
 	"loreviva.local/loreviva/internal/config"
 	"loreviva.local/loreviva/internal/domain"
+	"loreviva.local/loreviva/internal/localstate"
 	"loreviva.local/loreviva/migrations"
 )
 
@@ -26,29 +29,41 @@ var ErrReplan = errors.New("lock absent from frozen plan; rollback and replan wh
 // conservative UNKNOWN. It may not perform provider/network work. BeforeCommit
 // is an optional local pre-commit validation seam and always rolls back on error.
 type Store struct {
-	StudioConsentOwner       StudioConsentOwner
-	RehearsalPurgeOwner      RehearsalPurgeOwner
-	TurnSkills               TurnSkillOwner
-	RehearsalReportReader    RehearsalReportReader
-	RehearsalInputOwner      RehearsalInputOwner
-	DraftRehearsalOwner      DraftRehearsalOwner
-	DraftRehearsalReader     DraftRehearsalSourceReader
-	RehearsalInitializer     RehearsalInitializer
-	DraftCandidateOwner      DraftCandidateOwner
-	DraftCandidateReader     DraftCandidateReader
-	WorldAccountingAuthority WorldAccountingAuthority
-	SettlementAuthority      SettlementAuthority
-	ApprovedTurnReader       ApprovedTurnReader
-	CandidateOwner           OriginalCandidateOwner
-	OriginalResultReader     OriginalResultReader
-	OriginalResultProgram    OriginalResultProgram
-	QueryAuthority           OriginalQueryAuthority
-	ProviderEvidence         OriginalProviderEvidence
-	GenerationContext        HarnessContextValidator
-	TurnOwner                TurnInputOwner
-	Guard                    OperationGuard
-	DB                       *sql.DB
-	BeforeCommit             func(context.Context, *sql.Tx) error
+	integrationGovernanceOwner *IntegrationGovernanceOwnerBinding
+	integrationMediaOwner        RuntimeMediaFileOwner
+	integrationSnapshotOwner     DeliverySnapshotOwner
+	integrationDeliveryReader    DeliveryReaderOwner
+	integrationDeliveryAdmission DeliveryAdmission
+	integrationSessionRoot       *localstate.Root
+	integrationConsentOwner      IntegrationConsentOwner
+	integrationOwnerMu           sync.Mutex
+	integrationInitialOwner      IntegrationInitialOwner
+	integrationMaterialOwner     IntegrationCreationOwner
+	integrationClosed            atomic.Bool
+	ConfigGuard                  ConfigurationGuard
+	StudioConsentOwner           StudioConsentOwner
+	RehearsalPurgeOwner          RehearsalPurgeOwner
+	TurnSkills                   TurnSkillOwner
+	RehearsalReportReader        RehearsalReportReader
+	RehearsalInputOwner          RehearsalInputOwner
+	DraftRehearsalOwner          DraftRehearsalOwner
+	DraftRehearsalReader         DraftRehearsalSourceReader
+	RehearsalInitializer         RehearsalInitializer
+	DraftCandidateOwner          DraftCandidateOwner
+	DraftCandidateReader         DraftCandidateReader
+	WorldAccountingAuthority     WorldAccountingAuthority
+	SettlementAuthority          SettlementAuthority
+	ApprovedTurnReader           ApprovedTurnReader
+	CandidateOwner               OriginalCandidateOwner
+	OriginalResultReader         OriginalResultReader
+	OriginalResultProgram        OriginalResultProgram
+	QueryAuthority               OriginalQueryAuthority
+	ProviderEvidence             OriginalProviderEvidence
+	GenerationContext            HarnessContextValidator
+	TurnOwner                    TurnInputOwner
+	Guard                        OperationGuard
+	DB                           *sql.DB
+	BeforeCommit                 func(context.Context, *sql.Tx) error
 	// BeforeReadFinish is a read-only transaction verification seam. It does not
 	// run mutation/commit fault injection during unrelated owning reads.
 	BeforeReadFinish func(context.Context, *sql.Tx) error
@@ -57,6 +72,19 @@ type Store struct {
 }
 type OperationGuard interface {
 	EnterStore(context.Context) (context.Context, func(), error)
+}
+
+// Configuration admission is a real coordinator permit, including bootstrap.
+// Missing installation wiring never grants an implicit pre-runtime bypass.
+type ConfigurationGuard interface {
+	EnterConfiguration(context.Context) (context.Context, WorldAccountingIdentity, func(), error)
+}
+
+func (s *Store) EnterConfiguration(ctx context.Context) (context.Context, WorldAccountingIdentity, func(), error) {
+	if s.ConfigGuard == nil {
+		return ctx, WorldAccountingIdentity{}, nil, ErrDenied
+	}
+	return s.ConfigGuard.EnterConfiguration(ctx)
 }
 
 // EnterOperation is attached by the executable before serving or dispatching.
@@ -69,6 +97,7 @@ func (s *Store) EnterOperation(ctx context.Context) (context.Context, func(), er
 }
 
 type Tx interface {
+	AppendIntegrationControlResult(context.Context, domain.Scope, string, string) error
 	RehearsalBasis(domain.Scope) (*domain.RehearsalBasis, error)
 	RehearsalReportHistoryBasis(domain.Scope) (*domain.RehearsalBasis, error)
 	AssertRehearsalInput(domain.TurnInput) error
@@ -115,6 +144,13 @@ const (
 )
 
 type BarrierRequest struct {
+ integrationMemoryBirth *integrationMemoryBirthPlan
+	integrationGovernance *IntegrationMemoryGovernancePlan
+	integrationDelivery                                                *integrationDeliveryPlan
+	contentWithdrawal                                                  *contentWithdrawalPlan
+	integrationControl                                                 *integrationControlPlan
+	integrationTurn                                                    *integrationTurnPlan
+	integrationCreation                                                *integrationCreationState
 	operator                                                           *currentOperator
 	operatorActions                                                    []string
 	contentAction                                                      string
@@ -167,6 +203,8 @@ type BarrierRequest struct {
 	r0TurnProvision                                                    bool
 }
 type CommandBarrierRequest struct {
+	contentWithdrawal                                *contentWithdrawalPlan
+	integrationTurn                                  *integrationTurnPlan
 	ContentAction                                    string
 	Runtime                                          *RuntimeBinding
 	ProductScope                                     domain.ProductScope
@@ -227,7 +265,7 @@ func Open(c config.Database) (*Store, error) {
 	}
 	return New(sql.OpenDB(conn)), nil
 }
-func (s *Store) Close() error { return s.DB.Close() }
+func (s *Store) Close() error { s.integrationClosed.Store(true); return s.DB.Close() }
 
 // Migrate is an explicit operator/startup migration action; readiness never
 // creates gates, users or synthetic seed. MySQL DDL is not transaction atomic:
@@ -246,13 +284,21 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return errors.New("schema migration lock unavailable")
 	}
 	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK('loreviva.core.schema')")
-	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings} {
+	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
 		e = conn.QueryRowContext(ctx, "SELECT sha256 FROM schema_migrations WHERE version=?", version+1).Scan(&existing)
 		if e == nil {
 			if string(existing) != string(sum[:]) {
 				return errors.New("schema migration hash mismatch")
+			}
+			if version == 7 {
+				if e = verifyIntegrationMigration(ctx, conn); e != nil {
+					return e
+				}
+				if e = verifyIntegrationOperatorHashes(ctx, conn); e != nil {
+					return e
+				}
 			}
 			continue
 		}
@@ -270,6 +316,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 		}
 		for _, statement := range strings.Split(source, ";") {
 			if strings.TrimSpace(statement) == "" {
+				continue
+			}
+			if version == 7 {
+				if e = migrateIntegrationStatement(ctx, conn, statement); e != nil {
+					return e
+				}
 				continue
 			}
 			if version == 6 {
@@ -290,6 +342,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 		}
 		if version == 6 {
 			if e = finalizeStudioMigration(ctx, conn, sum); e != nil {
+				return e
+			}
+			continue
+		}
+		if version == 7 {
+			if e = finalizeIntegrationMigration(ctx, conn, sum); e != nil {
 				return e
 			}
 			continue
@@ -331,6 +389,10 @@ func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning
 		if e := s.BeforeCommit(ctx, tx); e != nil {
 			return e
 		}
+	}
+	if r.integrationGovernance != nil {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx { return ErrDenied }
+		if e := s.checkIntegrationGovernance(ctx, owning[0], r, true); e != nil { return e }
 	}
 	if e := s.checkOperatorBarrier(ctx, tx, r); e != nil {
 		return e
@@ -491,6 +553,31 @@ func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning
 	if e := checkCurrentLease(ctx, tx, r); e != nil {
 		return e
 	}
+	if r.integrationCreation != nil {
+		if len(owning) != 1 || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkIntegrationCreationTx(ctx, owning[0], r.integrationCreation, "PRE_COMMIT"); e != nil {
+			return e
+		}
+	}
+	if r.contentWithdrawal != nil {
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkContentWithdrawal(ctx, owning[0], r, true); e != nil {
+			return e
+		}
+	}
+	if r.integrationDelivery != nil {
+		if len(owning) != 1 {
+			return ErrDenied
+		}
+		if e := s.finishIntegrationDelivery(ctx, owning[0], r); e != nil {
+			return fmt.Errorf("delivery final: %w", e)
+		}
+	}
+ if r.integrationMemoryBirth!=nil { if len(owning)!=1{return ErrDenied};if e:=s.checkIntegrationMemoryBirthFinal(ctx,owning[0],r);e!=nil{return e} }
 	commit := s.Commit
 	if commit == nil {
 		commit = func(_ context.Context, t *sql.Tx) error { return t.Commit() }

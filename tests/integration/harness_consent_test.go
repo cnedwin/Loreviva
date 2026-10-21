@@ -26,6 +26,7 @@ func TestHarnessFreshBootstrapConsent(t *testing.T) {
 				t.Fatal(e)
 			}
 			scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
+			initializeTestConfiguration(t, s, t.TempDir())
 			if e := maintenance.BootstrapSyntheticWithConsent(ctx, s, scope, "owner", runtimeToken, optIn); e != nil {
 				t.Fatal(e)
 			}

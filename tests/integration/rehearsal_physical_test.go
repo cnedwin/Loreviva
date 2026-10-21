@@ -437,13 +437,8 @@ func TestProductLateBillAppendedAfterRuntimeReopen(t *testing.T) {
 	if e = r.Local.Participant.Close(ctx); e != nil {
 		t.Fatal(e)
 	}
-	local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer local.Participant.Close(ctx)
-	recovered := app.NewRuntime(r.Store, r.Files, r.Auth)
-	recovered.BindLocal(local)
+	recovered := reopenRuntimeFixture(t, ctx, r)
+	ctx = runtimeContextWithParent(t, recovered, ctx)
 	if done, failed, e := recovered.Store.RunOriginalBills(ctx); e != nil || done != 0 || failed != 0 {
 		t.Fatal("new Runtime had no late item yet", done, failed, e)
 	}

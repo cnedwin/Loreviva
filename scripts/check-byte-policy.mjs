@@ -11,7 +11,7 @@ const textNames=new Set(['.env.example','.gitattributes','.gitignore','.editorco
 const rawLicense={path:'LICENSES/typescript-5.9.3-LICENSE.txt',bytes:9197,sha256:'a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47'};
 const sha=b=>createHash('sha256').update(b).digest('hex');
 // Public paths keep exact POSIX spelling; private Windows path equivalence never applies here.
-function validName(name){
+export function validName(name){
  if(typeof name!=='string'||!name||name.includes('\\')||name.includes(':')||name.includes('\0')||name.startsWith('/')||name.split('/').some(p=>!p||p==='.'||p==='..'||/[. ]$/.test(p)||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)))throw Error('Unsafe relative path');
  return name;
 }
@@ -28,7 +28,7 @@ export function verifyBytes(name,body){
  return 'TEXT_LF';
 }
 // Inspect unresolved ancestors from the volume root before any manifest, child or Git read.
-function guardRoot(root){
+export function guardRoot(root){
  if(typeof root!=='string'||!path.isAbsolute(root)||root.split(/[\\/]/).some(p=>p==='.'||p==='..'||/[. ]$/.test(p)))throw Error('Unsafe root path');
  if(process.platform==='win32'&&!/^[A-Za-z]:[\\/]/.test(root))throw Error('Unsupported root namespace');
  const base=path.parse(root).root;let current=base;
@@ -60,10 +60,86 @@ export function gitInventory(root,{revision=null,index=false,git='git'}={}){
  return result;
 }
 // Exact child spelling and each ancestor type are checked before reading working bytes.
-async function workingBody(root,name){
+export async function workingBody(root,name){
  let current=path.resolve(root);
  for(const part of validName(name).split('/')){if(!(await readdir(current)).includes(part))throw Error('Exact path spelling missing: '+name);current=path.join(current,part);const st=await lstat(current);if(st.isSymbolicLink())throw Error('Alias refused: '+name);}
  const st=await lstat(current);if(!st.isFile())throw Error('Regular file required');return readFile(current);
+}
+export const inventoryName='scripts/source-byte-inventory.json';
+export const sourceDomains=['.github','apps','cmd','contracts','docs','examples','internal','migrations','packages','scripts','tests'];
+const excludedDirectories=new Set(['apps/reference-client/dist','apps/reference-client/node_modules','apps/studio/dist','apps/studio/node_modules','packages/sdk-ts/dist','packages/sdk-ts/node_modules']);
+// These are exact root domains, never basename exclusions at arbitrary depths.
+const excludedRootDirectories=new Set(['.git','.cache','node_modules','evidence','.sdd','.superpowers','test-results']);
+const historicalRootFiles=new Set([
+ 'phase32-admin-detail-binding-diagnostic.txt','phase32-admin-detail-binding-diagnostic.txt.command.json',
+ 'phase32-admin-detail-first.txt','phase32-admin-detail-first.txt.command.json',
+ 'phase32-admin-detail-green.txt','phase32-admin-detail-green.txt.command.json',
+ 'phase32-admin-detail-red.txt','phase32-admin-detail-red.txt.command.json',
+ 'phase32-admin-legacy-hash-green.txt','phase32-admin-legacy-hash-green.txt.command.json',
+ 'phase32-admin-legacy-hash-red.txt','phase32-admin-legacy-hash-red.txt.command.json',
+ 'phase32-admin-legacy-proof-green.txt','phase32-admin-legacy-proof-green.txt.command.json',
+ 'phase32-admin-legacy-proof-red.txt','phase32-admin-legacy-proof-red.txt.command.json',
+ 'phase32-detail-final-proof-green.txt','phase32-detail-final-proof-green.txt.command.json',
+ 'phase32-detail-malformed-proof-red.txt','phase32-detail-malformed-proof-red.txt.command.json',
+ 'phase32-detail-missing-original-green.txt','phase32-detail-missing-original-green.txt.command.json',
+ 'phase32-detail-proof-accounting.txt','phase32-detail-proof-accounting.txt.command.json',
+ 'phase32-final-affected.txt','phase32-final-affected.txt.command.json',
+ 'phase32-final-affected2.txt','phase32-final-affected2.txt.command.json',
+ 'phase32-list-late-green.txt','phase32-list-late-green.txt.command.json'
+]);
+export const compareNames=(a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b));
+export function closedObject(value,keys){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join('\0')!==[...keys].sort().join('\0'))throw Error('Closed object required');}
+// Inventories are exact data, not authority. The caller separately pins the reviewed seed/revision.
+export function orderedNames(names){
+ if(!Array.isArray(names)||!names.length)throw Error('Nonempty source inventory required');
+ for(let i=0;i<names.length;i++){validName(names[i]);if(i&&compareNames(names[i-1],names[i])>=0)throw Error('Source inventory order or duplicate');}
+ return names;
+}
+export function parseInventory(body){
+ verifyBytes(inventoryName,body);const data=JSON.parse(body);closedObject(data,['format','paths']);
+ if(data.format!=='loreviva.source-byte-inventory.v1')throw Error('Inventory format');
+ orderedNames(data.paths);if(!data.paths.includes(inventoryName))throw Error('Inventory must include itself');return data;
+}
+// Only these exact dependency/build domains are skipped; aliases elsewhere fail before traversal.
+export async function discoverSource(root){
+ root=guardRoot(root);const found=[];
+ async function walk(relative){
+  if(excludedDirectories.has(relative))return;
+  const target=path.join(root,relative);let st;try{st=await lstat(target);}catch(e){if(e.code==='ENOENT')return;throw e;}
+  if(st.isSymbolicLink())throw Error('Alias refused: '+relative);
+  if(st.isDirectory()){for(const child of await readdir(target))await walk(relative+'/'+child);}
+  else if(st.isFile()){validName(relative);found.push(relative);}else throw Error('Nonregular source');
+ }
+ for(const name of await readdir(root)){
+  if(excludedRootDirectories.has(name)||historicalRootFiles.has(name))continue;
+  const metadata=await lstat(path.join(root,name));
+  if(metadata.isSymbolicLink())throw Error('Alias refused: '+name);
+  if(metadata.isDirectory()){if(!sourceDomains.includes(name))throw Error('Unknown source directory: '+name);await walk(name);}
+  else if(metadata.isFile()){validName(name);found.push(name);}else throw Error('Nonregular source');
+ }
+ return found.sort(compareNames);
+}
+// Partial library data is explicitly opt-in; the engineering CLI always requires the complete inventory.
+export async function checkSourceBytes(root,scopeFile,{partial=false}={}){
+ if(typeof partial!=='boolean')throw Error('Partial mode must be boolean');
+ root=guardRoot(root);const scopePath=path.resolve(scopeFile);guardRoot(path.dirname(scopePath));
+ const raw=await workingBody(path.dirname(scopePath),path.basename(scopePath));verifyBytes('scope.json',raw);
+ const scope=JSON.parse(raw);closedObject(scope,['format','files']);if(scope.format!=='loreviva.source-byte-scope.v1'||!Array.isArray(scope.files))throw Error('Source scope format');
+ const names=orderedNames(scope.files.map(x=>x?.path));const output=[];
+ if(!partial&&!names.includes(inventoryName))throw Error('Project inventory required');
+ for(const entry of scope.files){
+  closedObject(entry,['path','bytes','sha256']);
+  if(!Number.isSafeInteger(entry.bytes)||entry.bytes<0||typeof entry.sha256!=='string'||!(/^[0-9a-f]{64}$/.test(entry.sha256)))throw Error('Source fingerprint type');
+  const body=await workingBody(root,entry.path),kind=verifyBytes(entry.path,body);
+  if(body.length!==entry.bytes||sha(body)!==entry.sha256)throw Error('Source fingerprint stale: '+entry.path);
+  output.push({...entry,kind});
+ }
+ if(names.includes(inventoryName)){
+  const inventory=parseInventory(await workingBody(root,inventoryName));
+  if(JSON.stringify(inventory.paths)!==JSON.stringify(names))throw Error('Scope/inventory differs');
+  for(const found of await discoverSource(root))if(!names.includes(found))throw Error('Uninventoried source: '+found);
+ }
+ return output;
 }
 export async function checkBytes(root,{revision=null,index=false,git='git'}={}){
  root=guardRoot(root);const output=[];
@@ -100,7 +176,8 @@ export async function checkGitBridge(root,{revision='HEAD',git='git'}={}){
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2);let options={};
- if(args.length===1&&args[0]==='--bridge'){const rows=await checkGitBridge(process.cwd());console.log('Exact working/index/HEAD bridge: '+rows.length+' files');}
+ if(args.length===2&&args[0]==='--source-scope'){const rows=await checkSourceBytes(process.cwd(),args[1]);console.log('Explicit source bytes: '+rows.length+' files (not a Git or approval proof)');}
+ else if(args.length===1&&args[0]==='--bridge'){const rows=await checkGitBridge(process.cwd());console.log('Exact working/index/HEAD bridge: '+rows.length+' files');}
  else{
   if(args.length===2&&args[0]==='--git')options={revision:args[1]};
   else if(args.length===1&&args[0]==='--git-index')options={index:true};

@@ -9,11 +9,12 @@ const names=('StudioSettingsScope StudioSettingsCommandKind StudioSettingsBasis 
 const ids=['getAdminSettings','commandAdminSettings','listAdminMembers','commandAdminMembers','getAdminSelfConsent','commandAdminSelfConsent','getAdminSettingsCommand'].sort();
 test('studio_contract_exact_delta',async()=>{
  const old=JSON.parse(await readFile(new URL('./fixtures/contract13-approved-baseline.json',import.meta.url),'utf8'));
- const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.4.0');
+ const approved=JSON.parse(await readFile(new URL('../tests/contracts/fixtures/contract14-approved-baseline.json',import.meta.url),'utf8'));
+ const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.5.0');
  for(const [p,v]of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v]of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);
- assert.deepEqual(Object.keys(o.components.schemas).filter(n=>!old.components.schemas[n]).sort(),names);
- const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,58); assert.equal(Object.keys(o.components.schemas).length,156);
+ assert.deepEqual(Object.keys(o.components.schemas).filter(n=>approved.components.schemas[n]&&!old.components.schemas[n]).sort(),names);
+ const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,65); assert.equal(Object.keys(o.components.schemas).length,177);
  const added=ops.filter(op=>ids.includes(op.operationId)); assert.deepEqual(added.map(o=>o.operationId).sort(),ids);
  for(const op of added)assert.deepEqual(op.security,[{OperatorBearer:[]}]);
  assert.equal(createHash('sha256').update(await readFile(new URL('../contracts/source/wepkg.schema.json',import.meta.url))).digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');

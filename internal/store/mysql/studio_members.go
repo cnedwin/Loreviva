@@ -102,6 +102,22 @@ func (s *Store) ApplyMember(ctx context.Context, key string, request generated.S
 	tenant := domain.SettingsScope{Kind: "TENANT", TenantID: p.TenantID}
 	section := "MEMBERS:" + target.CredentialID
 	keys := []LockKey{{Rank: 15, Kind: domain.StudioCredentialLock, IDs: []string{target.TenantID, target.CredentialID}}, studioGrantKey(target, r.Scope), studioGrantKey(p, tenant), studioGrantKey(target, tenant), studioScopeKey(tenant), {Rank: 30, IDs: []string{target.TenantID, target.ProductID, target.SubjectID}}, studioSectionKey(r.Scope, section)}
+	var configuration WorldAccountingIdentity
+	var targetHash [32]byte
+	if r.Kind == "SET_CREDENTIAL_STATE" {
+		var release func()
+		ctx, configuration, release, e = s.EnterConfiguration(ctx)
+		if e != nil {
+			return nil, e
+		}
+		defer release()
+		var raw []byte
+		if e = s.DB.QueryRowContext(ctx, "SELECT token_sha256 FROM operator_credentials WHERE credential_id=?", target.CredentialID).Scan(&raw); e != nil || len(raw) != 32 {
+			return nil, ErrDenied
+		}
+		copy(targetHash[:], raw)
+		keys = append(keys, credentialHashKey(targetHash))
+	}
 	c, original, e := s.beginStudioCommand(ctx, r, "MEMBER", key, request, keys...)
 	if e != nil || original != nil {
 		return original, e
@@ -113,6 +129,15 @@ func (s *Store) ApplyMember(ctx context.Context, key string, request generated.S
 	}
 	if current != target {
 		return nil, ErrReplan
+	}
+	if r.Kind == "SET_CREDENTIAL_STATE" {
+		if e = checkConfigurationInstallationTx(ctx, c.tx, configuration); e != nil {
+			return nil, e
+		}
+		var matches bool
+		if e = c.tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM operator_credentials c JOIN integration_credential_hashes h ON h.token_hash=c.token_sha256 AND h.kind='OPERATOR' AND h.principal_id=c.credential_id WHERE c.credential_id=? AND c.token_sha256=? AND h.installation_id=?)", target.CredentialID, targetHash[:], configuration.Installation).Scan(&matches); e != nil || !matches {
+			return nil, ErrReplan
+		}
 	}
 	stable, e := studioStableMaintainer(ctx, c.tx, p.TenantID, target.CredentialID)
 	if e != nil {

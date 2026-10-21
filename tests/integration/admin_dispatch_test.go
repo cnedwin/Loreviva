@@ -163,43 +163,38 @@ func TestProductCandidateRestartMarkerAndUnknownNeverRegenerate(t *testing.T) {
 				}
 			}
 			before := journalBytes(t, r)
-			local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+			fresh := reopenRuntimeFixture(t, ctx, r)
+			ctx = runtimeContextWithParent(t, fresh, ctx)
+			if _, e = fresh.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", l.TaskID); e != nil {
+				t.Fatal(e)
+			}
+			current, e := fresh.Store.ClaimRegistered(ctx, "candidate-takeover", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "CANDIDATE"}})
 			if e != nil {
 				t.Fatal(e)
 			}
-			defer local.Participant.Close(ctx)
-			fresh := app.NewRuntime(r.Store, r.Files, r.Auth)
-			fresh.BindLocal(local)
-			if _, e = r.Store.DB.Exec("UPDATE tasks SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(6),INTERVAL 1 SECOND) WHERE task_id=?", l.TaskID); e != nil {
-				t.Fatal(e)
-			}
-			current, e := r.Store.ClaimRegistered(ctx, "candidate-takeover", time.Now(), time.Minute, []store.RegisteredOperation{{Kind: "ADMIN", Operation: "CANDIDATE"}})
-			if e != nil {
-				t.Fatal(e)
-			}
-			if _, e = r.Store.StartSend(ctx, d, d.AttemptID); e == nil {
+			if _, e = fresh.Store.StartSend(ctx, d, d.AttemptID); e == nil {
 				t.Fatal("old fence used")
 			}
-			next, e := r.Store.PrepareDraftCandidateDispatch(ctx, current.TaskLease, "candidate-takeover")
+			next, e := fresh.Store.PrepareDraftCandidateDispatch(ctx, current.TaskLease, "candidate-takeover")
 			if e != nil {
 				t.Fatal(e)
 			}
 			next.CommandKey = d.CommandKey
 			next.CommitKey = d.CommitKey
-			denied, e := r.Store.StartSend(ctx, next, next.AttemptID)
+			denied, e := fresh.Store.StartSend(ctx, next, next.AttemptID)
 			if e != nil || denied.CanSend || !denied.QueryOriginal || denied.OriginalSend() != nil {
 				t.Fatal(denied, e)
 			}
-			id, e := r.Store.CandidateMockIdentity(ctx, l.ProductScope, l.TaskID)
+			id, e := fresh.Store.CandidateMockIdentity(ctx, l.ProductScope, l.TaskID)
 			if e != nil {
 				t.Fatal(e)
 			}
-			queryDue(t, r, l.TaskID)
-			q, e := r.Store.BeginOriginalQuery(ctx, id)
+			queryDue(t, fresh, l.TaskID)
+			q, e := fresh.Store.BeginOriginalQuery(ctx, id)
 			if e != nil {
 				t.Fatal(e)
 			}
-			m, e := r.Store.RecordOriginalQuery(ctx, q)
+			m, e := fresh.Store.RecordOriginalQuery(ctx, q)
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -207,11 +202,11 @@ func TestProductCandidateRestartMarkerAndUnknownNeverRegenerate(t *testing.T) {
 			if mode == "LOST_REPLY" {
 				want = "SUCCEEDED"
 			}
-			if m.State != want || !bytes.Equal(before, journalBytes(t, r)) {
+			if m.State != want || !bytes.Equal(before, journalBytes(t, fresh)) {
 				t.Fatal("original query mutated journal", m.State)
 			}
 			if mode == "LOST_REPLY" {
-				if _, e = r.Files.ReadPendingCandidateResult(ctx, next); e != nil {
+				if _, e = fresh.Files.ReadPendingCandidateResult(ctx, next); e != nil {
 					t.Fatal("takeover body", e)
 				}
 			}

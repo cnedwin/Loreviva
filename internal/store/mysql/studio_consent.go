@@ -169,8 +169,8 @@ func (s *Store) ApplySelfConsent(ctx context.Context, key string, request genera
 	if e != nil {
 		return nil, e
 	}
-	// Keep the legacy R0 gate synchronized; its required accepted_at is not proof of active consent.
-	// The Studio projection preserves any prior acceptance time on revocation and clears its expiry.
+	// Keep the existing online R0 consent gate synchronized. Its NOT NULL
+	// accepted_at is historical storage; false projections remain null above.
 	_, e = c.tx.ExecContext(ctx, "INSERT INTO r0_generation_consent(tenant_id,product_id,subject_id,credential_id,policy_id,opted_in,accepted_at,expires_at) VALUES(?,?,?,?,'R0_OWNER_PRIVATE_GENERATION_30D',?,?,?) ON DUPLICATE KEY UPDATE credential_id=VALUES(credential_id),opted_in=VALUES(opted_in),accepted_at=VALUES(accepted_at),expires_at=VALUES(expires_at)", p.TenantID, p.ProductID, p.SubjectID, p.CredentialID, enabled, c.now, expiry)
 	if e != nil {
 		return nil, e

@@ -23,3 +23,6 @@ var TurnAttempt string
 
 //go:embed 0007_studio_settings.sql
 var StudioSettings string
+
+//go:embed 0008_delivery_identity.sql
+var DeliveryIdentity string

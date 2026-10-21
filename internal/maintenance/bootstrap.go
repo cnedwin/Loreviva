@@ -27,11 +27,19 @@ func BootstrapSyntheticWithConsent(ctx context.Context, s *store.Store, scope do
 	if e := Compatible(ctx, s); e != nil {
 		return e
 	}
+	ctx, installation, release, e := s.EnterConfiguration(ctx)
+	if e != nil {
+		return e
+	}
+	defer release()
 	tx, e := s.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if e != nil {
 		return e
 	}
 	defer tx.Rollback()
+	if e = store.ReserveBootstrapOperatorHashTx(ctx, tx, installation, credentialID, secret); e != nil {
+		return e
+	}
 	var gates int
 	if e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM subject_governance").Scan(&gates); e != nil {
 		return e

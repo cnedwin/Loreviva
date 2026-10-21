@@ -403,17 +403,25 @@ func TestProductCandidateSettlementCurrentAuthority(t *testing.T) {
 				t.Fatal(items, e)
 			}
 			if mode == "SERVICE_DISABLED" {
-				local, e := app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
+				// Ordinary startup binds a fresh process-local Store, not the live Store twice.
+				local, e := app.OpenLocal(ctx, store.New(r.Store.DB), filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath)
 				if e != nil {
 					t.Fatal(e)
 				}
-				defer local.Participant.Close(ctx)
+				t.Cleanup(func() {
+					if e := local.Participant.Close(ctx); e != nil {
+						t.Error(e)
+					}
+				})
 				var enabled bool
 				if e = r.Store.DB.QueryRow("SELECT enabled FROM harness_settlement_services").Scan(&enabled); e != nil || enabled {
 					t.Fatal("ordinary open reenabled service", enabled, e)
 				}
 			} else if mode == "SERVICE_MISSING" || mode == "INSTALLATION" {
-				if _, e = app.OpenLocal(ctx, r.Store, filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath); e == nil {
+				if local, e := app.OpenLocal(ctx, store.New(r.Store.DB), filepath.Dir(r.Local.Coordinator.Directory()), r.Files.RootPath); e == nil {
+					if closeErr := local.Participant.Close(ctx); closeErr != nil {
+						t.Error(closeErr)
+					}
 					t.Fatal("ordinary open reseeded missing or stale authority")
 				}
 			}

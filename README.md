@@ -1,5 +1,9 @@
 # Loreviva
 
+> 当前开发快照：Task8接入、SDK、参考客户端与本人记忆治理已纳入源码；完整Task8/R0尚未验收，开发和自动续作已暂停。工作契约为1.5.0（65项操作、177项Schema）。下文原Tasks1–7与1.4.0说明保留其历史范围，当前代码边界以[进度说明](docs/progress/2026-10-21.zh.md)为准。
+>
+> Current snapshot: implemented Task8 integration, SDK, reference client and personal-memory governance. Whole Task8/R0 remain unaccepted; development and automation are paused. Working contract:1.5.0,65 operations/177 schemas. The earlier Tasks1–7/1.4.0 notes below retain their historical scope; see the [current progress](docs/progress/2026-10-21.en.md).
+
 **The AI Platform for Living Worlds**  
 创造世界，让它持续生长。
 

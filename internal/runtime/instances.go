@@ -14,10 +14,11 @@ import (
 )
 
 type Runtime struct {
-	Store           *store.Store
-	Content         *content.Service
-	InitialMemory   InitialMemoryAdapter
-	RehearsalMemory RehearsalMemoryInitializer
+	integrationInitialMemory IntegrationInitialMemoryAdapter
+	Store                    *store.Store
+	Content                  *content.Service
+	InitialMemory            InitialMemoryAdapter
+	RehearsalMemory          RehearsalMemoryInitializer
 }
 
 // InitialMemoryAdapter participates only in the original creation transaction.
@@ -49,6 +50,7 @@ type ItemState struct {
 	Rules                                          []generated.RuleDefinition
 }
 type Initialization struct {
+	IntegrationInitialLineage                                                          *store.IntegrationInitialLineage `json:",omitempty"`
 	ReleaseID, ReleaseHash, ProjectID, DefinitionID, PrimaryActorID, CreationCommandID string
 	Participants                                                                       []string
 	Actors                                                                             []ActorState
@@ -60,6 +62,13 @@ type Initialization struct {
 func InitializationEvidence(ctx context.Context, tx store.Tx, s domain.Scope) (Initialization, error) {
 	var out Initialization
 	if e := tx.RequireLock(worldKey(s)); e != nil {
+		return out, e
+	}
+	if raw, handled, e := store.IntegrationTurnInitializationTx(ctx, tx, s); handled {
+		if e != nil {
+			return out, e
+		}
+		e = json.Unmarshal(raw, &out)
 		return out, e
 	}
 	var raw []byte

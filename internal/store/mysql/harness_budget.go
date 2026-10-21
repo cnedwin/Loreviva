@@ -28,7 +28,7 @@ type HarnessIntake struct {
 }
 
 func harnessCommand(c CommandBarrierRequest) BarrierRequest {
-	return BarrierRequest{ProductScope: c.ProductScope, WorldScope: c.WorldScope, Versions: c.Versions, OwnerSubjectID: c.OwnerSubjectID, Operation: c.Operation, CommandKey: c.CommandKey, CommitKey: c.CommitKey, GateVersions: c.GateVersions, PayloadHash: c.PayloadHash, Locks: append([]LockKey{}, c.Locks...), commandOnly: true}
+	return BarrierRequest{integrationTurn: c.integrationTurn, ProductScope: c.ProductScope, WorldScope: c.WorldScope, Versions: c.Versions, OwnerSubjectID: c.OwnerSubjectID, Operation: c.Operation, CommandKey: c.CommandKey, CommitKey: c.CommitKey, GateVersions: c.GateVersions, PayloadHash: c.PayloadHash, Locks: append([]LockKey{}, c.Locks...), commandOnly: true}
 }
 func harnessPayload(v any) ([]byte, [32]byte, error) {
 	raw, e := json.Marshal(v)
@@ -135,7 +135,11 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 			return CommitReceipt{}, e
 		}
 		r.r0TurnProvision = true
-		for _, a := range r0Accounts(*c.WorldScope, turn.ProjectID) {
+		accounts := r0Accounts(*c.WorldScope, turn.ProjectID)
+		if r.integrationTurn != nil {
+			accounts = r.integrationTurn.accounts(turn.ProjectID)
+		}
+		for _, a := range accounts {
 			r.Locks = append(r.Locks, LockKey{Rank: 70, Kind: a.Kind, IDs: []string{a.ScopeKey, a.AccountID}})
 		}
 	}
@@ -202,7 +206,12 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 		if e = u.CreateTask(ctx, domain.TaskIntake{TaskScope: domain.TaskScope{ProductScope: c.ProductScope, WorldScope: c.WorldScope, OwnerSubjectID: c.OwnerSubjectID}, TaskID: in.TaskID, Kind: kind, ProjectID: q.ProjectID, NextRunAt: now}); e != nil {
 			return e
 		}
-		if _, e = u.tx.ExecContext(ctx, "INSERT INTO registered_jobs(tenant_id,product_id,task_id,operation) VALUES(?,?,?,?)", t, p, in.TaskID, q.Kind); e != nil {
+		if r.integrationTurn != nil {
+			_, e = u.tx.ExecContext(ctx, "INSERT INTO registered_jobs(tenant_id,product_id,task_id,operation,issuer_provenance,issuer_credential_id) VALUES(?,?,?,?,'DIRECT_INTEGRATION',NULL)", t, p, in.TaskID, q.Kind)
+		} else {
+			_, e = u.tx.ExecContext(ctx, "INSERT INTO registered_jobs(tenant_id,product_id,task_id,operation) VALUES(?,?,?,?)", t, p, in.TaskID, q.Kind)
+		}
+		if e != nil {
 			return e
 		}
 		for _, h := range in.ParentHolds {
@@ -229,8 +238,14 @@ func (s *Store) acceptHarness(ctx context.Context, c CommandBarrierRequest, in H
 				return e
 			}
 			u.acceptedTurnID = in.TaskID
-			e = s.TurnOwner.AcceptTurnInputTx(ctx, u, domain.TurnInput{Scope: *c.WorldScope, TaskID: in.TaskID, ActorID: turn.Request.PrimaryActorID, SourceID: turn.SourceID, Body: turn.Body})
+ input:=domain.TurnInput{Scope:*c.WorldScope,TaskID:in.TaskID,ActorID:turn.Request.PrimaryActorID,SourceID:turn.SourceID,Body:turn.Body}
+ if e=u.beginIntegrationMemoryBirth(ctx,"INPUT",input);e!=nil{return e}
+ e=s.TurnOwner.AcceptTurnInputTx(ctx,u,input)
+ if e==nil{e=u.sealIntegrationMemoryBirth(ctx,nil)}
 			u.acceptedTurnID = ""
+			if e == nil && r.integrationTurn != nil {
+				e = r.integrationTurn.writeIntake(ctx, u, r, in.TaskID, now)
+			}
 		}
 		return e
 	})

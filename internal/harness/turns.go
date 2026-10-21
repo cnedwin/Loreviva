@@ -21,6 +21,9 @@ func (s *TurnService) command(ctx context.Context, scope domain.Scope, actor, ke
 	if scope.Validate() != nil || domain.ValidateID(actor) != nil || domain.ValidateIdempotencyKey(key) != nil {
 		return out, store.ErrDenied
 	}
+	if c, handled, e := s.Store.IntegrationWorkerCommand(ctx, scope, key); handled {
+		return c, e
+	}
 	g, e := content.Gate(ctx, s.Store, scope.ProductScope)
 	if e != nil {
 		return out, e
@@ -125,6 +128,11 @@ func (s *TurnService) GetTurn(ctx context.Context, scope domain.Scope, id string
 // PrepareOriginalTurn is the fixed internal worker boundary. Caller-supplied
 // routes, account amounts, prompt hashes and provider keys are not accepted.
 func (s *TurnService) PrepareOriginalTurn(ctx context.Context, lease domain.TaskLease, worker string) (store.DispatchRequest, error) {
+	var issuerError error
+	ctx, issuerError = s.Store.EnterIntegrationTaskIssuer(ctx, lease, worker)
+	if issuerError != nil {
+		return store.DispatchRequest{}, issuerError
+	}
 	if d, e := s.Store.PrepareCurrentRehearsalTurn(ctx, lease, worker); e != nil {
 		return store.DispatchRequest{}, e
 	} else if d != nil {

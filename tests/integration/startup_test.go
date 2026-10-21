@@ -47,6 +47,7 @@ func TestM1Startup(t *testing.T) {
 	if r.Readiness(ctx) == nil {
 		t.Fatal("missing governance/auth startup ready")
 	}
+	initializeTestConfiguration(t, s, f.RootPath)
 	if e = maintenance.BootstrapSynthetic(ctx, s, scope, "owner", token); e != nil {
 		t.Fatal(e)
 	}
@@ -143,10 +144,12 @@ func TestActualAdminHTTPOriginalWireScopeAndUnavailableJobs(t *testing.T) {
 	}
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	token := "private-synthetic-test-operator-token"
+	privateRoot := t.TempDir()
+	initializeTestConfiguration(t, s, privateRoot)
 	if e := maintenance.BootstrapSynthetic(ctx, s, scope, "owner", token); e != nil {
 		t.Fatal(e)
 	}
-	f, e := files.New(s, t.TempDir())
+	f, e := files.New(s, privateRoot)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -228,10 +231,12 @@ func TestMultipartRejectedBeforeDurableIntakeAndPrivateProxy(t *testing.T) {
 	}
 	scope := domain.ProductScope{TenantID: "demo-local", ProductID: "coffee", SubjectID: "creator"}
 	token := "private-synthetic-test-operator-token"
+	privateRoot := t.TempDir()
+	initializeTestConfiguration(t, s, privateRoot)
 	if e := maintenance.BootstrapSynthetic(ctx, s, scope, "owner", token); e != nil {
 		t.Fatal(e)
 	}
-	f, e := files.New(s, t.TempDir())
+	f, e := files.New(s, privateRoot)
 	if e != nil {
 		t.Fatal(e)
 	}

@@ -37,7 +37,7 @@ func (o *Operator) Check(ctx context.Context) error {
 	}
 	var h []byte
 	var enabled bool
-	e := o.store.DB.QueryRowContext(ctx, "SELECT token_sha256,enabled FROM operator_credentials WHERE credential_id=? AND tenant_id=? AND product_id=? AND subject_id=?", o.credentialID, o.scope.TenantID, o.scope.ProductID, o.scope.SubjectID).Scan(&h, &enabled)
+	e := o.store.DB.QueryRowContext(ctx, "SELECT c.token_sha256,c.enabled AND (v.expires_at IS NULL OR v.expires_at>UTC_TIMESTAMP(6)) FROM operator_credentials c JOIN integration_credential_hashes h ON h.token_hash=c.token_sha256 AND h.kind='OPERATOR' AND h.principal_id=c.credential_id JOIN memory_installation i ON i.singleton=1 AND i.installation_id=h.installation_id LEFT JOIN studio_credential_state v USING(credential_id) WHERE c.credential_id=? AND c.tenant_id=? AND c.product_id=? AND c.subject_id=?", o.credentialID, o.scope.TenantID, o.scope.ProductID, o.scope.SubjectID).Scan(&h, &enabled)
 	if e != nil || !enabled || subtle.ConstantTimeCompare(h, o.configured[:]) != 1 {
 		return ErrUnauthenticated
 	}

@@ -24,13 +24,13 @@ type Plan struct {
 	Destructive bool        `json:"destructive"`
 }
 
-// Bind the plan ID to the database name and all seven pinned migration hashes. Up recomputes this identity before delegating migration; compatibility checks applied markers without applying a plan.
+// Bind the plan ID to the database name and all pinned migration hashes. Up recomputes this identity before delegating migration; compatibility checks applied markers without applying a plan.
 func MigrationPlan(ctx context.Context, s *store.Store) (Plan, error) {
 	p := Plan{Migrations: []Migration{}}
 	if e := s.DB.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&p.Database); e != nil {
 		return p, errors.New("database unavailable")
 	}
-	for i, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings} {
+	for i, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity} {
 		h := sha256.Sum256([]byte(source))
 		m := Migration{Version: i + 1, Hash: hex.EncodeToString(h[:])}
 		var got []byte
@@ -49,14 +49,14 @@ func MigrationPlan(ctx context.Context, s *store.Store) (Plan, error) {
 		p.Migrations = append(p.Migrations, m)
 	}
 	var n int
-	e := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN (1,2,3,4,5,6,7)").Scan(&n)
+	e := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN (1,2,3,4,5,6,7,8)").Scan(&n)
 	if e == nil && n != 0 {
 		return p, errors.New("schema newer than this application")
 	}
 	identity := struct {
 		Database string
 		Hashes   []string
-	}{p.Database, []string{p.Migrations[0].Hash, p.Migrations[1].Hash, p.Migrations[2].Hash, p.Migrations[3].Hash, p.Migrations[4].Hash, p.Migrations[5].Hash, p.Migrations[6].Hash}}
+	}{p.Database, []string{p.Migrations[0].Hash, p.Migrations[1].Hash, p.Migrations[2].Hash, p.Migrations[3].Hash, p.Migrations[4].Hash, p.Migrations[5].Hash, p.Migrations[6].Hash, p.Migrations[7].Hash}}
 	b, _ := json.Marshal(identity)
 	h := sha256.Sum256(b)
 	p.PlanID = hex.EncodeToString(h[:])

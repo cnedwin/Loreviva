@@ -280,6 +280,7 @@ func (s *Store) CommitAttemptTurn(ctx context.Context, lease domain.TaskLease, w
 		} else if len(parentHolds) != 0 {
 			return ErrDenied
 		}
+ if e=u.beginIntegrationMemoryBirth(ctx,"DERIVED",domain.TurnInput{});e!=nil{return e}
 		committed, e := s.CandidateOwner.ApplyOriginalCandidateTx(ctx, tx, scope, r.TaskID, meta.Identity.AttemptID, result, *r.Versions, body)
 		if e != nil {
 			return e
@@ -334,6 +335,14 @@ func (s *Store) CommitAttemptTurn(ctx context.Context, lease domain.TaskLease, w
 		}
 		if _, e = u.tx.ExecContext(ctx, "INSERT INTO harness_turn_commits VALUES(?,?,?,?,?,?)", scope.TenantID, scope.ProductID, r.TaskID, result, r.CommitKey, raw); e != nil {
 			return e
+		}
+ if e=u.sealIntegrationMemoryBirth(ctx,&committed);e!=nil{return e}
+		// WithBarrier mints its private plan on its own request copy. Only the
+		// actual unit carries that plan into this callback; caller DTOs do not.
+		if u.integrationDelivery != nil {
+			if e = s.AppendIntegrationResultTx(ctx, tx, DeliveryCommit{Scope: scope, Kind: "TURN", TaskID: r.TaskID, ResultID: result, PacketID: result, ReceiptKey: r.CommitKey, EventIDs: committed.EventIDs, Lineage: []string{r.Versions.ReleaseID}, Revision: 1, Turn: &committed}); e != nil {
+				return e
+			}
 		}
 		if e = advanceTurn(ctx, u, "COMMITTED"); e != nil {
 			return e

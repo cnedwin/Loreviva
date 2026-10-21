@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "vitest": ["../../apps/reference-client/node_modules/vitest/dist/index.d.ts"]
+    },
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../../apps/reference-client/node_modules/@types"
+    ]
+  },
+  "include": [
+    "../../packages/sdk-ts/src/**/*.ts",
+    "../../examples/thin-backend/*.ts",
+    "./*.ts",
+    "../e2e/player-flow.spec.ts"
+  ]
+}

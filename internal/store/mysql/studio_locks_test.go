@@ -36,9 +36,10 @@ func TestStudioLockOrderPreservesExistingEncoding(t *testing.T) {
 	if _, e = PlanLocks([]LockKey{{Rank: 60, Kind: "studio_connection", IDs: []string{"t", "p", "connection"}}}); e == nil {
 		t.Fatal("rank60 reinterpreted as connection")
 	}
-	for _, rank := range []int{15, 25, 35} {
-		if len(rankKinds[rank]) != 1 {
-			t.Fatal("duplicate new rank", rank)
+	// S65 appends kinds to the existing ranks; Studio keeps kind ordinal zero.
+	for rank, expected := range map[int][]string{15: {"studio_credential", "integration_principal"}, 25: {"studio_grants", "integration_registrar", "integration_entitlement"}, 35: {"studio_scope", "integration_customer", "integration_mapping", "integration_participant"}} {
+		if !reflect.DeepEqual(rankKinds[rank], expected) {
+			t.Fatal("unexpected append-only rank registration", rank)
 		}
 	}
 }
