@@ -79,13 +79,20 @@ func (m *MemoryService) BuildGenerationRequestTx(ctx context.Context, tx store.T
 }
 
 func currentGenerationMaterial(ctx context.Context, tx store.Tx, r ActorGenerationRequest) (out domain.GenerationMaterial, err error) {
-	return currentGenerationMaterialAtOriginalRevision(ctx, tx, r, nil, nil)
+	return currentGenerationMaterialAtOriginalRevision(ctx, tx, r, nil, nil, nil)
 }
 
-func currentGenerationMaterialAtOriginalRevision(ctx context.Context, tx store.Tx, r ActorGenerationRequest, original *domain.Versions, originalWorld *domain.WorldPerception) (out domain.GenerationMaterial, err error) {
+func currentGenerationMaterialAtOriginalRevision(ctx context.Context, tx store.Tx, r ActorGenerationRequest, original *domain.Versions, originalWorld *domain.WorldPerception, keep map[string]string) (out domain.GenerationMaterial, err error) {
 	c, e := assembleGenerationContextTx(ctx, tx, r, original)
 	if e != nil {
 		return out, e
+	}
+	if len(keep) != 0 {
+		// An original attempt's proof covers the memories it actually used. A
+		// memory committed by another task in the same world is not part of that
+		// set, so it must not invalidate the attempt's own proof.
+		c.Initial = originalNodesOnly(c.Initial, keep)
+		c.Relationship = originalNodesOnly(c.Relationship, keep)
 	}
 	route, e := world.GenerationRouteTx(ctx, tx, r.Scope, r.ActorID)
 	if e != nil {
@@ -142,6 +149,9 @@ func currentGenerationMaterialAtOriginalRevision(ctx context.Context, tx store.T
 	}
 	b := domain.GenerationBinding{ActorID: r.ActorID, DataSubjectID: r.DataSubjectID, TargetKind: r.TargetKind, TargetID: r.TargetID, Audience: string(r.Audience), Use: string(r.Use), ContextHash: c.Proof.hash, RouteID: routeHash, RequestHash: requestHash}
 	b.WorldHash = worldHash
+	b.CoreHash = digest(c.Core)
+	b.SkillsHash = digest(skills)
+	b.MemoryGraphHash = digest(struct{ Initial, Relationship []MemoryRecord }{c.Initial, c.Relationship})
 	if turn != nil {
 		b.InputSourceID = turn.SourceID
 		b.TurnCommandHash = turn.CommandHash
@@ -166,6 +176,19 @@ func currentGenerationMaterialAtOriginalRevision(ctx context.Context, tx store.T
 type turnEvidence struct {
 	CommandHash, QuoteID, SourceID, InputHash string
 	InputBound, OutputBound                   uint64
+}
+
+// originalNodesOnly keeps the records an original attempt actually used. The
+// kept records are hashed in full, so a modified body still changes the digest
+// and is still refused; only unrelated additions are ignored.
+func originalNodesOnly(in []MemoryRecord, keep map[string]string) []MemoryRecord {
+	out := make([]MemoryRecord, 0, len(in))
+	for _, n := range in {
+		if _, ok := keep[n.ID]; ok {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 func currentTurnEvidence(ctx context.Context, tx store.Tx, r ActorGenerationRequest, c ActorGenerationContext) (*turnEvidence, error) {
