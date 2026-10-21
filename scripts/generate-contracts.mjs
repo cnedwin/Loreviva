@@ -213,7 +213,9 @@ function transportDescriptors(openapi,profiles,header){
    out[profile][op.operationId]={method:op.method.toUpperCase(),path:op.route,roles,parameters:parameters.map(p=>({name:p.name,in:p.in,required:p.required===true,schema:p.schema})),requestMime,bodyRequired:body?.required===true,inputValidator:'profile_'+profile+'_input_'+op.operationId,responses,projection:op['x-loreviva-response-projection']??null};
   }
  }
- const roles=Object.fromEntries(operations(openapi).map(op=>[op.operationId,out[Object.keys(out)[0]][op.operationId].roles]));
+ // A profile may legitimately omit an operation, and a legacy source may declare
+ // no profile at all; roles are per operation, so any profile carrying it wins.
+ const roles=Object.fromEntries(operations(openapi).map(op=>{const entry=Object.values(out).map(p=>p[op.operationId]).find(Boolean);return [op.operationId,entry?entry.roles:[]]}));
  const protocols=Object.fromEntries(Object.entries(out).map(([p,ops])=>[p,Object.fromEntries(Object.entries(ops).map(([id,op])=>[id,Object.fromEntries(Object.entries(op.responses).map(([status,r])=>[status,r.protocol]))]))]));
  const multipart=operations(openapi).filter(op=>resolve(openapi,op.requestBody)?.content?.['multipart/form-data']);
  const overlay=multipart.map(op=>{
