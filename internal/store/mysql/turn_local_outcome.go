@@ -16,6 +16,14 @@ import (
 // It is classification, never a permit or proof that a transaction ended.
 type CandidateResourceConflict struct{ Kind, ID, OriginalHash, CurrentHash string }
 
+// SameSubject reports whether two evaluations found the same cited resource in
+// conflict with the same recorded original. CurrentHash is excluded: in a world
+// where several tasks advance, the resource may move again between approval and
+// commit, and that is still the conflict the recovery was approved for.
+func (e *CandidateResourceConflict) SameSubject(o CandidateResourceConflict) bool {
+	return e.Kind == o.Kind && e.ID == o.ID && e.OriginalHash == o.OriginalHash
+}
+
 func (e *CandidateResourceConflict) Error() string { return ErrCandidateResourceConflict.Error() }
 func (e *CandidateResourceConflict) Unwrap() error { return ErrCandidateResourceConflict }
 
