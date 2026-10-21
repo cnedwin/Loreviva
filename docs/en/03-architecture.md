@@ -9,7 +9,7 @@ This page describes the locally approved Tasks 1–7 implementation and subseque
 | Item | Status in this batch |
 | --- | --- |
 | Backend | Go 1.27.2, Kratos 3.0.0, modular single application; see [go.mod](../../go.mod) |
-| Database | MySQL Community LTS / InnoDB, `database/sql`; embedded migrations 0001–0007 |
+| Database | MySQL Community LTS / InnoDB, `database/sql`; embedded migrations 0001–0008 |
 | Toolchain | Node.js 24, pnpm 11.25.0, TypeScript; exact dependencies in [package.json](../../package.json) and lockfile |
 | Files | Private local directory and application authentication proxy; the file root is not publicly mounted |
 | Frontend | Native Vue Studio; the Go application embeds and serves the actual build at `/studio/` |
@@ -87,7 +87,7 @@ This batch's Worker can execute only the corresponding registered jobs. The Mock
 
 ## Contracts and extensions
 
-The machine contract is 1.4.0, 58 operations / 156 schemas. Source1.3 51/131, source1.2 49/123, and the original 18 operations/43 DTO retain their respective historical comparison meanings. Source1.3 added `resolveDraftGeneration` and `listAdminTasks`; source1.4 adds the seven Settings operations below. [OpenAPI](../../contracts/source/openapi.yaml) and [wepkg Schema](../../contracts/source/wepkg.schema.json) are the maintained sources; Go/TypeScript types and validation artifacts are derived by the generator. The [TypeScript SDK entry](../../packages/sdk-ts/src/index.ts) retains configuration and type support, while the [administrative client](../../packages/sdk-ts/src/admin.ts) adds limited administrative HTTP calls, authenticated asset reads, and uploads; this is not the complete customer SDK or player SSE.
+The approved machine-contract baseline is 1.4.0 (58 operations / 156 schemas); the working contract is 1.5.0 (65 operations / 177 schemas). Source1.3 51/131, source1.2 49/123, and the original 18 operations/43 DTO retain their respective historical comparison meanings. Source1.3 added `resolveDraftGeneration` and `listAdminTasks`; source1.4 adds the seven Settings operations below. [OpenAPI](../../contracts/source/openapi.yaml) and [wepkg Schema](../../contracts/source/wepkg.schema.json) are the maintained sources; Go/TypeScript types and validation artifacts are derived by the generator. The [TypeScript SDK entry](../../packages/sdk-ts/src/index.ts) retains configuration and type support, while the [administrative client](../../packages/sdk-ts/src/admin.ts) adds limited administrative HTTP calls, authenticated asset reads, and uploads; this is not the complete customer SDK or player SSE.
 
 | Operation ID | Method | Path |
 | --- | --- | --- |

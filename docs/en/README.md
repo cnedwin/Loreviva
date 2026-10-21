@@ -21,7 +21,7 @@ This repository contains the approved **Tasks 1–7** source: content authoring,
 | Planned | Complete client SDK and integration examples |
 | Planned | Content package import/export, metering management, complete backup/recovery, and release validation for real models/paid hosting |
 
-The Go application serves native Vue Studio at `/studio/`; `/` retains its startup-inspection role. The machine contract is **1.4.0, 58 operations / 156 schemas**, with embedded migrations 0001–0007. Reserved OpenAPI operations do not mean registered, usable endpoints; an implemented internal TURN does not mean customer player HTTP interaction is connected. See [architecture and endpoint owners](03-architecture.md) for the actual boundary.
+The Go application serves native Vue Studio at `/studio/`; `/` retains its startup-inspection role. The approved machine contract is **1.4.0 (58 operations / 156 schemas)**; this batch works against **1.5.0 (65 operations / 177 schemas)**, with embedded migrations 0001–0008. Reserved OpenAPI operations do not mean registered, usable endpoints; an implemented internal TURN does not mean customer player HTTP interaction is connected. See [architecture and endpoint owners](03-architecture.md) for the actual boundary.
 
 The sustained character growth and deeper memory requirements in development design 3.0.2 remain future design work; the 12 LC requirements and 24 scenarios have not been implemented or run. The complete R0 product workflow, human experience, R1 real models, billing, and deployment remain unaccepted.
 
