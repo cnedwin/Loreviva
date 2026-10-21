@@ -9,7 +9,7 @@ Loreviva — The AI Platform for Living Worlds。
 | 项目 | 本批状态 |
 | --- | --- |
 | 后端 | Go 1.27.2、Kratos 3.0.0、模块化单应用；见 [go.mod](../go.mod) |
-| 数据库 | MySQL Community LTS / InnoDB，`database/sql`；嵌入迁移 0001–0007 |
+| 数据库 | MySQL Community LTS / InnoDB，`database/sql`；嵌入迁移 0001–0008 |
 | 工具链 | Node.js 24、pnpm 11.25.0、TypeScript；精确依赖见 [package.json](../package.json) 与 lockfile |
 | 文件 | 私有本机目录、应用鉴权代理；不公开挂载文件根 |
 | 前端 | 原生 Vue Studio，真实构建产物由 Go 嵌入并提供 `/studio/` |
@@ -87,7 +87,7 @@ flowchart LR
 
 ## 契约与扩展
 
-机器契约为 1.4.0，58 operations / 156 schemas；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)保留配置与类型能力，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；这不等于完整客户 SDK 或玩家 SSE。
+已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.5.0（65 operations / 177 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)保留配置与类型能力，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；这不等于完整客户 SDK 或玩家 SSE。
 
 | Operation ID | Method | Path |
 | --- | --- | --- |
