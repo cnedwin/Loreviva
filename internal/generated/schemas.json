@@ -13593,7 +13593,7 @@
         "properties": {
           "contract_version": {
             "type": "string",
-            "const": "1.5.0"
+            "const": "1.6.0"
           },
           "source_hash": {
             "type": "string",
@@ -14168,6 +14168,22 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "preflightContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getContentPackageCapabilities": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -14235,7 +14251,9 @@
               "getPlayerSelfConsent",
               "commandPlayerSelfConsent",
               "readRuntimeMedia",
-              "getOriginalTurnIntakeReceipt"
+              "getOriginalTurnIntakeReceipt",
+              "preflightContentPackage",
+              "getContentPackageCapabilities"
             ],
             "additionalProperties": false
           },
@@ -14266,7 +14284,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.5.0",
+            "contract_version": "1.6.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -14394,10 +14412,266 @@
               "getPlayerSelfConsent": "UNAVAILABLE",
               "commandPlayerSelfConsent": "UNAVAILABLE",
               "readRuntimeMedia": "UNAVAILABLE",
-              "getOriginalTurnIntakeReceipt": "UNAVAILABLE"
+              "getOriginalTurnIntakeReceipt": "UNAVAILABLE",
+              "preflightContentPackage": "AVAILABLE",
+              "getContentPackageCapabilities": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
+          }
+        ]
+      },
+      "PackagePreflightLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "archive_bytes",
+          "manifest_bytes",
+          "entries",
+          "file_bytes",
+          "total_bytes",
+          "ratio",
+          "path_length",
+          "path_depth"
+        ],
+        "properties": {
+          "archive_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "manifest_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "entries": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "file_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ratio": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path_length": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path_depth": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "examples": [
+          {
+            "archive_bytes": 67108864,
+            "manifest_bytes": 8388608,
+            "entries": 10000,
+            "file_bytes": 16777216,
+            "total_bytes": 536870912,
+            "ratio": 200,
+            "path_length": 240,
+            "path_depth": 8
+          }
+        ]
+      },
+      "PackagePreflightFinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "code"
+        ],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "ERROR",
+              "WARNING"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "object": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        "examples": [
+          {
+            "severity": "ERROR",
+            "code": "FILE_HASH_MISMATCH",
+            "path": "definitions/coffee.json",
+            "object": "files[0]",
+            "detail": "declared 3f2a4c11aa77b1e2, actual 8c11d0f5bb39ac42"
+          }
+        ]
+      },
+      "PackagePreflightReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "report_version",
+          "verdict",
+          "archive_sha256",
+          "archive_bytes",
+          "file_count",
+          "total_bytes",
+          "limits",
+          "findings",
+          "report_sha256"
+        ],
+        "properties": {
+          "report_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "REJECT"
+            ]
+          },
+          "package_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "package_version": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "content_sha256_declared": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content_sha256_computed": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "manifest_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "file_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limits": {
+            "$ref": "#/components/schemas/PackagePreflightLimits"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackagePreflightFinding"
+            }
+          },
+          "report_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "examples": [
+          {
+            "report_version": "1",
+            "verdict": "PASS",
+            "package_id": "coffee.demo",
+            "package_version": "1.0.0",
+            "kind": "WORLD",
+            "content_sha256_declared": "c17bd376828c0f0f0b0a3f7e4c4c0f4b0bd6b7f0b1f6a9b8f7c6d5e4f3a2b1c0",
+            "content_sha256_computed": "c17bd376828c0f0f0b0a3f7e4c4c0f4b0bd6b7f0b1f6a9b8f7c6d5e4f3a2b1c0",
+            "manifest_sha256": "9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+            "archive_sha256": "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+            "archive_bytes": 1024,
+            "file_count": 1,
+            "total_bytes": 83,
+            "limits": {
+              "archive_bytes": 67108864,
+              "manifest_bytes": 8388608,
+              "entries": 10000,
+              "file_bytes": 16777216,
+              "total_bytes": 536870912,
+              "ratio": 200,
+              "path_length": 240,
+              "path_depth": 8
+            },
+            "findings": [],
+            "report_sha256": "7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d"
+          }
+        ]
+      },
+      "ContentPackageCapabilities": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "registry_version",
+          "limits",
+          "capabilities"
+        ],
+        "properties": {
+          "registry_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/PackagePreflightLimits"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+            },
+            "maxItems": 64
+          }
+        },
+        "examples": [
+          {
+            "registry_version": "1",
+            "limits": {
+              "archive_bytes": 67108864,
+              "manifest_bytes": 8388608,
+              "entries": 10000,
+              "file_bytes": 16777216,
+              "total_bytes": 536870912,
+              "ratio": 200,
+              "path_length": 240,
+              "path_depth": 8
+            },
+            "capabilities": [
+              "sign_custody",
+              "text"
+            ]
           }
         ]
       }

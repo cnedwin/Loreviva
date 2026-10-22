@@ -34,6 +34,7 @@ func (w *Worker) Check(context.Context) error {
 	}
 	return nil
 }
+
 // The loop attempts original-query, cost and cutoff maintenance separately from new task work; an ignored iteration error is not a completed result.
 func (w *Worker) Start(ctx context.Context) error {
 	w.mu.Lock()
@@ -83,6 +84,7 @@ func (w *Worker) Stop(ctx context.Context) error {
 	}
 	return nil
 }
+
 // A registered-task lease selects work, not blanket execution authority. Each selected executor retains its own gates, and file cleanup checks its program proof before applying the bounded page.
 func (w *Worker) Once(ctx context.Context) error {
 	ctx, release, permitError := w.s.EnterOperation(ctx)

@@ -7,7 +7,7 @@ const tuples=[['getTurn','IntegrationTurnView'],['getEvents','IntegrationEventPa
 const ops=doc=>Object.values(doc.paths).flatMap(item=>Object.values(item).filter(op=>op?.operationId));
 export function resolveIntegrationProfiles(source) {
  const meta=source['x-integration-contract-profiles'];
- if(meta===undefined){if(source.info.version==='1.5.0')throw Error('missing integration profile metadata');return {};}
+ if(meta===undefined){if(source.info.version==='1.6.0')throw Error('missing integration profile metadata');return {};}
  const fail=()=>{throw Error('invalid closed integration profile projection');};
  if(!keys(meta,['selector_header','default_profile','profiles'])||meta.selector_header!=='Loreviva-Client-Contract'||meta.default_profile!=='public_v1'||!Array.isArray(meta.profiles)||meta.profiles.length!==2)fail();
  const [legacy,integration]=meta.profiles;

@@ -92,6 +92,7 @@ func (r *Runtime) BindLocal(local *Local) {
 	r.Candidates = &harness.CandidateService{Executor: r.Worker.Turns}
 }
 func (r *Runtime) Readiness(ctx context.Context) error { return r.readiness(ctx, false) }
+
 // Readiness verifies the registered prerequisites; the original-governance path skips only the selected Mock continuity/result-governance checks, not request authorization.
 func (r *Runtime) readiness(ctx context.Context, originalGovernance bool) error {
 	if r == nil || r.Store == nil || r.Files == nil || r.Auth == nil || r.Worker == nil {

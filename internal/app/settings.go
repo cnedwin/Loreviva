@@ -40,6 +40,7 @@ func settingsScope(q *http.Request, extra ...string) (domain.SettingsScope, erro
 	}
 	return sc, nil
 }
+
 // A stale revision and a changed registration both require a fresh snapshot, but remain distinct conflicts.
 // Missing rows become not-found without exposing stored data.
 func settingsFailure(w http.ResponseWriter, e error) {
