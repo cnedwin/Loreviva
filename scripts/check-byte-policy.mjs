@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 
 const textExtensions=new Set('.go .mod .sum .json .yaml .yml .md .txt .js .mjs .cjs .ts .mts .cts .tsx .vue .css .html .sql .sh .ps1 .svg .xml .toml'.split(' '));
 const binaryExtensions=new Set('.png .jpg .jpeg .gif .webp .ico .woff .woff2 .ttf .otf .pdf .zip .wasm .exe .dll'.split(' '));
-const textNames=new Set(['.env.example','.gitattributes','.gitignore','.editorconfig','LICENSE','NOTICE']);
+const textNames=new Set(['.env.example','.gitattributes','.gitignore','.editorconfig','LICENSE','NOTICE','CODEOWNERS']);
 const rawLicense={path:'LICENSES/typescript-5.9.3-LICENSE.txt',bytes:9197,sha256:'a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47'};
 const sha=b=>createHash('sha256').update(b).digest('hex');
 // Public paths keep exact POSIX spelling; private Windows path equivalence never applies here.
@@ -22,7 +22,7 @@ export function verifyBytes(name,body){
  if(name.startsWith('LICENSES/'))return 'UPSTREAM_RAW';
  const extension=path.posix.extname(name);
  if(binaryExtensions.has(extension))return 'BINARY_RAW';
- if(!textExtensions.has(extension)&&!textNames.has(name))throw Error('Unclassified bytes: '+name);
+ if(!textExtensions.has(extension)&&!textNames.has(path.posix.basename(name)))throw Error('Unclassified bytes: '+name);
  new TextDecoder('utf-8',{fatal:true}).decode(body);
  if(body.subarray(0,3).equals(Buffer.from([239,187,191]))||body.includes(13)||body.includes(0))throw Error('Text must be UTF-8 LF without BOM: '+name);
  return 'TEXT_LF';
