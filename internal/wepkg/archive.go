@@ -3,6 +3,8 @@ package wepkg
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -11,20 +13,22 @@ import (
 	"strings"
 )
 
-// Entry is one archive member as the preflight saw it. Only the archive is
+// Member is one archive entry as the preflight saw it. Only the archive is
 // inspected here: no extraction to disk happens, so an entry name can never
-// escape a directory.
-type Entry struct {
+// escape a directory. SHA256 is computed from the decompressed bytes, so a
+// header that lies about content is caught.
+type Member struct {
 	Path       string
 	Size       uint64
 	Compressed uint64
 	Method     uint16
 	Mode       os.FileMode
 	IsDir      bool
+	SHA256     string
 }
 
 type Index struct {
-	Entries    []Entry
+	Members    []Member
 	TotalBytes int64
 	Files      int
 }
@@ -98,7 +102,7 @@ func InspectArchive(raw []byte, lim Limits) (Index, []Finding) {
 		}
 
 		if isDir {
-			out.Entries = append(out.Entries, Entry{Path: clean, IsDir: true, Mode: mode})
+			out.Members = append(out.Members, Member{Path: clean, IsDir: true, Mode: mode})
 			continue
 		}
 
@@ -119,7 +123,8 @@ func InspectArchive(raw []byte, lim Limits) (Index, []Finding) {
 			findings = append(findings, Finding{Severity: Error, Code: CodeArchiveCorrupt, Path: clean, Detail: "member unreadable"})
 			continue
 		}
-		n, e := io.Copy(io.Discard, io.LimitReader(rc, lim.FileBytes+1))
+		sum := sha256.New()
+		n, e := io.Copy(io.MultiWriter(io.Discard, sum), io.LimitReader(rc, lim.FileBytes+1))
 		rc.Close()
 		if e != nil {
 			findings = append(findings, Finding{Severity: Error, Code: CodeArchiveCorrupt, Path: clean, Detail: "member failed integrity check"})
@@ -141,16 +146,16 @@ func InspectArchive(raw []byte, lim Limits) (Index, []Finding) {
 				Detail: fmt.Sprintf("total expansion exceeds %d", lim.TotalBytes)}}
 		}
 		out.Files++
-		out.Entries = append(out.Entries, Entry{Path: clean, Size: uint64(n), Compressed: f.CompressedSize64, Method: f.Method, Mode: mode})
+		out.Members = append(out.Members, Member{Path: clean, Size: uint64(n), Compressed: f.CompressedSize64, Method: f.Method, Mode: mode, SHA256: hex.EncodeToString(sum.Sum(nil))})
 	}
 
 	// A file may not also be a directory prefix of another member: extraction
 	// would have to turn it into one.
-	for _, e := range out.Entries {
+	for _, e := range out.Members {
 		if e.IsDir {
 			continue
 		}
-		for _, other := range out.Entries {
+		for _, other := range out.Members {
 			if other.Path != e.Path && strings.HasPrefix(other.Path, e.Path+"/") {
 				findings = append(findings, Finding{Severity: Error, Code: CodePathPrefixCollision, Path: e.Path, Object: other.Path,
 					Detail: "a file is also used as a directory"})
@@ -159,7 +164,7 @@ func InspectArchive(raw []byte, lim Limits) (Index, []Finding) {
 		}
 	}
 
-	sort.Slice(out.Entries, func(i, j int) bool { return out.Entries[i].Path < out.Entries[j].Path })
+	sort.Slice(out.Members, func(i, j int) bool { return out.Members[i].Path < out.Members[j].Path })
 	Order(findings)
 	return out, findings
 }
