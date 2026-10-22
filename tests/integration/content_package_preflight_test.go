@@ -87,7 +87,7 @@ func validPackage(t *testing.T, body []byte) []byte {
 		FormatVersion: "1.0", PackageID: "coffee.demo", Kind: "WORLD", PackageVersion: "1.0.0",
 		Entrypoints: []string{"coffee_demo"},
 		Entries:     []wepkg.Entry{{LogicalID: "coffee_demo", Kind: "WORLD", Path: "definitions/coffee.json", Version: "1.0.0", SHA256: digest}},
-		Files:       []wepkg.FileRecord{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json", Rights: wepkg.Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_BACKGROUND"}}}},
+		Files:       []wepkg.FileRecord{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json", Rights: wepkg.Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
 		Provenance:  wepkg.Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}},
 	}
 	m.Requirements.Presentation = []wepkg.Capability{{CapabilityID: "text", Required: true}}

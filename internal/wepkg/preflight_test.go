@@ -188,7 +188,7 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 			"version": "1.0.0", "sha256": digest, "references": []string{}}},
 		"files": []any{map[string]any{"path": "definitions/coffee.json", "sha256": digest, "size_bytes": len(body),
 			"media_type": "application/json", "rights": map[string]any{"license": "CC0-1.0", "source_reference": "synthetic",
-				"redistribution_allowed": true, "allowed_uses": []string{"WORLD_BACKGROUND"}}}},
+				"redistribution_allowed": true, "allowed_uses": []string{"WORLD_CONTENT"}}}},
 		"dependencies": []any{},
 		"requirements": map[string]any{"model_capabilities": []any{}, "tool_capabilities": []any{}, "presentation_capabilities": []any{
 			map[string]any{"capability_id": "text", "required": true}}},
@@ -216,4 +216,56 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 	if has(rejected.Findings, CodeContentHashMismatch) {
 		t.Fatalf("content digest blamed for a body change: %v", codes(rejected.Findings))
 	}
+}
+
+func TestParseManifestRefusesNonRedistributableSource(t *testing.T) {
+	m := schemaExample(t)
+	m.Files[0].Rights.RedistributionAllowed = false
+	if _, findings := ParseManifest(mustJSON(t, m), DefaultLimits); !has(findings, CodeRightsNotDistributable) {
+		t.Fatalf("non-redistributable source accepted: %v", codes(findings))
+	}
+}
+
+func TestParseManifestRefusesUnknownUse(t *testing.T) {
+	m := schemaExample(t)
+	m.Files[0].Rights.AllowedUses = []string{"WORLD_CONTENT", "EVERYTHING"}
+	if _, findings := ParseManifest(mustJSON(t, m), DefaultLimits); !has(findings, CodeManifestSchema) {
+		t.Fatalf("unknown use accepted: %v", codes(findings))
+	}
+}
+
+func TestCheckGraphRefusesNonRootEntrypoint(t *testing.T) {
+	m := schemaExample(t)
+	m.Entries[0].Kind = "SCHEMA"
+	if findings := CheckGraph(m); !has(findings, CodeEntrypointKind) {
+		t.Fatalf("schema entrypoint accepted: %v", codes(findings))
+	}
+}
+
+func TestCheckRefusesUnreadableEntryBody(t *testing.T) {
+	m := schemaExample(t)
+	body := []byte("not json at all")
+	sum := sha256.Sum256(body)
+	digest := hex.EncodeToString(sum[:])
+	m.Files[0] = FileRecord{Path: m.Entries[0].Path, SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json",
+		Rights: Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}
+	m.Entries[0].SHA256 = digest
+	content, e := ContentHash(m)
+	if e != nil {
+		t.Fatal(e)
+	}
+	m.ContentSHA256 = content
+	archive := build(t, member{name: "manifest.json", body: mustJSON(t, m)}, member{name: m.Entries[0].Path, body: body})
+	if rep := Check(archive, DefaultLimits); !has(rep.Findings, CodeEntryBodyInvalid) {
+		t.Fatalf("unreadable entry body accepted: %v", codes(rep.Findings))
+	}
+}
+
+func mustJSON(t *testing.T, v any) []byte {
+	t.Helper()
+	raw, e := json.Marshal(v)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return raw
 }
