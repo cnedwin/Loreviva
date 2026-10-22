@@ -99,7 +99,7 @@ for (const shard of results) {
     let event;
     try { event = JSON.parse(line); } catch { continue; }
     const test = event.Test || "";
-    if (test.includes("/") || !["pass", "fail", "skip"].includes(event.Action)) continue;
+    if (!test || test.includes("/") || !["pass", "fail", "skip"].includes(event.Action)) continue;
     if (event.Action === "pass") passed++;
     else if (event.Action === "skip") skipped++;
     else { failed++; failures.push(test); }

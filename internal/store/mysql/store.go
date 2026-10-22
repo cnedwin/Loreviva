@@ -276,14 +276,22 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return e
 	}
 	defer conn.Close()
+	// The lock protects one database's schema, so its name carries the database.
+	// A fixed name would serialize migrations for every database on the server,
+	// which makes independent databases (each test's own) wait on each other.
+	var database string
+	if e = conn.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&database); e != nil {
+		return e
+	}
+	lock := "loreviva.core.schema." + database
 	var obtained int
-	if e = conn.QueryRowContext(ctx, "SELECT GET_LOCK('loreviva.core.schema',10)").Scan(&obtained); e != nil {
+	if e = conn.QueryRowContext(ctx, "SELECT GET_LOCK(?,10)", lock).Scan(&obtained); e != nil {
 		return e
 	}
 	if obtained != 1 {
 		return errors.New("schema migration lock unavailable")
 	}
-	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK('loreviva.core.schema')")
+	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK(?)", lock)
 	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
