@@ -50,10 +50,19 @@ func CheckGraph(m Manifest) []Finding {
 		}
 	}
 
+	kinds := map[string]string{}
+	for _, e := range m.Entries {
+		kinds[e.LogicalID] = e.Kind
+	}
 	for _, id := range m.Entrypoints {
 		if !entries[id] {
 			findings = append(findings, Finding{Severity: Error, Code: CodeEntrypointUnknown, Object: "entrypoints",
 				Detail: "names unknown entry " + id})
+			continue
+		}
+		if !rootKinds[kinds[id]] {
+			findings = append(findings, Finding{Severity: Error, Code: CodeEntrypointKind, Object: "entrypoints",
+				Detail: fmt.Sprintf("%s is a %s entry, not a publishable root", id, kinds[id])})
 		}
 	}
 

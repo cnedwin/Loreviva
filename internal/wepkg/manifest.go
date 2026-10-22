@@ -82,6 +82,10 @@ var (
 	knownEntryKinds = map[string]bool{"WORLD": true, "CHARACTER": true, "ROLE": true, "SKILL": true, "KNOWLEDGE": true, "PRESENTATION_THEME": true, "PRODUCT_PACK": true, "RULES": true, "SCHEMA": true}
 	knownMedia      = map[string]bool{"application/json": true, "text/plain": true, "text/markdown": true, "application/pdf": true,
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true}
+	knownUses = map[string]bool{"WORLD_CONTENT": true, "CHARACTER_CONTENT": true, "SKILL_CONTENT": true,
+		"KNOWLEDGE": true, "PRESENTATION": true, "SYNTHETIC_TEST": true}
+	rootKinds = map[string]bool{"WORLD": true, "CHARACTER": true, "ROLE": true, "SKILL": true,
+		"KNOWLEDGE": true, "PRESENTATION_THEME": true}
 	manifestFields = map[string]bool{"format_version": true, "package_id": true, "kind": true, "package_version": true,
 		"content_sha256": true, "compatibility": true, "entrypoints": true, "entries": true, "files": true,
 		"dependencies": true, "requirements": true, "provenance": true}
@@ -141,6 +145,13 @@ func ParseManifest(raw []byte, lim Limits) (Manifest, []Finding) {
 		check(f.Rights.License != "", object+".rights.license", "required")
 		check(f.Rights.SourceReference != "", object+".rights.source_reference", "required")
 		check(len(f.Rights.AllowedUses) > 0, object+".rights.allowed_uses", "must not be empty")
+		if !f.Rights.RedistributionAllowed {
+			findings = append(findings, Finding{Severity: Error, Code: CodeRightsNotDistributable, Path: f.Path, Object: object,
+				Detail: "the source may not be redistributed"})
+		}
+		for _, use := range f.Rights.AllowedUses {
+			check(knownUses[use], object+".rights.allowed_uses", "unknown use "+use)
+		}
 	}
 	for i, e := range m.Entries {
 		object := fmt.Sprintf("entries[%d]", i)

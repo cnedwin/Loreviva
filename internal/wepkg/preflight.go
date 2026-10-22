@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 )
 
@@ -44,6 +45,27 @@ func Check(raw []byte, lim Limits) Report {
 	rep.Findings = append(rep.Findings, CheckFiles(m, idx)...)
 	rep.Findings = append(rep.Findings, CheckContentHash(m)...)
 	rep.Findings = append(rep.Findings, CheckGraph(m)...)
+	media := map[string]string{}
+	for _, f := range m.Files {
+		media[f.Path] = f.MediaType
+	}
+	for _, entry := range m.Entries {
+		if media[entry.Path] != "application/json" {
+			continue
+		}
+		body, e := readMember(raw, entry.Path, lim.FileBytes)
+		if e != nil {
+			continue
+		}
+		// The entry body is untrusted JSON. It is parsed here only to prove it is
+		// readable; the import stage must never hand it to the draft assembler
+		// without a schema of its own.
+		var probe any
+		if json.Unmarshal(body, &probe) != nil {
+			rep.Findings = append(rep.Findings, Finding{Severity: Error, Code: CodeEntryBodyInvalid, Path: entry.Path,
+				Detail: "entry body is not readable JSON"})
+		}
+	}
 	for _, entry := range m.Entries {
 		if entry.Kind != "RULES" {
 			continue
