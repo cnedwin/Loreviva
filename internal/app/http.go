@@ -115,6 +115,19 @@ type adminWork func(context.Context, domain.ProductScope, *http.Request, []byte)
 
 // After decoding the request, the entry action is checked and bound to a private HTTP proof; owning operations still enforce their transaction and source gates.
 func (r *Runtime) admin(schema, action string, work adminWork) http.HandlerFunc {
+	return r.adminWith(schema, action, work, false)
+}
+
+// adminControl serves a read-only report of what this runtime can do, and the
+// controls an operator needs when it cannot do everything. The operator action
+// is still required, but not every worker adapter has to be ready: reporting
+// which jobs are unimplemented, or cancelling work on a degraded runtime, is
+// exactly what an operator does when an adapter is missing.
+func (r *Runtime) adminControl(schema, action string, work adminWork) http.HandlerFunc {
+	return r.adminWith(schema, action, work, true)
+}
+
+func (r *Runtime) adminWith(schema, action string, work adminWork, skipReadiness bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, q *http.Request) {
 		requestedAction := action
 		for _, v := range q.URL.Query() {
@@ -182,7 +195,7 @@ func (r *Runtime) admin(schema, action string, work adminWork) http.HandlerFunc 
 		if schema == "AdminMemoryGovernanceRequestV1" || schema == "AdminMemoryUsePolicyRequestV1" {
 			originalGovernance = r.originalMemoryRecovery(q.Context(), scope, q, raw, schema)
 		}
-		if e = r.readiness(q.Context(), originalGovernance); e != nil {
+		if e = r.readiness(q.Context(), originalGovernance); e != nil && !skipReadiness {
 			failure(w, e)
 			return
 		}
@@ -336,7 +349,7 @@ func (r *Runtime) Handler() http.Handler {
 	r.adminReadRoutes(mux)
 	r.settingsRoutes(mux)
 	r.assetRoutes(mux)
-	mux.HandleFunc("GET "+root+"/capabilities", r.admin("", "content.read", r.capabilities))
+	mux.HandleFunc("GET "+root+"/capabilities", r.adminControl("", "content.read", r.capabilities))
 	r.instanceRoutes(mux)
 	mux.HandleFunc("POST /world/v1/instances", r.createIntegrationInstance)
 	r.integrationMemoryRoutes(mux)
