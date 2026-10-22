@@ -7,7 +7,7 @@ import addFormats from 'ajv-formats';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 import {resolveIntegrationProfiles} from './integration-profiles.mjs';
 
-export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.5.0',ajv:'8.17.1','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
+export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.6.0',ajv:'8.17.1','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
 const repo=fileURLToPath(new URL('../',import.meta.url));
 export const canonicalSourceRoot=path.resolve(repo,'contracts/source');
 const methods=new Set(['get','put','post','delete','options','head','patch','trace']);

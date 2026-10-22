@@ -1,15 +1,15 @@
 {
-  "source_hash": "cdff948efad24ca548e966e86878a27af8f45c17000e3e17cd3f2cd3352aad97",
+  "source_hash": "8b47e97040db2fa8b3d9ef4ad65459b649c580b59fbfef74ca4a3208e88420ce",
   "source_hashes": {
-    "openapi.yaml": "7598875f4c1fc4e284e955b29bd22e9321a30b98eaee32515c05b1629a4d0e3f",
+    "openapi.yaml": "cbf0ca5b4813414c3ebc89e67bf5ce633de48f55961d54906e060e5e2bc0eaa0",
     "wepkg.schema.json": "d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03"
   },
   "profile_hashes": {
-    "contracts/generated/profiles/public_v1.openapi.json": "2efeeb3b4ca01739ab4e2f6b05e7f4980550a476c314732ac38c7ec39987c815",
-    "contracts/generated/profiles/integration_r0_v1.openapi.json": "5ad519fe48dc86d8debc3e2a29e3f26c916b1cd2ab42a2bdff1e9629acff3817"
+    "contracts/generated/profiles/public_v1.openapi.json": "338e8d86cda919f495170f3cdf0744ead0c7f1d6adc11a094174687539924479",
+    "contracts/generated/profiles/integration_r0_v1.openapi.json": "af191848ce68c4f283d72a0a8c2e01550deef180cec1065d4708d3ab7cebc96f"
   },
   "generator_versions": {
-    "loreviva": "1.5.0",
+    "loreviva": "1.6.0",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "go-jsonschema": "6.0.2"
@@ -30,6 +30,8 @@
     "rehearseContentDraft",
     "publishContentDraft",
     "listDraftRevisions",
+    "getContentPackageCapabilities",
+    "preflightContentPackage",
     "listAdminInstances",
     "createAdminInstance",
     "getAdminInstance",
@@ -88,16 +90,16 @@
   ],
   "transport_artifacts": {
     "packages/sdk-ts/src/generated/transport.ts": {
-      "bytes": 415454,
-      "sha256": "4825e63c8211b33095bf9127828996a161656a66c6a6db520a1875eb56a89df9"
+      "bytes": 423911,
+      "sha256": "25d5029df5a340b0538b77610b07437a1507d5bf5c1c7eba0b05329d6ed7c6e0"
     },
     "packages/sdk-ts/src/generated/validators.cjs": {
-      "bytes": 22772393,
-      "sha256": "dfaa0ef322771a7b5eeba65e993ff4c3c39c98c6b40bbb936644cc6806bc080a"
+      "bytes": 23233511,
+      "sha256": "ef853b41ac8682693a71ae710dc378b477de76c7d40deb76daa66ab9a606d501"
     },
     "packages/sdk-ts/src/generated/validators.d.cts": {
-      "bytes": 120282,
-      "sha256": "bd931e43466d030187c81c390e2b267b3d46f2f6db218f7de83dd6dcb8a8a0fc"
+      "bytes": 122973,
+      "sha256": "9a9b4e5edda4a8d72c282885f60bc1e8a987acea9c15882d0f7aff963f8f2e85"
     }
   }
 }

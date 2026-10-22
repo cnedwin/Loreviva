@@ -849,7 +849,7 @@ func TestIntegrationCapabilitiesAndMemoryAdapter(t *testing.T) {
 		SourceHash string            `json:"source_hash"`
 		Profiles   []json.RawMessage `json:"profiles"`
 	}
-	if e := json.Unmarshal(out.Body.Bytes(), &response); e != nil || len(response.Operations) != 65 || response.SourceHash != generated.SourceHash || len(response.Profiles) != 2 {
+	if e := json.Unmarshal(out.Body.Bytes(), &response); e != nil || len(response.Operations) != 67 || response.SourceHash != generated.SourceHash || len(response.Profiles) != 2 {
 		t.Fatal("complete source-owned inventory", e)
 	}
 	for _, id := range []string{"getIntegrationCapabilities", "getSnapshot", "getEvents", "streamEvents", "readRuntimeMedia", "getMemory", "listMemories", "governMemories", "commandPlayerSelfConsent"} {

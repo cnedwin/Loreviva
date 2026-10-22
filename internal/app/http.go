@@ -27,6 +27,7 @@ func response(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+
 // Commit uncertainty directs recovery to the original key; this response does not establish rollback or authorize a replacement request.
 func failure(w http.ResponseWriter, e error) {
 	status := 503
@@ -40,6 +41,12 @@ func failure(w http.ResponseWriter, e error) {
 		code = "UNAUTHENTICATED"
 		message = "Operator authentication required."
 		recovery = "AUTHENTICATE"
+		retry = false
+	case errors.Is(e, errUnsupportedMedia) || errors.Is(e, errArchiveTooLarge):
+		status = 400
+		code = "INVALID_REQUEST"
+		message = "Request not accepted."
+		recovery = "FIX_REQUEST"
 		retry = false
 	case errors.Is(e, auth.ErrForbidden) || errors.Is(e, store.ErrDenied):
 		status = 403
@@ -232,7 +239,9 @@ func labels(v []generated.SupportLabel) []string {
 	return out
 }
 func (r *Runtime) Handler() http.Handler {
-	if r.Memory != nil { _ = r.Memory.BindIntegrationGovernance() }
+	if r.Memory != nil {
+		_ = r.Memory.BindIntegrationGovernance()
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, q *http.Request) { response(w, 200, map[string]any{"status": "alive"}) })
 	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, q *http.Request) {
@@ -350,6 +359,7 @@ func (r *Runtime) Handler() http.Handler {
 	r.settingsRoutes(mux)
 	r.assetRoutes(mux)
 	mux.HandleFunc("GET "+root+"/capabilities", r.adminControl("", "content.read", r.capabilities))
+	r.packageRoutes(mux)
 	r.instanceRoutes(mux)
 	mux.HandleFunc("POST /world/v1/instances", r.createIntegrationInstance)
 	r.integrationMemoryRoutes(mux)
