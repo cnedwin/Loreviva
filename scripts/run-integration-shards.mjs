@@ -27,6 +27,7 @@ const dryRun = args.includes("--dry-run");
 const shards = Math.max(1, Number(option("shards", "4")));
 const filter = option("run", "");
 const timeout = option("timeout", "240m");
+const retrySerial = !args.includes("--no-retry");
 const outDir = resolve(option("out", join(tmpdir(), "loreviva-shards-" + Date.now())));
 const root = resolve(import.meta.dirname, "..");
 
@@ -107,8 +108,30 @@ for (const shard of results) {
   console.log(`shard ${shard.index}: ${shard.count} tests, exit ${shard.code}`);
 }
 
+// Some targets measure real elapsed time (a 25s purge deadline, a session that
+// must expire). Under N-way load those can exceed their own budget while the
+// same code passes alone. Re-run each failure once, serially, and report which
+// ones only passed that way: a load-sensitive result must not read as a product
+// failure, and must not silently count as a pass either.
+let onlySerial = [];
+if (retrySerial && failures.length) {
+  console.log(`re-running ${failures.length} failures serially`);
+  const again = await run("go", [
+    "test", "./tests/integration", "-p=1", "-count=1", "-timeout", timeout,
+    "-run", "^(" + failures.join("|") + ")$",
+  ]);
+  const stillFailing = failures.filter((f) => (again.stdout + again.stderr).includes("--- FAIL: " + f));
+  onlySerial = failures.filter((f) => !stillFailing.includes(f));
+  failures.length = 0;
+  failures.push(...stillFailing);
+  failed = stillFailing.length;
+}
+
 const minutes = ((Date.now() - started) / 60000).toFixed(1);
 console.log(`\n${names.length} targets: ${passed} pass, ${failed} fail, ${skipped} skip in ${minutes} min`);
+if (onlySerial.length) {
+  console.log("passed only in a serial retry (load sensitive): " + onlySerial.join(", "));
+}
 if (failures.length) {
   console.log("failed: " + failures.join(", "));
   process.exit(1);
