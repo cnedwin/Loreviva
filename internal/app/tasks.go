@@ -11,7 +11,7 @@ import (
 
 func (r *Runtime) taskRoutes(m *http.ServeMux) {
 	m.HandleFunc("GET /world/v1/admin/tasks/{task_id}", r.readAdminTaskMetadata)
-	m.HandleFunc("POST /world/v1/admin/tasks/{task_id}/cancel", r.admin("AdminCancelRequest", "task.cancel", func(ctx context.Context, s domain.ProductScope, q *http.Request, b []byte) (int, any, error) {
+	m.HandleFunc("POST /world/v1/admin/tasks/{task_id}/cancel", r.adminControl("AdminCancelRequest", "task.cancel", func(ctx context.Context, s domain.ProductScope, q *http.Request, b []byte) (int, any, error) {
 		id := q.PathValue("task_id")
 		if _, _, e := r.Store.ReadRegisteredAdminTask(ctx, s, id); e != nil {
 			return 0, nil, content.ErrNotFound
