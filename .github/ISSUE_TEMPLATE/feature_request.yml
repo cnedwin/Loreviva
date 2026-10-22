@@ -1,0 +1,48 @@
+name: Feature proposal
+description: A capability a creator or integrator needs
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Who is blocked, in what workflow, and what they cannot do today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: The smallest change that solves it. Interface changes start in contracts/source/.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Content authoring and packages
+        - World runtime and turns
+        - Memory and governance
+        - Harness, candidates and rehearsal
+        - Contract and SDK
+        - Studio
+        - Tooling and verification
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: checkboxes
+    id: readiness
+    attributes:
+      label: Readiness
+      options:
+        - label: I can help implement or test this
+          required: false
+        - label: This changes the machine contract and would need a written spec and two reviews
+          required: false

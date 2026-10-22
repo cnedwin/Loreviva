@@ -1,0 +1,51 @@
+name: Bug report
+description: A reproducible defect in the published snapshot
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, private conversations or real user data.
+        Security issues go through private reporting, never this form.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or contract version
+      description: The commit SHA or contract version you ran.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Go, Node, pnpm and MySQL versions, and how the database was started.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction
+      description: The smallest sequence of commands that shows the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Exact output, status code or error text.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs or test names, with secrets removed.
+    validations:
+      required: false

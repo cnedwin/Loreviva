@@ -1,20 +1,54 @@
-# 参与 Loreviva
+# Contributing to Loreviva
 
-欢迎改造世界设定、角色、Agent 和 Skill，以及完善接入方式。
+Thanks for taking the time to contribute. This document describes how work moves
+from an idea to `main`, and what a reviewable change looks like here.
+中文版见 [CONTRIBUTING.zh-CN.md](CONTRIBUTING.zh-CN.md).
 
-当前公开代码是经过检查的开发基础，已实现范围见 [README](README.md)。先查找已有 Issue；功能建议请描述创作者或接入方遇到的具体问题，再提出尽量小的改动。
+## What we can accept
 
-## 提交变更
+| Change | Accepted when |
+| --- | --- |
+| Bug fix with a regression test | The test fails before the fix and passes after |
+| Contract or schema change | Starts in `contracts/source/`, regenerated artefacts committed, counts and capability tables updated |
+| New runtime capability | Has a written spec, two independent reviews, and real verification against a disposable database |
+| Documentation | Improves accuracy or translation; English is primary, Chinese is the companion |
+| Tooling change | Keeps the byte policy, supply-chain policy and zero-diff generation green |
 
-1. Fork 仓库，在独立分支开发。
-2. 按 [搭建与接入](docs/04-setup-and-integration.md)准备环境。
-3. 补充能够验证行为的测试，运行相关检查。涉及数据库时使用隔离的合成数据库。
-4. 创建 Pull Request，说明改变的行为、验证结果和剩余限制。不要提交密钥、个人对话、数据库转储、缓存或生成的运行数据。
+We cannot accept: fabricated test results, assertions weakened to make a gate
+pass, credentials or private data, database dumps, generated runtime artefacts,
+or acceptance claims the evidence does not support.
 
-接口修改先更新 `contracts/source/`，运行生成工具，并提交与源码相符的生成文件。程序负责事实、权限与事务；Agent 输出候选方案，外部文本不能直接取得执行权限。
+## Workflow
 
-## 许可
+1. **Discuss first** for anything larger than a bug fix: open an issue describing
+   the creator or integrator problem, not only the proposed solution.
+2. **Fork and branch.** Branch names: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+3. **Change the source of truth first.** Interface changes begin in
+   `contracts/source/`; run `pnpm generate:contracts` and commit the generated
+   files in the same change.
+4. **Test what you touched.** Unit tests for logic; integration tests against a
+   real disposable MySQL for anything that reads or writes state. Never use SQL to
+   manufacture a state the product cannot produce.
+5. **Run the gate that matches the change** (see the README). The full sharded
+   gate runs before merge to `main`.
+6. **Open a pull request** using the template: behaviour change, verification
+   evidence, remaining limitations.
 
-Copyright 2026 Loreviva contributors.
+## Review
 
-Loreviva 原创代码使用 [Apache-2.0](LICENSE)。提交贡献表示你有权提供该贡献，并同意按此许可提供；不要求转让版权。引用第三方材料时保留其原许可、版权及必要的 NOTICE。模型服务、模型权重、创作者内容和社区素材各自遵守其授权。
+- One maintainer approval merges ordinary changes; contract, schema and security
+  changes need two.
+- Reviewers check behaviour and evidence, not style preferences.
+- A red gate is a red gate: fix the cause, do not widen the assertion.
+
+## Commits and history
+
+Conventional-commit subjects (`feat:`, `fix:`, `test:`, `docs:`, `chore:`) with a
+body that explains **why**. History on `main` is linear; pull requests are rebased,
+never merge-committed.
+
+## Licence
+
+Copyright 2026 Loreviva contributors. Contributions are accepted under
+[Apache-2.0](LICENSE); you keep your copyright. Third-party material keeps its own
+licence and must be recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
