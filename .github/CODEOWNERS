@@ -1,0 +1,18 @@
+# Default owners for everything in the repository.
+*                                @cnedwin
+
+# The machine contract and its generated artefacts move together.
+/contracts/                      @cnedwin
+/internal/generated/             @cnedwin
+/packages/sdk-ts/src/generated/  @cnedwin
+
+# Governance and policy documents.
+/.github/                        @cnedwin
+/CODE_OF_CONDUCT.md              @cnedwin
+/GOVERNANCE.md                   @cnedwin
+/SECURITY.md                     @cnedwin
+/VERSIONING.md                   @cnedwin
+
+# Verification tooling and the gates it enforces.
+/scripts/                        @cnedwin
+/migrations/                     @cnedwin

@@ -1,11 +1,40 @@
-# 安全问题与运行范围
+# Security policy
 
-当前版本为开发基础。对外提供真实用户服务前，需要验证部署隔离、权限、备份恢复、数据删除和监控；当前检查记录不代表生产验收。
+## Scope and maturity
 
-不要在公开 Issue、日志或 Pull Request 中提交 Token、密码、Cookie、实际连接字符串、私人对话或漏洞利用细节。
+This repository is a development snapshot. Before serving real users, deployment
+isolation, authorisation, backup/restore, deletion and monitoring must be verified
+independently; existing test records are not production acceptance.
 
-如果仓库已启用 GitHub 私有漏洞报告，请通过仓库的 Security 页面提交。若尚未启用，可先发起不含漏洞细节的联系请求，由维护者安排私密沟通渠道。
+## Reporting a vulnerability
 
-报告请包含受影响版本、复现条件、预期和实际行为，以及经脱敏的最小示例。不要访问他人的账户、世界、角色记忆或私人数据来验证问题。
+Use **GitHub private vulnerability reporting** on the repository Security page. If
+it is unavailable, open an issue that contains **no exploit details** and ask for a
+private channel.
 
-模型输出、上传文档和社区 Skill 均按不可信输入处理。模型 API 密钥保存在服务端；权限与事务必须由程序检查。当前演示模式不调用真实模型，不执行真实收费。
+Include: affected version or commit, reproduction conditions, expected and actual
+behaviour, and a minimal sanitised example. Do not access another person's account,
+world, memory or private data to demonstrate an issue.
+
+## What counts as a vulnerability here
+
+- Privilege escalation across tenant, product, subject or world scope
+- Reading memory, files or receipts without a current positive-use decision
+- Forging a commit receipt, recovery approval or capability claim
+- Bypassing a gate with untrusted input (package, document, model output)
+- Any path where an operator action is accepted without its grant
+
+## Handling
+
+Maintainers acknowledge within seven days, agree a disclosure date with the
+reporter, and credit reporters who wish to be credited. Fixes follow the normal
+review path; the regression test lands with the fix.
+
+## Untrusted input
+
+Model output, uploaded documents and community packages are untrusted. API keys
+stay server-side; permissions and transactions are enforced by program checks,
+never by prompt text. The current build does not call a real model and does not
+charge money.
+
+中文版见 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)。
