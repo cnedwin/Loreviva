@@ -67,11 +67,11 @@ func TestInspectArchiveAcceptsSafeMembers(t *testing.T) {
 	if len(findings) != 0 {
 		t.Fatalf("unexpected findings: %v", codes(findings))
 	}
-	if index.Files != 2 || len(index.Entries) != 2 {
+	if index.Files != 2 || len(index.Members) != 2 {
 		t.Fatalf("index: %+v", index)
 	}
-	if index.Entries[0].Path != "content/world.json" || index.Entries[1].Path != "manifest.json" {
-		t.Fatalf("entries not sorted: %+v", index.Entries)
+	if index.Members[0].Path != "content/world.json" || index.Members[1].Path != "manifest.json" {
+		t.Fatalf("entries not sorted: %+v", index.Members)
 	}
 }
 
