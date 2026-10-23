@@ -4,8 +4,11 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  # The durability and coordinator layer (internal/localstate) refuses to open on
+  # non-Windows volumes by design: R0 support is the verified Windows local
+  # fixed-volume path. Unit packages therefore run on the platform they support.
   contracts-and-unit:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       # Immutable reviewed action pins, matching the byte-policy workflow.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -30,3 +33,16 @@ jobs:
       # Unit packages must not need a database; anything that does belongs in the
       # integration suite, which runs against a disposable MySQL outside CI.
       - run: go test ./internal/... -count=1
+  # Portability smoke on the platform not yet supported for local state: the tree
+  # must still build there, so a Linux-only build break is caught early.
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.27.2'
+          cache: false
+      - run: go build ./...
