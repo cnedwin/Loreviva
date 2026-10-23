@@ -516,7 +516,7 @@
     },
     "contracts/generated/manifest.json": {
       "bytes": 3685,
-      "sha256": "2babf0284cc2fe30e0dd971cfc7c6d2fad151729ea42de3a8bc39f1fedea0182"
+      "sha256": "f29fa08e4e3c6bdd96bfc637d8c9249fb12e85502b95ef584b43180238d739b6"
     },
     "contracts/generated/openapi.json": {
       "bytes": 843068,
@@ -761,6 +761,10 @@
     "internal/app/candidate_history.go": {
       "bytes": 2722,
       "sha256": "51a312d67cf23dbb087c64895ad121f10894be82a9513cb51f0b9ef3cf605cd3"
+    },
+    "internal/app/capabilities_test.go": {
+      "bytes": 1793,
+      "sha256": "cfd1154f72d048be8a02b1a063f679e121b27d83b7a9a0e42c7cdee8ab8f1149"
     },
     "internal/app/http.go": {
       "bytes": 17524,
@@ -1976,11 +1980,11 @@
     },
     "package.json": {
       "bytes": 1577,
-      "sha256": "9729d8dc8006c55efdc054ea4ff9d15f5efb8175103fb235c9dd1f28f023815f"
+      "sha256": "f6a4b7baf304a1beaea495d916d892a1204c390921018deec142d2057d87d310"
     },
     "packages/sdk-ts/package.json": {
       "bytes": 241,
-      "sha256": "1ff0842d5d4b3d28e65db6c685efb69210904d872c2da0edad4d1976a814cb92"
+      "sha256": "8fdb7c0dcc9e1043ddfdef213c650b1591f9277d796a045b0f62ff06673c3d65"
     },
     "packages/sdk-ts/src/admin.ts": {
       "bytes": 6125,
@@ -2036,7 +2040,7 @@
     },
     "pnpm-lock.yaml": {
       "bytes": 60671,
-      "sha256": "4aa6e6bef5812c58436ace6da58e2c9b7db2bb779df865e363f8822c6f7ef034"
+      "sha256": "f5d9157d3bcbf9e98db445d0caa9f43c09e395dadbe884dbb1193a0623525448"
     },
     "pnpm-workspace.yaml": {
       "bytes": 228,
@@ -2084,7 +2088,7 @@
     },
     "scripts/generate-contracts.mjs": {
       "bytes": 25773,
-      "sha256": "1d631befdcc6b15071c489b22d7d0ad8a785c645558f32db65f120a0599335a6"
+      "sha256": "fbf073d32271b78d478480d86dfcb88980212fbbcb53f985aff070bad1067058"
     },
     "scripts/integration-profiles.mjs": {
       "bytes": 4915,

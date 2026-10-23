@@ -21,5 +21,5 @@
     "reference:initialize": "node examples/thin-backend/reference-bff.ts initialize",
     "reference:serve": "node examples/thin-backend/reference-bff.ts serve"
   },
-  "devDependencies": { "ajv": "8.17.1", "ajv-formats": "3.0.1", "typescript": "5.9.3", "@playwright/test": "1.64.0" }
+  "devDependencies": { "ajv": "8.18.0", "ajv-formats": "3.0.1", "typescript": "5.9.3", "@playwright/test": "1.64.0" }
 }
