@@ -72,6 +72,14 @@ test('SDKSSEFramingAndReset', async()=>{
 
 test('SDKTransport65AndProfileValidation', async()=>{
  const schemas=JSON.parse(readFileSync(new URL('../../contracts/generated/openapi.json',import.meta.url),'utf8')).components.schemas;
+ // Keep the historical test identity, but check the complete current source operation set.
+ const source=JSON.parse(readFileSync(new URL('../../contracts/source/openapi.yaml',import.meta.url),'utf8')) as {paths:Record<string,Record<string,{operationId?:string}>>};
+ const sourceOperations=Object.values(source.paths).flatMap(item=>Object.entries(item)
+  .filter(([method])=>['get','put','post','delete','options','head','patch','trace'].includes(method))
+  .map(([,operation])=>operation.operationId));
+ expect(sourceOperations.every(id=>typeof id==='string'&&id.length>0)).toBe(true);
+ expect(new Set(sourceOperations).size).toBe(sourceOperations.length);
+ expect(sourceOperations).toEqual(expect.arrayContaining(['getContentPackageCapabilities','preflightContentPackage']));
  const example=schemas.PlayerSelfConsentSnapshot.examples[0];
  const error=schemas.Error.examples[0];
  const bearer=randomBytes(24).toString('hex');
@@ -112,7 +120,7 @@ test('SDKTransport65AndProfileValidation', async()=>{
   if(!module)return;
   const {createIntegrationTransport,createPreparedIntegrationOwner}=module;
   for(const profile of ['public_v1','integration_r0_v1'] as const){
-   const desc=transportDescriptors[profile];expect(Object.keys(desc)).toHaveLength(65);
+   const desc=transportDescriptors[profile];expect(Object.keys(desc).sort()).toEqual([...sourceOperations].sort());
    for(const key of Object.keys(desc) as (keyof typeof desc)[]){
     expect(desc[key].method).toBe(operationRoutes[key].method);expect(desc[key].path).toBe(operationRoutes[key].path);
    }

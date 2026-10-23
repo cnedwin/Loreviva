@@ -15,7 +15,7 @@
     8,
     9
   ],
-  "scope": "Reference-test fixture resolution and explicit source-inventory repair. Task8 final closure resumes; whole Task8 and R0 remain unaccepted. Synthetic Mock only.",
+  "scope": "Reference-test fixture resolution, exact SDK operation coverage and explicit source-inventory repair. Current native BFF target validated with synthetic data. Task8 and R0 remain unaccepted.",
   "working_contract": "1.6.0",
   "review_status": "development_snapshot_not_a_release",
   "validation": {
@@ -37,11 +37,30 @@
     "source_inventory": "661 files; explicit discovery and independent source-scope check",
     "unchanged_contract_and_go": "Prior fixed-main evidence retained; no Go or machine-contract changes in this candidate",
     "pnpm_entry": "Environment dependency reinstall precondition failed; UI checks used the installed Vitest directly",
-    "native_bff_tests": "NOT_RUN",
+    "native_bff_tests": {
+      "pass": 1,
+      "fail": 0,
+      "seconds": 104.21,
+      "scope": "Complete target with synthetic data; fresh host checks; owned restricted temporary directory",
+      "prior_attempt": "Default temporary directory correctly refused for broad inherited permissions; production checks unchanged"
+    },
     "database_campaign": "NOT_RUN",
     "browser": "NOT_RUN",
     "development_and_automation": "ACTIVE_R0_FIRST",
-    "R0_acceptance": "NOT_ACCEPTED"
+    "R0_acceptance": "NOT_ACCEPTED",
+    "sdk_initial": {
+      "pass": 4,
+      "fail": 1,
+      "failure": "Obsolete 65-operation assertion against current 67-operation source"
+    },
+    "sdk_affected_complete_target_after_fix": {
+      "pass": 1,
+      "fail": 0,
+      "seconds": 9.57,
+      "excluded_unchanged_target": 1
+    },
+    "sdk_typecheck": "PASS",
+    "sdk_scope": "Other four unchanged passing targets not rerun; no clean five-target rerun claimed"
   },
   "files": {
     ".editorconfig": {
@@ -89,8 +108,8 @@
       "sha256": "c2e9bbd22cc95cf70a29fbe9ebddd4b7d50987a92b9532b17edd0a8e4a9c3c43"
     },
     "CHANGELOG.md": {
-      "bytes": 3381,
-      "sha256": "1126c2371f4a3ea00a5b1d3d6debed2856bfe857491e7eeca375657d9fabc64f"
+      "bytes": 3486,
+      "sha256": "c2f14b1f865f2d8d9f9e22898f3822e921c7107d23c6d5ba35db052287fc3d54"
     },
     "CODE_OF_CONDUCT.md": {
       "bytes": 2303,
@@ -713,12 +732,12 @@
       "sha256": "af342a789ab370bc9d39107455e256ff83af7cf243f2043da0f6ac4c9993c607"
     },
     "docs/progress/2026-10-23.en.md": {
-      "bytes": 4702,
-      "sha256": "4e0ac8b5bc8ae0531a0c2faee76a415c9e064c66717f765143e112424c1978e3"
+      "bytes": 5381,
+      "sha256": "f395cf96712ba7502e220515856fbe61c6fd6cb967aca51b7d25e58e3c91920c"
     },
     "docs/progress/2026-10-23.zh.md": {
-      "bytes": 4061,
-      "sha256": "53bd48aae51f68fc2f14345eeb0b31d129b1e4b825f7ecb79017834daa45e919"
+      "bytes": 4560,
+      "sha256": "55513576d1b70b79a7f839a1213585c1cc0d8cd02eb2f5291529ccc0bad67ae3"
     },
     "examples/coffee/definitions.json": {
       "bytes": 10898,
@@ -2673,8 +2692,8 @@
       "sha256": "1e4a904aa3cf1d1162cca35cde99728afcfa01be78be7be0ba65e62ff3de73f1"
     },
     "tests/sdk/integration-transport.test.ts": {
-      "bytes": 23212,
-      "sha256": "da9d57db6a46bc39a2cc291299e984a9e36f2cebbc6bd2288af0b814fd64093e"
+      "bytes": 24018,
+      "sha256": "372938d4fa146d9a8af069ac7a462ced5e92449b1613321449907f6685950fb0"
     },
     "tests/sdk/integration-types.ts": {
       "bytes": 3855,
