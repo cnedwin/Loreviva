@@ -1,4 +1,4 @@
-> 设计文档 v3.0.2。本文定义产品目标与要求；本分支源码仍为 Task1–7 / 契约1.4.0，未包含开发中的1.5.0功能。可用能力和安装步骤见[本仓库支持范围](00-status.md)。
+> 设计文档 v3.0.2。本文定义产品目标与要求；本分支源码仍为 Task1–7 / 契约1.4.0，未包含开发中的1.6.0功能。可用能力和安装步骤见[本仓库支持范围](00-status.md)。
 
 # Loreviva 技术架构白皮书
 
@@ -17,7 +17,7 @@ Loreviva — The AI Platform for Living Worlds
 
 | 项目 | 技术选择 | 精确发行物要求 |
 | --- | --- | --- |
-| 公开HTTP契约 | `/world/v1`、OpenAPI 3.1.2；1.3.0兼容基线为51操作/131 Schema，批准1.4.0基线为58/156，工作1.5.0为65/177 | 原18公开及33行政/文件操作保持兼容；默认记忆响应兼容，provenance_v1须显式选择；SDK与客户支持范围按实际发行证据声明 |
+| 公开HTTP契约 | `/world/v1`、OpenAPI 3.1.2；1.3.0兼容基线为51操作/131 Schema，批准1.4.0基线为58/156，工作1.6.0为65/177 | 原18公开及33行政/文件操作保持兼容；默认记忆响应兼容，provenance_v1须显式选择；SDK与客户支持范围按实际发行证据声明 |
 | 数据Schema | JSON Schema 2020-12 | Schema与合法/非法固定样例共同版本化 |
 | 内容包 | `.wepkg`格式1.0，逻辑依赖与本地release分开 | 包摘要、文件清单与导入映射可追溯 |
 | 前端 | Vue 3.5.43稳定版、Node.js 24 LTS；TypeScript、Vite、Router、Pinia与可复用原生Vue/HTML/CSS/SVG组件 | 精确实物、严格类型及工程lock分别核验；ElementPlus不进入产品依赖，声明兼容性不得以弱化检查掩盖 |
@@ -288,7 +288,7 @@ epoch改变、游标过期或上下文不符返回409 VIEW_RESET；客户端清�
 
 ### 客户接入拥有与交付
 
-客户接入以Loreviva-Client-Contract为唯一selector，固定public_v1/integration_r0_v1两投影。1.5.0分配新增7操作/21 Schema（65/177）、17平台集合与2客户示例集合、typed participant/issuer桥，以及实际CONFIG/NOTIFICATIONS登记与Close/drain。Service世界owner与唯一player数据owner需真实同Tx桥，全局bearer hash覆盖Operator/SERVICE/CLIENT。既有Schema对象、锁序、0001–0007及wepkg保持兼容；新增表、文件、keyref和writer进入完整恢复库存，完整C恢复是单独能力。
+客户接入以Loreviva-Client-Contract为唯一selector，固定public_v1/integration_r0_v1两投影。1.6.0分配新增7操作/21 Schema（65/177）、17平台集合与2客户示例集合、typed participant/issuer桥，以及实际CONFIG/NOTIFICATIONS登记与Close/drain。Service世界owner与唯一player数据owner需真实同Tx桥，全局bearer hash覆盖Operator/SERVICE/CLIENT。既有Schema对象、锁序、0001–0007及wepkg保持兼容；新增表、文件、keyref和writer进入完整恢复库存，完整C恢复是单独能力。
 
 <a id="task8-fix1-有限规格修订候选待采用"></a>
 

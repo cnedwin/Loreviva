@@ -41,4 +41,4 @@ The total hash (`ContextHash`) is still recorded and exposed, but it is **no lon
 
 ## Status
 
-Implemented in the 1.5.0 working code (component proof, same-origin birth check) and covered by the positive case of `TestIntegrationTurnMemoryProofFinalAndRecovery` (real competitor → conflict → recompute → birth record) together with its negative control (a rewritten cited body must be refused).
+Implemented in the 1.6.0 working code (component proof, same-origin birth check) and covered by the positive case of `TestIntegrationTurnMemoryProofFinalAndRecovery` (real competitor → conflict → recompute → birth record) together with its negative control (a rewritten cited body must be refused).

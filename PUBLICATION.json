@@ -78,6 +78,10 @@
       "bytes": 1302,
       "sha256": "375905e98e5431f6c66adc58243939e25be11afe190636788a6c931e2554f7a5"
     },
+    ".github/workflows/verify.yml": {
+      "bytes": 1310,
+      "sha256": "68260fa4104447966dbe447c952c5bfeaba5b22b59e61dd3a21e4ed2fc70c3f4"
+    },
     ".gitignore": {
       "bytes": 97,
       "sha256": "c2e9bbd22cc95cf70a29fbe9ebddd4b7d50987a92b9532b17edd0a8e4a9c3c43"
@@ -548,15 +552,15 @@
     },
     "docs/02-requirements.md": {
       "bytes": 8012,
-      "sha256": "c3b0485a547e083c46f8811cba0d9e579349bf122485fba2b3e90e1f16c01cb6"
+      "sha256": "e3fe41738a434e5906d074bd25bbbc364f63a40771d77b916ae5a7b2d70a671f"
     },
     "docs/03-architecture.md": {
       "bytes": 8815,
-      "sha256": "eaa7fc15f2d9ef5921783a1b98977c2a9d5e9ec3e16ea4e62fc65e14d2942976"
+      "sha256": "6f6d46a505e8d381953ca0f11165bf4f3940b8d6298a1360ff25fa7dac10ed29"
     },
     "docs/04-setup-and-integration.md": {
       "bytes": 10447,
-      "sha256": "27d9a914a7c468803f311eb766507940357df1f2609eb0014fab052d70bc7bb6"
+      "sha256": "6c48da360c991c1ec08bc850632f81656f1b1d4276e9ebb1767627015b2793d5"
     },
     "docs/README.md": {
       "bytes": 2225,
@@ -567,24 +571,24 @@
       "sha256": "0adf802214718ec87c6992517c49f8a4661cc055e8f503e8755e1f164f607b62"
     },
     "docs/design/00-status.md": {
-      "bytes": 1267,
-      "sha256": "ebd188461cc9f9f8b711f9af571ea157ec925a0f31884c49d53e3bc772190178"
+      "bytes": 1470,
+      "sha256": "cb1b7481ab440e5c2e83ce3917253279b2d4382df09ffc3f25377eb3f5a0a664"
     },
     "docs/design/01-product-overview.md": {
       "bytes": 15740,
-      "sha256": "36a605dc561d3521b2e81ef8a9ac9d4c6d84e4b5dc3234c06a5188e971bf8b8a"
+      "sha256": "533b3b1daf6887ca9ee7ebb77ecd5dec983c17ab1242a9bcce6d007c4002fcda"
     },
     "docs/design/02-requirements.md": {
       "bytes": 92397,
-      "sha256": "af62d78b942f083b70adfe3b36e97a6260b0d3a1b7bfa0e13c38d655e8ce38e3"
+      "sha256": "5024dc0cbd4e39195b3f43569ba63ab5fa00f8400c582b57b1ba65cdd7a0b1cd"
     },
     "docs/design/03-architecture.md": {
       "bytes": 87131,
-      "sha256": "3f84c1ba2eb335d36696741083af8ac64d59a5f55ca84e0060cf5f244f962a14"
+      "sha256": "74423435e058969daaf3bb24d8193ee06842682b3fd080e1b52d590eade22437"
     },
     "docs/design/04-setup-and-integration.md": {
       "bytes": 33019,
-      "sha256": "8d3ebec8da7da4a45d6531a5cfb981f605896ef1339ff5884411a30992047ed8"
+      "sha256": "87fa345e911d10f870abe08f3eb08a937a7a4de1bae22af993fc502c1d22411c"
     },
     "docs/design/05-roadmap.md": {
       "bytes": 1191,
@@ -596,7 +600,7 @@
     },
     "docs/design/07-concurrent-worlds.md": {
       "bytes": 2656,
-      "sha256": "f8974f7691163cf228e2b357ba3ae5918918a95168710588cae0d11435a9f130"
+      "sha256": "ddc4e062fb245978f5c25191405815014ec918c963853746f18155bd59e9e7b6"
     },
     "docs/design/diagrams/deployment.md": {
       "bytes": 332,
@@ -631,24 +635,24 @@
       "sha256": "82ffabeb2d223680842a634b122146da5c46a7cc41b3b7ef22a247c0f60d856e"
     },
     "docs/design/en/00-status.md": {
-      "bytes": 1570,
-      "sha256": "e08e3bbdfb48654fe341dc9a9ddde614875ddde09d512db812d7e36a84b30ef9"
+      "bytes": 1803,
+      "sha256": "0ee8d3c9ac2d5a8453a5e1512b6ef27db05d1163010da16299fe05748e2fa80a"
     },
     "docs/design/en/01-product-overview.md": {
       "bytes": 22176,
-      "sha256": "50dcc6d6f1777823a171f1c55780b55978cb7ce86ede034a3c37685842401eea"
+      "sha256": "301bc2f6f8c38863bd1d703208053009213c5bb6279950bdf1e5b63b6ef0b7e8"
     },
     "docs/design/en/02-requirements.md": {
       "bytes": 121292,
-      "sha256": "dfc434161387e454fce8207d98e77427b1d69ced509183014d60f031ffe02787"
+      "sha256": "9ba4c7aa3c325f3d9b6cf9a5633c358d247cc8a5c955c492e183dc7e7066819f"
     },
     "docs/design/en/03-architecture.md": {
       "bytes": 102820,
-      "sha256": "90b40c70b059bfc1bb26ea1fbac2d5133ed4ff9abc69f283f8d4c44ee2a18ee6"
+      "sha256": "e6fd6423b8d8c0e8eec22f06a0c842f632da93731e2fac1ef941698f2bab8b94"
     },
     "docs/design/en/04-setup-and-integration.md": {
       "bytes": 39760,
-      "sha256": "056b106c6ddf9dd6cfc919504fedb0830f4f370c2575e1a9b630592a20e49a65"
+      "sha256": "0c8d3748f91abd95d0715e78732d356f775cb9366de904408738486c6e23fe8d"
     },
     "docs/design/en/05-roadmap.md": {
       "bytes": 1534,
@@ -660,7 +664,7 @@
     },
     "docs/design/en/07-concurrent-worlds.md": {
       "bytes": 2881,
-      "sha256": "ba6b91c961e77ce71e0dd37b5a1f9168ab143ecd2cc8ed0b78ff00de02de5fa9"
+      "sha256": "00ab66fd5db9206d9b2ed7add65b86189d08f5cf13e3534b5f35284c3979f91f"
     },
     "docs/en/01-product-overview.md": {
       "bytes": 8453,
@@ -668,15 +672,15 @@
     },
     "docs/en/02-requirements.md": {
       "bytes": 10315,
-      "sha256": "8b6cfa81ef63bfb3fe85bfbfd023eb061b7a769a82e7283f2ac0b879d295dd9f"
+      "sha256": "a6a65532153a986a7cf7378f1c63c8b7e83d55b14e65b44c6cf651347fa9a812"
     },
     "docs/en/03-architecture.md": {
       "bytes": 10662,
-      "sha256": "a048373187e27d86391acea607fd438bc61c53f7b4b469b4097f0a73a99af3c0"
+      "sha256": "008101019334672a9520d9f959682edac46637316c11e716f79825297f1d5814"
     },
     "docs/en/04-setup-and-integration.md": {
       "bytes": 12730,
-      "sha256": "d0726bc5e18786792d41a2146d8395422d35e2166cb437c0b358cd3548b9c07e"
+      "sha256": "b4c73e746b797d80047ccdbe617c441e176e6c61913a1e1f4286800afb0b5e67"
     },
     "docs/en/CONTRIBUTING.md": {
       "bytes": 1727,
@@ -684,7 +688,7 @@
     },
     "docs/en/README.md": {
       "bytes": 6906,
-      "sha256": "29f0729a7ea8005281f418711fa871f29c802d739c81af1a48d716928ba55a25"
+      "sha256": "2b3433ae8aa984de8f0a3e9b9ac4a0086fd9d46867ff5b1c6448c008da5528c8"
     },
     "docs/en/SECURITY.md": {
       "bytes": 1215,

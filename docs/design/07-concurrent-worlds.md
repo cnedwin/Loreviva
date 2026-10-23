@@ -41,4 +41,4 @@
 
 ## 状态
 
-本模型已在 1.5.0 工作代码中实现（证明部件化、出生记录同源判定），并由 `TestIntegrationTurnMemoryProofFinalAndRecovery` 的正例（真实竞争者 → 冲突 → 重算 → 出生记录）与负例（改写被引用正文必须被拒）共同验证。
+本模型已在 1.6.0 工作代码中实现（证明部件化、出生记录同源判定），并由 `TestIntegrationTurnMemoryProofFinalAndRecovery` 的正例（真实竞争者 → 冲突 → 重算 → 出生记录）与负例（改写被引用正文必须被拒）共同验证。

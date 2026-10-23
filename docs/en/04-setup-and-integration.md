@@ -113,7 +113,7 @@ pnpm test
 go test ./...
 ```
 
-Contract sources are maintained in `contracts/source/`; the working contract is 1.5.0 / 65 operations / 177 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
+Contract sources are maintained in `contracts/source/`; the working contract is 1.6.0 / 67 operations / 183 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
 
 ```powershell
 pnpm --dir apps/studio test

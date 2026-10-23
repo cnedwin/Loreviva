@@ -1,0 +1,32 @@
+name: Verify
+on: [push, pull_request]
+# Read-only default token: no write scope, no deployment, no pull_request_target.
+permissions:
+  contents: read
+jobs:
+  contracts-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      # Immutable reviewed action pins, matching the byte-policy workflow.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.27.2'
+          cache: false
+      # The contract artefacts, types and validators are generated: a tree whose
+      # generated files disagree with their source is not reviewable.
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec node scripts/check-generated.mjs
+      - run: pnpm run test:contracts
+      - run: go build ./...
+      - run: go vet ./internal/...
+      # Unit packages must not need a database; anything that does belongs in the
+      # integration suite, which runs against a disposable MySQL outside CI.
+      - run: go test ./internal/... -count=1

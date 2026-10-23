@@ -113,7 +113,7 @@ pnpm test
 go test ./...
 ```
 
-契约源维护在 `contracts/source/`，本批工作契约为 1.5.0 / 65 operations / 177 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0008，完整产品安装/升级发行仍未验收。
+契约源维护在 `contracts/source/`，本批工作契约为 1.6.0 / 67 operations / 183 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0008，完整产品安装/升级发行仍未验收。
 
 ```powershell
 pnpm --dir apps/studio test
