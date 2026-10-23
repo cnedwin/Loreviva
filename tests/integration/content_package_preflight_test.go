@@ -16,6 +16,7 @@ import (
 	"loreviva.local/loreviva/internal/auth"
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/files"
+	"loreviva.local/loreviva/internal/generated"
 	"loreviva.local/loreviva/internal/maintenance"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/internal/wepkg"
@@ -156,6 +157,7 @@ func TestContentPackagePreflightPassAndDeterminism(t *testing.T) {
 	if first.Code != 200 {
 		t.Fatalf("preflight status %d: %s", first.Code, first.Body.String())
 	}
+	assertPackageWire(t, "PackagePreflightReport", first.Body.Bytes())
 	var report wepkg.Report
 	if e := json.Unmarshal(first.Body.Bytes(), &report); e != nil {
 		t.Fatal(e)
@@ -164,6 +166,10 @@ func TestContentPackagePreflightPassAndDeterminism(t *testing.T) {
 		t.Fatalf("valid package rejected: %v", report.Findings)
 	}
 	second := f.post(t, f.token, contentType, body)
+	if second.Code != 200 {
+		t.Fatalf("repeat preflight status %d", second.Code)
+	}
+	assertPackageWire(t, "PackagePreflightReport", second.Body.Bytes())
 	var again wepkg.Report
 	if e := json.Unmarshal(second.Body.Bytes(), &again); e != nil {
 		t.Fatal(e)
@@ -178,6 +184,7 @@ func TestContentPackagePreflightPassAndDeterminism(t *testing.T) {
 
 func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 	f := newPackageFixture(t, "private-synthetic-preflight-operator-token-0002")
+	before := countRows(t, f.store)
 	archive := validPackage(t, []byte(`{"name":"coffee"}`))
 	// Add a member nobody declared, then rebuild the archive around it: the
 	// report must say so rather than failing the request.
@@ -221,6 +228,7 @@ func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 	if out.Code != 200 {
 		t.Fatalf("a rejected package must still answer with a report, got %d: %s", out.Code, out.Body.String())
 	}
+	assertPackageWire(t, "PackagePreflightReport", out.Body.Bytes())
 	var report wepkg.Report
 	if e := json.Unmarshal(out.Body.Bytes(), &report); e != nil {
 		t.Fatal(e)
@@ -237,23 +245,32 @@ func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 	if !found {
 		t.Fatalf("report does not name the undeclared member: %+v", report.Findings)
 	}
+	if after := countRows(t, f.store); after != before {
+		t.Fatalf("rejected preflight wrote business state: %v -> %v", before, after)
+	}
 }
 
 func TestContentPackagePreflightRequestShape(t *testing.T) {
 	f := newPackageFixture(t, "private-synthetic-preflight-operator-token-0003")
 	archive := validPackage(t, []byte(`{"name":"coffee"}`))
 
-	if out := f.post(t, f.token, "application/json", []byte(`{}`)); out.Code != 400 {
+	out := f.post(t, f.token, "application/json", []byte(`{}`))
+	if out.Code != 400 {
 		t.Fatalf("non-multipart accepted: %d", out.Code)
 	}
+	assertPackageWire(t, "AdminError", out.Body.Bytes())
 	contentType, body := multipartBody(t, archive, "file")
-	if out := f.post(t, f.token, contentType, body); out.Code != 400 {
+	out = f.post(t, f.token, contentType, body)
+	if out.Code != 400 {
 		t.Fatalf("wrong part name accepted: %d", out.Code)
 	}
+	assertPackageWire(t, "AdminError", out.Body.Bytes())
 	contentType, body = multipartBody(t, archive, "archive")
-	if out := f.post(t, "not-an-operator", contentType, body); out.Code != 401 && out.Code != 403 {
+	out = f.post(t, "not-an-operator", contentType, body)
+	if out.Code != 401 && out.Code != 403 {
 		t.Fatalf("missing operator authority accepted: %d", out.Code)
 	}
+	assertPackageWire(t, "AdminError", out.Body.Bytes())
 }
 
 func TestContentPackageCapabilitiesPublishesLimits(t *testing.T) {
@@ -262,6 +279,7 @@ func TestContentPackageCapabilitiesPublishesLimits(t *testing.T) {
 	if out.Code != 200 {
 		t.Fatalf("capabilities status %d: %s", out.Code, out.Body.String())
 	}
+	assertPackageWire(t, "ContentPackageCapabilities", out.Body.Bytes())
 	var caps struct {
 		RegistryVersion string           `json:"registry_version"`
 		Limits          map[string]int64 `json:"limits"`
@@ -272,5 +290,36 @@ func TestContentPackageCapabilitiesPublishesLimits(t *testing.T) {
 	}
 	if caps.RegistryVersion != "1" || caps.Limits["file_bytes"] != wepkg.DefaultLimits.FileBytes || len(caps.Capabilities) == 0 {
 		t.Fatalf("published limits are not the applied ones: %+v", caps)
+	}
+}
+
+// Check original HTTP bytes before decoding so casing and unknown fields cannot disappear.
+func assertPackageWire(t *testing.T, schema string, raw []byte) {
+	t.Helper()
+	if err := generated.Validate(schema, raw); err != nil {
+		t.Fatalf("response wire schema: %v", err)
+	}
+	if schema == "AdminError" {
+		return
+	}
+	var response struct {
+		Limits map[string]int64 `json:"limits"`
+	}
+	if err := json.Unmarshal(raw, &response); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]int64{
+		"archive_bytes": wepkg.DefaultLimits.ArchiveBytes, "manifest_bytes": wepkg.DefaultLimits.ManifestBytes,
+		"entries": int64(wepkg.DefaultLimits.Entries), "file_bytes": wepkg.DefaultLimits.FileBytes,
+		"total_bytes": wepkg.DefaultLimits.TotalBytes, "ratio": wepkg.DefaultLimits.Ratio,
+		"path_length": int64(wepkg.DefaultLimits.PathLength), "path_depth": int64(wepkg.DefaultLimits.PathDepth),
+	}
+	if len(response.Limits) != len(want) {
+		t.Fatalf("unexpected limit keys: %d", len(response.Limits))
+	}
+	for key, value := range want {
+		if got, ok := response.Limits[key]; !ok || got != value {
+			t.Fatalf("limit %s missing or incorrect", key)
+		}
 	}
 }

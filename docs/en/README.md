@@ -10,4 +10,4 @@
 - [Product design reading views](../design/en/00-status.md)
 
 English documentation is a same-source reading view of the Chinese specification.
-Unattended development remains paused; whole Task8 and R0 are not accepted.
+Task8 has local acceptance within its declared scope. Task9 content-package work and the remaining R0 packages are still incomplete.
