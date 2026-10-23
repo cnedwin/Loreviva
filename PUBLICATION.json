@@ -79,8 +79,8 @@
       "sha256": "375905e98e5431f6c66adc58243939e25be11afe190636788a6c931e2554f7a5"
     },
     ".github/workflows/verify.yml": {
-      "bytes": 2049,
-      "sha256": "2f55863e99f795f5831fe479dd0d855bde64b809480bea55a97abed44d1639f3"
+      "bytes": 2352,
+      "sha256": "a0c26eb6829aee0bf43bf4bd32a3562cfdcd6e7090b24d1fc2448cff3a422b3f"
     },
     ".gitignore": {
       "bytes": 97,

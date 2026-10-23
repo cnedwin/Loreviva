@@ -32,7 +32,13 @@ jobs:
       - run: go vet ./internal/...
       # Unit packages must not need a database; anything that does belongs in the
       # integration suite, which runs against a disposable MySQL outside CI.
+      # Temp files must live on a path whose real and lexical forms agree: the
+      # local-state guard rejects short (8.3) profile paths, which is what the
+      # default temp directory looks like on a Windows runner.
       - run: go test ./internal/... -count=1
+        env:
+          TMP: ${{ runner.temp }}
+          TEMP: ${{ runner.temp }}
   # Portability smoke on the platform not yet supported for local state: the tree
   # must still build there, so a Linux-only build break is caught early.
   build-linux:
