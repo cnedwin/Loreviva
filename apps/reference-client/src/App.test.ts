@@ -1,13 +1,14 @@
 import {test,expect,vi} from 'vitest';
 import {readFileSync,appendFileSync} from 'node:fs';
 import {randomBytes,createHash,webcrypto} from 'node:crypto';
-import {resolve} from 'node:path';
+import {URL as NodeURL} from 'node:url';
 import {mount,flushPromises} from '@vue/test-utils';
 import {createReferenceState} from './state.ts';
 import App from './App.vue';
 import validators from '../../../packages/sdk-ts/src/generated/validators.cjs';
 
-const schemas=JSON.parse(readFileSync(resolve(process.cwd(),'contracts/generated/openapi.json'),'utf8')).components.schemas;
+// Anchor the fixture to this module, including under jsdom and package-local launches.
+const schemas=JSON.parse(readFileSync(new NodeURL('../../../contracts/generated/openapi.json',import.meta.url),'utf8')).components.schemas;
 function example(name:string):any{
  if(name==='MemoryProvenanceV1')return {projection:'provenance_v1',memory:example('Memory'),evidence_domain:'PLAYER_STATEMENT',source_epoch_ids:[],parent_memory_ids:[],occurred_at_estimated:false};
  const value=structuredClone(schemas[name].examples[0]);

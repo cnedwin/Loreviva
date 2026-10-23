@@ -72,4 +72,6 @@ VIEW_RESET 应丢弃原视图与 cursor，取得新的 snapshot 后继续。curs
 
 发行评审仍需保留过小报价已受理后原 worker 返回 `HARNESS_CONTEXT` 时的 RUNNING 终结与解释，以及主 JavaScript 分块体积。TURN 输入及原 Mock 空、非空衍生批次的验证，不等于任意外部模型、未知生产者或所有恢复分支已验收；缺失旧证明仍按上文拒绝正文。无记录与跨本人 original 查询统一返回不暴露原记录的本地 404；它不等于上游成功，也不能触发业务重发。
 
-工程字节检查采用显式 source inventory：编辑、增加或删除文件后，由受控 `scope:refresh` 及明确 delta 生成新不可变 revision，再独立执行 `check:bytes`。检查不自动重算期望值；这不是 Git 提交、公开分发批准或产品验收。
+安装锁定依赖后，可用 `pnpm --dir apps/reference-client exec vitest run --project reference-ui` 运行参考客户端的纯界面检查。契约测试材料相对于测试文件定位，从工程根目录启动 Vitest 并指定 `--root apps/reference-client` 也可使用同一套检查。本项不验证原生日志、数据库或真实浏览器。完整参考套件另需以 `LOREVIVA_TEST_NATIVE_FIXTURE_FILE` 指定已准备的本机原生测试材料，该私有文件不得提交仓库。
+
+工程字节检查采用显式 source inventory，并纳入保留原字节的上游许可证。编辑、增加或删除文件后，由受控 `scope:refresh` 及明确 delta 生成新不可变 revision，再独立执行 `node scripts/check-byte-policy.mjs --source-scope .cache/source-byte-scope.json`。检查不自动重算期望值；默认 `check:bytes` 仅检查字节政策，不证明清单完整或源码身份。这些检查不构成公开分发批准或产品验收，Git 字节桥仍是独立检查。

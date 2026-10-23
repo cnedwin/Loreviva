@@ -1,7 +1,7 @@
 {
   "format": "loreviva.publication.v1",
   "repository": "https://github.com/cnedwin/Loreviva.git",
-  "base_public_commit": "78517b24c1ab2f4730a4f35ac8be66d2f59233d9",
+  "base_public_commit": "6b74bae69f167003574b2d0e6d0f6b30febec310",
   "completed_tasks": [
     1,
     2,
@@ -15,30 +15,33 @@
     8,
     9
   ],
-  "scope": "Bounded runner repair and bilingual progress alignment. Tasks1-7 retain reviewed scope; Task8 integration and Task9 static preflight are present but whole packages and R0 remain unaccepted. Synthetic Mock only; unattended development stays paused.",
+  "scope": "Reference-test fixture resolution and explicit source-inventory repair. Task8 final closure resumes; whole Task8 and R0 remain unaccepted. Synthetic Mock only.",
   "working_contract": "1.6.0",
   "review_status": "development_snapshot_not_a_release",
   "validation": {
-    "integration_runner": {
-      "pass": 25,
+    "reference_ui_package_directory": {
+      "pass": 1,
       "fail": 0,
-      "kind": "synthetic child processes, no database"
+      "seconds": 47.48
     },
-    "contract_sdk_config_csp": {
-      "pass": 27,
-      "fail": 0
+    "reference_ui_repository_directory": {
+      "pass": 1,
+      "fail": 0,
+      "seconds": 48.24
     },
+    "reference_typecheck": "PASS",
     "byte_policy_tests": {
-      "pass": 8,
+      "pass": 9,
       "fail": 0
     },
-    "generated_contracts": "zero diff",
+    "source_inventory": "661 files; explicit discovery and independent source-scope check",
+    "unchanged_contract_and_go": "Prior fixed-main evidence retained; no Go or machine-contract changes in this candidate",
+    "pnpm_entry": "Environment dependency reinstall precondition failed; UI checks used the installed Vitest directly",
+    "native_bff_tests": "NOT_RUN",
     "database_campaign": "NOT_RUN",
-    "reference_client_tests": "NOT_RUN; known cwd-dependent contract path remains",
-    "native_bff_tests": "NOT_RUN; controlled fixture prerequisites required",
     "browser": "NOT_RUN",
-    "development_and_automation": "PAUSED",
-    "go_build": "PASS; go build ./... on Windows, not runtime acceptance"
+    "development_and_automation": "ACTIVE_R0_FIRST",
+    "R0_acceptance": "NOT_ACCEPTED"
   },
   "files": {
     ".editorconfig": {
@@ -86,8 +89,8 @@
       "sha256": "c2e9bbd22cc95cf70a29fbe9ebddd4b7d50987a92b9532b17edd0a8e4a9c3c43"
     },
     "CHANGELOG.md": {
-      "bytes": 3018,
-      "sha256": "ea21140ca0ee73d20aa15cb54d55f041f50a491536774dde0f7b002e537a28a0"
+      "bytes": 3381,
+      "sha256": "1126c2371f4a3ea00a5b1d3d6debed2856bfe857491e7eeca375657d9fabc64f"
     },
     "CODE_OF_CONDUCT.md": {
       "bytes": 2303,
@@ -222,12 +225,12 @@
       "sha256": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00"
     },
     "README.md": {
-      "bytes": 5151,
-      "sha256": "39aa5a79887b95b7aefe11514ab152dd2ffcaf6c707527fc263e32d50e4a39d8"
+      "bytes": 5179,
+      "sha256": "bc8efb5d04dd5a47a876d5c7427ee0844a459f9c421ea1a378bb659d124b4c31"
     },
     "README.zh-CN.md": {
-      "bytes": 3758,
-      "sha256": "9f5535437d7d263a0e4b3e1f82d183c268d78ae418a6b052e613f62d1c2bd7f5"
+      "bytes": 3787,
+      "sha256": "54305ba46e0b29b1d32a025da93210a85958058a923e46c198ae4c0c4cd18f9b"
     },
     "SECURITY.md": {
       "bytes": 1657,
@@ -258,8 +261,8 @@
       "sha256": "84a5d27676329923f02decf4bf3916cfced8be0e74f0295fe4385255c42c7815"
     },
     "apps/reference-client/src/App.test.ts": {
-      "bytes": 16107,
-      "sha256": "29b03d2ac7d01741caf1c03efbbabed8ebd5f1d20f43788a75709715a5c9c2fc"
+      "bytes": 16216,
+      "sha256": "d91cda997d0ad9e08435f4ef8e93cce31047b87412eceafd6f71adb0ae847a6d"
     },
     "apps/reference-client/src/App.vue": {
       "bytes": 13227,
@@ -694,12 +697,12 @@
       "sha256": "5236ae23d797761ef7ac8dbb0e4181bb3126d579370be96cf37f158ba8653cce"
     },
     "docs/integration/Quickstart.en.md": {
-      "bytes": 10684,
-      "sha256": "b48046038176f78c8434dc305df7053f9d2676e9c8e125ea0ff3d14b8f104c55"
+      "bytes": 11477,
+      "sha256": "7c4887a27e33cf7378c462ed51872597c2271f1c1a653184c156b672f18d8e87"
     },
     "docs/integration/Quickstart.zh.md": {
-      "bytes": 9008,
-      "sha256": "ceb46fe3064dc90a035920ff89e6d5d973e0a478c65e6bb288433f184c607db8"
+      "bytes": 9742,
+      "sha256": "a344834fb654ec478046670d1e67a0d6dfa04698307f4a50a3fecab8941cc0b3"
     },
     "docs/progress/2026-10-21.en.md": {
       "bytes": 3510,
@@ -710,12 +713,12 @@
       "sha256": "af342a789ab370bc9d39107455e256ff83af7cf243f2043da0f6ac4c9993c607"
     },
     "docs/progress/2026-10-23.en.md": {
-      "bytes": 3964,
-      "sha256": "7467735fd76ac9de2b6c7857149f12b9aad4de3fdf0b4bb9ce2c54c4346ffc85"
+      "bytes": 4702,
+      "sha256": "4e0ac8b5bc8ae0531a0c2faee76a415c9e064c66717f765143e112424c1978e3"
     },
     "docs/progress/2026-10-23.zh.md": {
-      "bytes": 3397,
-      "sha256": "452ffd36a9ef3fb9a06016fcb875a4e1808a7b3ddaf88874e033ff2b3ad9e499"
+      "bytes": 4061,
+      "sha256": "53bd48aae51f68fc2f14345eeb0b31d129b1e4b825f7ecb79017834daa45e919"
     },
     "examples/coffee/definitions.json": {
       "bytes": 10898,
@@ -2066,12 +2069,12 @@
       "sha256": "b954151b67795e2a100f629cfc8cd6504d7781ea37fdf029fcd7476105b3f69d"
     },
     "scripts/byte-policy.test.mjs": {
-      "bytes": 8283,
-      "sha256": "9bd39be9088d48873249cd9e4f77d5e0f88b5aa9702abbe7482e4da1eca6e8fe"
+      "bytes": 9537,
+      "sha256": "4e9ba797700f2aa8fce18177d3aa8ceb96fac5df1d8b397cdca1a49f09f6fdd4"
     },
     "scripts/check-byte-policy.mjs": {
-      "bytes": 14567,
-      "sha256": "759b201604464a80ae9de6d0c6e50021fbf7183da0dce10bbd9cb4e5fdce4b90"
+      "bytes": 14578,
+      "sha256": "3eaba33034c93685cb1998bcbd82006526a38dd8da816e5faa1b402739dcf158"
     },
     "scripts/check-generated.mjs": {
       "bytes": 1811,
@@ -2138,8 +2141,8 @@
       "sha256": "b8be77b86c6d5a34ae089b7db500934ef01f3f86af6b1578b7031b85eba46273"
     },
     "scripts/source-byte-inventory.json": {
-      "bytes": 24580,
-      "sha256": "cbca17e0c3c272eec3509828b04b8554b225fb2e1addcac5368d0dd027af8dde"
+      "bytes": 28541,
+      "sha256": "dca50462152066861d5b3998bda78572949f0996a4971f6344496fa3b5e8db86"
     },
     "scripts/source-byte-scope.test.mjs": {
       "bytes": 20163,
@@ -2731,5 +2734,30 @@
   "working_contract_counts": {
     "operations": 67,
     "schemas": 181
+  },
+  "prior_candidate_validation_20261023": {
+    "commit": "6b74bae69f167003574b2d0e6d0f6b30febec310",
+    "validation": {
+      "integration_runner": {
+        "pass": 25,
+        "fail": 0,
+        "kind": "synthetic child processes, no database"
+      },
+      "contract_sdk_config_csp": {
+        "pass": 27,
+        "fail": 0
+      },
+      "byte_policy_tests": {
+        "pass": 8,
+        "fail": 0
+      },
+      "generated_contracts": "zero diff",
+      "database_campaign": "NOT_RUN",
+      "reference_client_tests": "NOT_RUN; known cwd-dependent contract path remains",
+      "native_bff_tests": "NOT_RUN; controlled fixture prerequisites required",
+      "browser": "NOT_RUN",
+      "development_and_automation": "PAUSED",
+      "go_build": "PASS; go build ./... on Windows, not runtime acceptance"
+    }
   }
 }
