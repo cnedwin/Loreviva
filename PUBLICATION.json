@@ -771,8 +771,8 @@
       "sha256": "4e0be7adbff640a7e999ceee626eed67916b6ac4e8d2e668b084361a2003c22b"
     },
     "internal/app/integration_capabilities.go": {
-      "bytes": 12829,
-      "sha256": "16f6aa3d3d99365cffd6e5a5a60ae681e880c57016328007ba54b737174f998e"
+      "bytes": 12717,
+      "sha256": "0f18f7c8d1ff4c40d7a8e86089e09bf8d105170f9ad826444bfd18baab9bce65"
     },
     "internal/app/integration_create.go": {
       "bytes": 1635,
