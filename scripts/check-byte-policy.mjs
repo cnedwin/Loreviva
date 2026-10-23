@@ -66,7 +66,7 @@ export async function workingBody(root,name){
  const st=await lstat(current);if(!st.isFile())throw Error('Regular file required');return readFile(current);
 }
 export const inventoryName='scripts/source-byte-inventory.json';
-export const sourceDomains=['.github','apps','cmd','contracts','docs','examples','internal','migrations','packages','scripts','tests'];
+export const sourceDomains=['.github','LICENSES','apps','cmd','contracts','docs','examples','internal','migrations','packages','scripts','tests'];
 const excludedDirectories=new Set(['apps/reference-client/dist','apps/reference-client/node_modules','apps/studio/dist','apps/studio/node_modules','packages/sdk-ts/dist','packages/sdk-ts/node_modules']);
 // These are exact root domains, never basename exclusions at arbitrary depths.
 const excludedRootDirectories=new Set(['.git','.cache','node_modules','evidence','.sdd','.superpowers','test-results']);

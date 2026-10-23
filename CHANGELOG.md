@@ -1,5 +1,12 @@
 # Changelog
 
+## Reference validation and source inventory
+
+- Resolve the reference UI contract fixture relative to its module from either launch directory.
+- Include byte-preserved upstream licenses in explicit source scopes and reconcile the published file inventory.
+- Compare SDK operation descriptors with the complete current contract instead of a stale numeric count.
+- Keep full Task8 and R0 acceptance pending; historical expiry results retain their source applicability.
+
 Notable changes to this repository. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [VERSIONING.md](VERSIONING.md).

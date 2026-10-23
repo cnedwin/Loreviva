@@ -80,7 +80,7 @@ and skipped retries cannot erase an initial failure. Shared server load and timi
 still affect parallel runs; no fixed speedup is promised.
 
 See [current progress and R0 gaps](docs/progress/2026-10-23.en.md).
-Unattended development remains paused. Product design is 3.1.0; published long-form
+Unattended development has resumed with Task8 final closure first. Product design is 3.1.0; published long-form
 design reading views still retain 3.0.2, with R0 execution baseline 3.0.1.
 
 ## Contributing

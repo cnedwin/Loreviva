@@ -6,6 +6,26 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {verifyBytes,checkBytes} from './check-byte-policy.mjs';
 import * as byteGate from './check-byte-policy.mjs';
+import {refreshSourceScope} from './refresh-source-byte-scope.mjs';
+
+test('source scope includes upstream licenses without rewriting their bytes',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'lv-license-scope-'));
+ try{
+  await mkdir(path.join(root,'LICENSES','example'),{recursive:true});
+  await mkdir(path.join(root,'scripts'));
+  const license=Buffer.from('Upstream license\r\n');
+  await writeFile(path.join(root,'LICENSES','example','LICENSE.txt'),license);
+  const paths=['LICENSES/example/LICENSE.txt','scripts/source-byte-inventory.json'];
+  await writeFile(path.join(root,'scripts','source-byte-inventory.json'),JSON.stringify({format:'loreviva.source-byte-inventory.v1',paths},null,2)+'\n');
+  assert.deepEqual(await byteGate.discoverSource(root),paths);
+  const refreshed=await refreshSourceScope(root,{init:true});
+  assert.equal(refreshed.files,2);
+  await byteGate.checkSourceBytes(root,path.join(root,'.cache','source-byte-scope.json'));
+  assert.deepEqual(await readFile(path.join(root,'LICENSES','example','LICENSE.txt')),license);
+  await mkdir(path.join(root,'unknown-domain'));
+  await assert.rejects(byteGate.discoverSource(root),/Unknown source directory/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
 
 test('project LF, binary and upstream raw classes preserve bytes',()=>{
  assert.equal(verifyBytes('a.go',Buffer.from('package a\n')),'TEXT_LF');
