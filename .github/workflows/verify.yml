@@ -35,7 +35,14 @@ jobs:
       # Temp files must live on a path whose real and lexical forms agree: the
       # local-state guard rejects short (8.3) profile paths, which is what the
       # default temp directory looks like on a Windows runner.
-      - run: go test ./internal/... -count=1
+      # Packages listed here run with no database and no local fixed volume they
+      # cannot open. Everything else (content, store, delivery and the integration
+      # suite) needs a disposable MySQL and stays in the local gate, which the
+      # README documents as the full verification ladder.
+      - run: >-
+          go test -count=1
+          ./internal/wepkg ./internal/app ./internal/wire ./internal/runtime
+          ./internal/domain ./internal/auth ./internal/settings ./internal/localstate
         env:
           TMP: ${{ runner.temp }}
           TEMP: ${{ runner.temp }}
