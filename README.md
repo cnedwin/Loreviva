@@ -53,7 +53,8 @@ Requirements: **Go 1.27.2**, **MySQL Community LTS** on loopback, **Node.js 24**
 ```bash
 pnpm install --frozen-lockfile
 pnpm generate:contracts          # must produce zero diff
-go build ./...
+pnpm check:studio                # verify committed UI against its complete build inputs
+pnpm build:server ./...          # check UI freshness, then compile Go
 ```
 
 Integration tests need a real, disposable MySQL through `LOREVIVA_TEST_DSN`; each
@@ -63,7 +64,7 @@ test creates and drops its own randomly named database. See
 Verification ladder — run the smallest gate that can catch your change:
 
 ```bash
-go build ./... && go vet ./... && node scripts/check-generated.mjs   # seconds
+pnpm build:server ./... && go vet ./... && node scripts/check-generated.mjs   # seconds
 go test ./internal/wepkg ./internal/app ./internal/wire ./internal/runtime ./internal/domain ./internal/auth ./internal/settings ./internal/localstate  # database-free units
 go test ./tests/integration -run '<affected targets>'                # minutes
 node --test scripts/integration-shards.test.mjs                     # no database

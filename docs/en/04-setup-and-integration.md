@@ -38,7 +38,7 @@ To rebuild Studio from source, first run from the repository root:
 ```powershell
 pnpm install --frozen-lockfile
 pnpm build:studio
-go build ./cmd/loreviva
+pnpm build:server ./cmd/loreviva
 ```
 
 Run from the repository root:
@@ -121,9 +121,11 @@ pnpm --dir apps/studio typecheck
 pnpm build:studio
 ```
 
+`pnpm build:studio` runs the Vue type check and production build, then records complete source inputs and output bytes. `pnpm check:studio` performs a read-only comparison of Studio, SDK, contracts, lockfile, build configuration and embedded files; added, removed or changed bytes require a rebuild. `pnpm build:server ./cmd/loreviva` checks these inputs before compiling the server. Plain `go build` only compiles the supplied embedded bytes and does not prove frontend source freshness. The server separately validates the embedded contract and file integrity, returning 503 for an invalid artifact.
+
 `go test ./...` does not automatically enable browser fixtures. `TestStudioBrowser` and `TestStudioSettingsEntryBrowser` require explicit `LOREVIVA_STUDIO_BROWSER=1`, verified `LOREVIVA_TEST_NODE` and `LOREVIVA_TEST_PNPM`, and a private `LOREVIVA_STUDIO_EVIDENCE` output location. Without opt-in they SKIP, which is not browser success. The fixtures start actual local services with synthetic data and run the pinned Playwright projects; invoking `pnpm test:e2e` alone cannot replace those service and credential prerequisites. Controlled browser success is not human or real-model acceptance.
 
-These are source development entry points. This documentation-only update retains the published code bytes. Installation, build and database functionality have not been rerun; documentation verification adds no installation or functional acceptance. Future functional verification needs a separately arranged exclusive restricted test database window, retaining prerequisite failures and unrun results.
+These commands define verification entry points; each result is bound to its source and artifact bytes. A successful build does not establish database, browser or complete release acceptance. Actual database verification uses an exclusive restricted window and retains prerequisite failures and unrun results. Consult the verification record for the corresponding version's accepted scope.
 
 Database integration tests require TCP `127.0.0.1:33267` and a non-root account. A privately provided `LOREVIVA_TEST_DSN` creates and cleans up `loreviva_test_<24位小写十六进制>` test databases. Without that variable, tests fail rather than automatically skipping; the account should have permissions only within this restricted test scope. Actual CLI tests also use `LOREVIVA_TEST_GO_EXE` to specify the executor. These are test-fixture restrictions; the service's `LOREVIVA_DB_ADDR` is set through configuration. Check results are specific to the published copy.
 
