@@ -79,8 +79,8 @@
       "sha256": "375905e98e5431f6c66adc58243939e25be11afe190636788a6c931e2554f7a5"
     },
     ".github/workflows/verify.yml": {
-      "bytes": 1310,
-      "sha256": "68260fa4104447966dbe447c952c5bfeaba5b22b59e61dd3a21e4ed2fc70c3f4"
+      "bytes": 2049,
+      "sha256": "2f55863e99f795f5831fe479dd0d855bde64b809480bea55a97abed44d1639f3"
     },
     ".gitignore": {
       "bytes": 97,
@@ -571,8 +571,8 @@
       "sha256": "0adf802214718ec87c6992517c49f8a4661cc055e8f503e8755e1f164f607b62"
     },
     "docs/design/00-status.md": {
-      "bytes": 1470,
-      "sha256": "cb1b7481ab440e5c2e83ce3917253279b2d4382df09ffc3f25377eb3f5a0a664"
+      "bytes": 1699,
+      "sha256": "c13e55da516368c32af78d9110626c5f6750eaec43c57dc715c6f2484866367b"
     },
     "docs/design/01-product-overview.md": {
       "bytes": 15740,
@@ -635,8 +635,8 @@
       "sha256": "82ffabeb2d223680842a634b122146da5c46a7cc41b3b7ef22a247c0f60d856e"
     },
     "docs/design/en/00-status.md": {
-      "bytes": 1803,
-      "sha256": "0ee8d3c9ac2d5a8453a5e1512b6ef27db05d1163010da16299fe05748e2fa80a"
+      "bytes": 2061,
+      "sha256": "c53fc887443ffec2fbaa2bf25daf6780f76ab7aacada8ccbceec5db9642ea4a9"
     },
     "docs/design/en/01-product-overview.md": {
       "bytes": 22176,
