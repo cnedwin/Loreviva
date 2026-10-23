@@ -1,7 +1,7 @@
--- PRIVATE CANDIDATE TEXT ONLY: PREPARATION_ONLY / NOT_NORMATIVE / NOT_RUN.
--- Future candidate destination: examples/thin-backend/migrations/0001_customer_delivery.sql.
--- No SQL execution until formal Slice6 freeze/review and fresh Root authorization.
--- Column names, summary capacity32, named CHECKs and fail-on-existing CREATE are pending choices.
+-- Customer-owned delivery tables for the synthetic reference integration.
+-- Apply only to the separate customer database through its initialization flow.
+-- CREATE intentionally fails on existing tables; this is not an upgrade migration.
+-- Fixed summary values carry no original conversation or model-generated body.
 -- Owning code validates ASCII/Identity/scope, raw32 hashes and actual original notice revision.
 -- Both rows commit in one customer transaction. No platform/cross-DB authority is created.
 -- created_at must be actual same-transaction customer DBUTC, never client time or fabricated history.

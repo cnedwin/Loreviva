@@ -38,7 +38,7 @@ Kratos 3 已由 [go.mod](../go.mod)固定。Go 应用在 `/studio/` 提供原生
 ```powershell
 pnpm install --frozen-lockfile
 pnpm build:studio
-go build ./cmd/loreviva
+pnpm build:server ./cmd/loreviva
 ```
 
 在仓库根目录执行：
@@ -121,9 +121,11 @@ pnpm --dir apps/studio typecheck
 pnpm build:studio
 ```
 
+`pnpm build:studio` 实际运行 Vue 类型检查与生产构建，再记录完整源码输入和产物字节清单。`pnpm check:studio` 只读核对源码、SDK、契约、锁文件、构建配置及内嵌文件；任意新增、删除或字节变化都要求重新构建。`pnpm build:server ./cmd/loreviva` 先通过该检查再编译服务端。直接 `go build` 只编译现有内嵌字节，不能证明前端源码新鲜度；服务端另检查内嵌契约版本与文件完整性，错误产物返回503。
+
 `go test ./...` 本身不会自动启用浏览器夹具。`TestStudioBrowser` 与 `TestStudioSettingsEntryBrowser` 需要显式 `LOREVIVA_STUDIO_BROWSER=1`，以及核验过的 `LOREVIVA_TEST_NODE`、`LOREVIVA_TEST_PNPM` 和私有 `LOREVIVA_STUDIO_EVIDENCE` 输出位置；未启用时为 SKIP，不能算浏览器通过。夹具启动真实本机服务并提供合成数据，按固定 Playwright 项目执行；直接 `pnpm test:e2e` 不能替代这些服务和凭据前置。受控浏览器通过也不是真人或真实模型验收。
 
-这些是源码中的开发入口，不是新公开候选的执行回执。本次为纯文档更新，代码字节保持原公开基线；没有重新执行安装、构建或数据库功能测试，也不据文档核验新增安装或功能通过结论。实际执行须另安排唯一受限测试数据库窗口，保留前置失败与未运行结果。
+上述命令定义验证入口，各次结果绑定当时的源码和产物。构建通过不等于数据库、浏览器或完整发行验收；实际数据库验证使用单一受限窗口，保留前置失败与未运行结果。具体已通过范围以对应版本的验证记录为准。
 
 数据库集成测试强制使用 TCP `127.0.0.1:33267` 和非 root 账户，通过私下提供的 `LOREVIVA_TEST_DSN` 创建并清理 `loreviva_test_<24位小写十六进制>` 测试库。未设置该变量时测试失败，不会自动跳过；账户应只拥有此受限测试范围的权限。实际 CLI 测试另使用 `LOREVIVA_TEST_GO_EXE` 指定执行器。这是测试夹具的限制，服务本身的 `LOREVIVA_DB_ADDR` 按配置指定。检查结果以具体发布副本为准。
 

@@ -28,6 +28,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec node scripts/check-generated.mjs
       - run: pnpm run test:contracts
+      - run: pnpm test:studio-build
+      - run: pnpm check:studio
       - run: go build ./...
       - run: go vet ./internal/...
       # Unit packages must not need a database; anything that does belongs in the
@@ -58,4 +60,9 @@ jobs:
         with:
           go-version: '1.27.2'
           cache: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: node scripts/build-studio.mjs --check
       - run: go build ./...
