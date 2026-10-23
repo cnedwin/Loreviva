@@ -1,4 +1,4 @@
-> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.5.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
+> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.6.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
 
 # Loreviva Product Design Overview and Structure
 

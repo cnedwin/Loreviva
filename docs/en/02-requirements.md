@@ -21,7 +21,7 @@ Each row describes that task’s own evidence scope; an earlier task’s limitat
 | --- | --- | --- |
 | Task7 Studio | Native Vue editing/scene view, optional Mock assistance, original-task queries, local settings, members, and self-consent entry points | Human outcomes, real models, complete customer SDK, billing, or deployment |
 
-Current model and billing configuration accepts only `mock`. Task7 native Studio, local settings, member actions, and a separate self-consent entry point are included in the approved baseline; the complete SDK, import/export, metering management, and complete recovery remain subsequent tasks. The approved machine-contract baseline 1.4.0 has 58 operations and 156 Schema; the working contract in this tree is 1.5.0 (65 operations, 177 Schema), and its reserved scope still exceeds connected handlers.
+Current model and billing configuration accepts only `mock`. Task7 native Studio, local settings, member actions, and a separate self-consent entry point are included in the approved baseline; the complete SDK, import/export, metering management, and complete recovery remain subsequent tasks. The approved machine-contract baseline 1.4.0 has 58 operations and 156 Schema; the working contract in this tree is 1.6.0 (67 operations, 183 Schema), and its reserved scope still exceeds connected handlers.
 
 ## Authoring and related operations
 

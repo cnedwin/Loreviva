@@ -87,7 +87,7 @@ flowchart LR
 
 ## 契约与扩展
 
-已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.5.0（65 operations / 177 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)保留配置与类型能力，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；这不等于完整客户 SDK 或玩家 SSE。
+已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.6.0（67 operations / 183 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)保留配置与类型能力，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；这不等于完整客户 SDK 或玩家 SSE。
 
 | Operation ID | Method | Path |
 | --- | --- | --- |

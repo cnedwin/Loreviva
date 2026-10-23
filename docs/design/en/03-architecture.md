@@ -1,4 +1,4 @@
-> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.5.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
+> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.6.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
 
 # Loreviva Technical Architecture Whitepaper
 
@@ -17,7 +17,7 @@ The engineering and documentation root is `<repository>`. Credentials, data and 
 
 | Item | Technology choice | Exact-artifact requirement |
 | --- | --- | --- |
-| Public HTTP contract | `/world/v1`, OpenAPI 3.1.2; the 1.3.0 compatibility baseline has 51 operations/131 schemas, the approved 1.4.0 baseline has 58/156, and working 1.5.0 has 65/177 | Original 18 public and 33 administrative/file operations retain compatibility; default memory responses remain compatible and provenance_v1 is explicitly selected. SDK and customer support claims follow actual release evidence |
+| Public HTTP contract | `/world/v1`, OpenAPI 3.1.2; the 1.3.0 compatibility baseline has 51 operations/131 schemas, the approved 1.4.0 baseline has 58/156, and working 1.6.0 has 65/177 | Original 18 public and 33 administrative/file operations retain compatibility; default memory responses remain compatible and provenance_v1 is explicitly selected. SDK and customer support claims follow actual release evidence |
 | Data Schema | JSON Schema 2020-12 | Schema/versioned fixed valid and invalid examples together |
 | Content package | `.wepkg` format 1.0, logical dependencies separate from local release | Traceable package digest, file manifest, import mapping |
 | Frontend | Vue 3.5.43 stable, Node.js 24 LTS; TypeScript, Vite, Router, Pinia, reusable native Vue/HTML/CSS/SVG components | Exact artifacts, strict types, engineering lock each verified; ElementPlus is excluded; declaration incompatibility must not be hidden by weakened checking |
@@ -318,7 +318,7 @@ Customer integration includes protocol discovery, customer-safe notification GET
 
 ### Customer integration ownership and delivery
 
-Customer integration uses Loreviva-Client-Contract as the sole selector for public_v1/integration_r0_v1. The 1.5.0 allocation adds 7 operations/21 schemas (65/177), 17 platform tables and two separate customer-example tables, typed participant/issuer bridges and actual CONFIG/NOTIFICATIONS registration with Close/drain. Service world ownership and the single-player data owner require a real same-Tx bridge; global bearer hashes cover Operator/SERVICE/CLIENT. Existing schema objects, lock ordinals, migrations0001–0007 and wepkg remain protected. Every new table, file, key reference and writer enters the complete recovery inventory; full C restoration is a separate capability.
+Customer integration uses Loreviva-Client-Contract as the sole selector for public_v1/integration_r0_v1. The 1.6.0 allocation adds 7 operations/21 schemas (65/177), 17 platform tables and two separate customer-example tables, typed participant/issuer bridges and actual CONFIG/NOTIFICATIONS registration with Close/drain. Service world ownership and the single-player data owner require a real same-Tx bridge; global bearer hashes cover Operator/SERVICE/CLIENT. Existing schema objects, lock ordinals, migrations0001–0007 and wepkg remain protected. Every new table, file, key reference and writer enters the complete recovery inventory; full C restoration is a separate capability.
 
 <a id="task8-fix1-bounded-specification-candidate-not-adopted"></a>
 
