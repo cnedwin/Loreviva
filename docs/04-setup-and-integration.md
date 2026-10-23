@@ -98,7 +98,7 @@ go run ./cmd/loreviva maintenance cleanup-files --key <稳定幂等键>
 
 ## 客户接入的下一步
 
-现有 [TypeScript 包](../packages/sdk-ts/src/index.ts)保留生成类型及 `baseUrl`、`sessionToken` 配置校验/冻结。[行政客户端](../packages/sdk-ts/src/admin.ts)的 `createAdminClient` 使用 `getOperatorBearer` 提供的当前凭据，支持行政契约调用、鉴权资产读取和上传；请求/响应按生成契约校验。它不是完整客户 SDK，不提供玩家会话/互动/SSE或客户身份适配器；不能把行政 Operator 凭据发给玩家客户端。
+[TypeScript包](../packages/sdk-ts/src/index.ts)导出行政/接入客户端、预备命令、BFF恢复、媒体与SSE类型。[薄后端](../examples/thin-backend/)与[参考客户端](../apps/reference-client/)提供参考接入实现，前置见[Quickstart](integration/Quickstart.zh.md)。不能把Operator凭据发送给玩家。完整Task8/R0未验收。
 
 计划中的 Integration Kit 将提供受限会话、互动、快照与事件恢复、媒体更新、参考客户端和薄后端适配器。客户后端仍负责玩家身份、业务资格、行业规则、钱包/订单/支付/退款及原业务服务回执；客户端不持 Operator 或模型秘密。
 
@@ -113,7 +113,7 @@ pnpm test
 go test ./...
 ```
 
-契约源维护在 `contracts/source/`，本批工作契约为 1.6.0 / 67 operations / 183 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0008，完整产品安装/升级发行仍未验收。
+契约源维护在 `contracts/source/`，本批工作契约为 1.6.0 / 67 operations / 181 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0008，完整产品安装/升级发行仍未验收。
 
 ```powershell
 pnpm --dir apps/studio test

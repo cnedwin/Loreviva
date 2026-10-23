@@ -21,7 +21,7 @@ Each row describes that task’s own evidence scope; an earlier task’s limitat
 | --- | --- | --- |
 | Task7 Studio | Native Vue editing/scene view, optional Mock assistance, original-task queries, local settings, members, and self-consent entry points | Human outcomes, real models, complete customer SDK, billing, or deployment |
 
-Current model and billing configuration accepts only `mock`. Task7 native Studio, local settings, member actions, and a separate self-consent entry point are included in the approved baseline; the complete SDK, import/export, metering management, and complete recovery remain subsequent tasks. The approved machine-contract baseline 1.4.0 has 58 operations and 156 Schema; the working contract in this tree is 1.6.0 (67 operations, 183 Schema), and its reserved scope still exceeds connected handlers.
+Current configuration accepts only mock. Task1–7 retain their reviewed scope. Task8 SDK, thin backend, reference client and self-memory governance exist in the snapshot, but whole Task8 remains unaccepted. Task9 static preflight is implemented; import/export, complete metering, recovery and release are unfinished. Approved contract:1.4.0 (58/156); working contract:1.6.0 (67/181), migrations0001–0008. Reserved operations do not establish mounted handlers.
 
 ## Authoring and related operations
 
@@ -67,7 +67,7 @@ Task7 implements the native editing GUI for the corresponding Mock path; real su
 
 ## Intended requirements for integration, recovery, and metering
 
-The complete Integration Kit should cover customer backend identity verification, restricted sessions, snapshots, interaction, original task queries, resumed event/media retrieval, control, memory governance, and business receipts. The TypeScript package retains generated types and configuration wrappers and adds the limited administrative HTTP client `createAdminClient` for administrative contract calls, authenticated asset reads, and uploads. It is not the complete customer SDK and does not provide player session/interaction/SSE integration or customer identity adapters.
+The Integration Kit has TypeScript transport, prepared-command ownership, BFF recovery, media and SSE components, plus a thin backend and Vue reference client. Customer identity remains the customer's responsibility. Whole Task8 acceptance is pending; see [current gaps](../progress/2026-10-23.en.md).
 
 Task results, service completion, supplier costs, and risk reservations need separate presentation. `UNKNOWN` means the original result awaits confirmation; it does not mean failure, zero cost, or permission to procure again automatically. Successful request acceptance also does not establish a world action. Within synthetic Mock scope, Task6 verifies recovery by querying the original attempt, necessary costs, late costs, and their separation from service results; UNKNOWN keeps querying the original identity without automatically purchasing again. Candidates are scoped to their original draft and source permissions; adoption still requires explicit saving. Rehearsal creates an isolated temporary world and retains FAIL/NOT_RUN and cleanup progress. Administrative metadata visibility does not grant private result body access. Task7 includes local settings interfaces; this engineering evidence does not establish completed metering management pages, customer player workflows, or real commercial billing.
 
@@ -77,7 +77,7 @@ Customers retain authority over player identities, business eligibility, industr
 
 | Scope | Work still required |
 | --- | --- |
-| Complete community workflow | Beyond the existing Task7 Studio, a reference client, complete SDK, import/sharing, and non-maintainer operation validation remain required; passing Mock/automated browser checks does not replace complete R0 or human acceptance |
+| Complete community workflow | SDK/reference-client source exists; complete integration acceptance, import/sharing and non-maintainer validation remain required. Mock/browser checks do not establish R0 or human acceptance. |
 | Real AI | Supplier adaptation, current permission/source checks, real calls/recovery, and character/rule quality evaluation |
 | Paid hosting | Metering/accounting, concurrent allowance control, payment/refunds, industry integration, and operational maintenance verification |
 | Broader releases | Independent evidence for the corresponding multi-character, media, notification, shared-community, or industry capabilities |

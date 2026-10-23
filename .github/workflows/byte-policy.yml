@@ -25,6 +25,7 @@ jobs:
       - run: node scripts/check-byte-policy.mjs --bridge
       - run: node scripts/check-byte-policy.mjs --git-index
       - run: node --test scripts/byte-policy.test.mjs
+      - run: node --test scripts/integration-shards.test.mjs
       - run: npm install --global pnpm@11.25.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec node scripts/check-generated.mjs

@@ -16,7 +16,7 @@ Notable changes to this repository. Format follows
   whose digest ignores archive packaging.
 - Contract **1.6.0**: `POST /world/v1/admin/content-packages/preflight` and
   `GET /world/v1/admin/content-packages/capabilities`, with package report,
-  finding, limits and capability schemas (67 operations / 183 schemas).
+  finding, limits and capability schemas (67 operations / 181 schemas).
 - Concurrency model: an original attempt's proof is split into named parts, so a
   memory another task committed no longer invalidates the attempt, while a cited
   memory that changed is still refused.
@@ -37,6 +37,12 @@ Notable changes to this repository. Format follows
   longer serialise behind one server-wide lock.
 
 ### Fixed
+
+- Integration shards reject failed processes/packages, incomplete or inconsistent
+  results; JSON serial retries require explicit pass evidence and return exit 2
+  for recovered failures. Separate logs are flushed before reading a full summary.
+- Bilingual status now distinguishes implemented SDK/preflight code from pending
+  Task8/R0 acceptance, with 67 operations and 181 schemas in the working contract.
 
 - Three migration assertions that assumed the newest schema was 7.
 - `/capabilities` answered 403 for a runtime with a missing rehearsal adapter.

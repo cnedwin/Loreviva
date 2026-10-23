@@ -1,7 +1,7 @@
 {
   "format": "loreviva.publication.v1",
   "repository": "https://github.com/cnedwin/Loreviva.git",
-  "base_public_commit": "570b14ff2a4dbd7858138f2ce99191ffe5199366",
+  "base_public_commit": "78517b24c1ab2f4730a4f35ac8be66d2f59233d9",
   "completed_tasks": [
     1,
     2,
@@ -12,34 +12,33 @@
     7
   ],
   "in_progress_tasks": [
-    8
+    8,
+    9
   ],
-  "scope": "Reviewable development snapshot. Tasks 1-7 implemented and reviewed; Task 8 integration in progress; R0 unaccepted. Synthetic Mock model and Mock billing only.",
+  "scope": "Bounded runner repair and bilingual progress alignment. Tasks1-7 retain reviewed scope; Task8 integration and Task9 static preflight are present but whole packages and R0 remain unaccepted. Synthetic Mock only; unattended development stays paused.",
   "working_contract": "1.6.0",
   "review_status": "development_snapshot_not_a_release",
   "validation": {
-    "sdk_strict": "PASS",
-    "reference_strict": "PASS",
-    "reference_build": "PASS",
-    "studio_build": "PASS",
-    "go_build": "PASS",
-    "contract_tests": {
-      "pass": 22,
-      "fail": 2
+    "integration_runner": {
+      "pass": 25,
+      "fail": 0,
+      "kind": "synthetic child processes, no database"
     },
-    "reference_tests": {
-      "pass": 4,
-      "fail": 2,
-      "suite_load_fail": 1
+    "contract_sdk_config_csp": {
+      "pass": 27,
+      "fail": 0
     },
-    "database_campaign": {
-      "pass": 327,
-      "skip": 3,
-      "fail": 1,
-      "not_run": 275,
-      "previous_done_separate": 6
+    "byte_policy_tests": {
+      "pass": 8,
+      "fail": 0
     },
-    "development_and_automation": "PAUSED"
+    "generated_contracts": "zero diff",
+    "database_campaign": "NOT_RUN",
+    "reference_client_tests": "NOT_RUN; known cwd-dependent contract path remains",
+    "native_bff_tests": "NOT_RUN; controlled fixture prerequisites required",
+    "browser": "NOT_RUN",
+    "development_and_automation": "PAUSED",
+    "go_build": "PASS; go build ./... on Windows, not runtime acceptance"
   },
   "files": {
     ".editorconfig": {
@@ -75,8 +74,8 @@
       "sha256": "f837b89a018e0c251fed8536e35ada62f14b7eb4b59c22d32b61fff80535f934"
     },
     ".github/workflows/byte-policy.yml": {
-      "bytes": 1302,
-      "sha256": "375905e98e5431f6c66adc58243939e25be11afe190636788a6c931e2554f7a5"
+      "bytes": 1363,
+      "sha256": "b6c5f28335813cd4801d10ce729f4f7ae66664ad15f5ff971fd277a2dacf05e8"
     },
     ".github/workflows/verify.yml": {
       "bytes": 2814,
@@ -87,8 +86,8 @@
       "sha256": "c2e9bbd22cc95cf70a29fbe9ebddd4b7d50987a92b9532b17edd0a8e4a9c3c43"
     },
     "CHANGELOG.md": {
-      "bytes": 2608,
-      "sha256": "aeedeff48d3862a3c02c11cca89bda40446c3fa55a9f2a4297b098e5a290b4f3"
+      "bytes": 3018,
+      "sha256": "ea21140ca0ee73d20aa15cb54d55f041f50a491536774dde0f7b002e537a28a0"
     },
     "CODE_OF_CONDUCT.md": {
       "bytes": 2303,
@@ -223,12 +222,12 @@
       "sha256": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00"
     },
     "README.md": {
-      "bytes": 4202,
-      "sha256": "a3ff5ee578ca422d8354150434eef6595e0e6e4e1de664594400a05be7740824"
+      "bytes": 5151,
+      "sha256": "39aa5a79887b95b7aefe11514ab152dd2ffcaf6c707527fc263e32d50e4a39d8"
     },
     "README.zh-CN.md": {
-      "bytes": 6419,
-      "sha256": "592f3fd6712548be583cc291f2fed4cdfdf8cad115839f80d5f5353cab93de6f"
+      "bytes": 3758,
+      "sha256": "9f5535437d7d263a0e4b3e1f82d183c268d78ae418a6b052e613f62d1c2bd7f5"
     },
     "SECURITY.md": {
       "bytes": 1657,
@@ -547,20 +546,20 @@
       "sha256": "d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03"
     },
     "docs/01-product-overview.md": {
-      "bytes": 6435,
-      "sha256": "6af6513d2495969239d43f99cadb94fb3c2c71393954ded0068ae2676a485106"
+      "bytes": 6522,
+      "sha256": "358a671beb6287c85cc70f0bc027b8bc4cc488c8979b4a7a93c80320690e74b7"
     },
     "docs/02-requirements.md": {
-      "bytes": 8012,
-      "sha256": "e3fe41738a434e5906d074bd25bbbc364f63a40771d77b916ae5a7b2d70a671f"
+      "bytes": 7765,
+      "sha256": "d2ff28ddc5afb869cf0cd4d87e0c43704f0787d8cdd699d627e84751a2c7f1ec"
     },
     "docs/03-architecture.md": {
-      "bytes": 8815,
-      "sha256": "6f6d46a505e8d381953ca0f11165bf4f3940b8d6298a1360ff25fa7dac10ed29"
+      "bytes": 8775,
+      "sha256": "1d2737de7f4accf36cf22f464065c3a2874bfcc907d94674801dc144b6aece07"
     },
     "docs/04-setup-and-integration.md": {
-      "bytes": 10447,
-      "sha256": "6c48da360c991c1ec08bc850632f81656f1b1d4276e9ebb1767627015b2793d5"
+      "bytes": 10319,
+      "sha256": "3f224bb43ee57a420ec70421ef3ed78c885e716f69ec83142419ed5134741c97"
     },
     "docs/README.md": {
       "bytes": 2225,
@@ -571,24 +570,24 @@
       "sha256": "0adf802214718ec87c6992517c49f8a4661cc055e8f503e8755e1f164f607b62"
     },
     "docs/design/00-status.md": {
-      "bytes": 1699,
-      "sha256": "c13e55da516368c32af78d9110626c5f6750eaec43c57dc715c6f2484866367b"
+      "bytes": 1786,
+      "sha256": "6d552a8944f0db671d6df0a8977d313f8a790e1506d9e5cc4a066d9ec80a88f6"
     },
     "docs/design/01-product-overview.md": {
-      "bytes": 15740,
-      "sha256": "533b3b1daf6887ca9ee7ebb77ecd5dec983c17ab1242a9bcce6d007c4002fcda"
+      "bytes": 15745,
+      "sha256": "c9a37fc8355918276cf73c4ba4d8c1d171ed28094a3d5e07e242815cfccec92f"
     },
     "docs/design/02-requirements.md": {
-      "bytes": 92397,
-      "sha256": "5024dc0cbd4e39195b3f43569ba63ab5fa00f8400c582b57b1ba65cdd7a0b1cd"
+      "bytes": 92402,
+      "sha256": "c908be42cde66396bf14f230fff1b3a48ff9462e4e029c514e75013a486c5cc2"
     },
     "docs/design/03-architecture.md": {
-      "bytes": 87131,
-      "sha256": "74423435e058969daaf3bb24d8193ee06842682b3fd080e1b52d590eade22437"
+      "bytes": 87286,
+      "sha256": "6865190bcbde99b669e36d04ce1b0e24e71ce07ac4c49f45a03964ae8a95a6ef"
     },
     "docs/design/04-setup-and-integration.md": {
-      "bytes": 33019,
-      "sha256": "87fa345e911d10f870abe08f3eb08a937a7a4de1bae22af993fc502c1d22411c"
+      "bytes": 33024,
+      "sha256": "d789fc311482cacc408d74295b7eb250a8588f0665c042fc819ab93868f01992"
     },
     "docs/design/05-roadmap.md": {
       "bytes": 1191,
@@ -599,8 +598,8 @@
       "sha256": "6a091c724ba54ad366b77217d3a9b3a15d1f4a373716f7eefa37e2ec301003af"
     },
     "docs/design/07-concurrent-worlds.md": {
-      "bytes": 2656,
-      "sha256": "ddc4e062fb245978f5c25191405815014ec918c963853746f18155bd59e9e7b6"
+      "bytes": 2748,
+      "sha256": "cdbfbbf7adef5ccd1bb42d0698aadc654251c27076ffa1760f02b0e59436758b"
     },
     "docs/design/diagrams/deployment.md": {
       "bytes": 332,
@@ -635,24 +634,24 @@
       "sha256": "82ffabeb2d223680842a634b122146da5c46a7cc41b3b7ef22a247c0f60d856e"
     },
     "docs/design/en/00-status.md": {
-      "bytes": 2061,
-      "sha256": "c53fc887443ffec2fbaa2bf25daf6780f76ab7aacada8ccbceec5db9642ea4a9"
+      "bytes": 2164,
+      "sha256": "1caefad1f2bee94c2e5753403176381e2d23a599458acec7757d7f690848bee6"
     },
     "docs/design/en/01-product-overview.md": {
-      "bytes": 22176,
-      "sha256": "301bc2f6f8c38863bd1d703208053009213c5bb6279950bdf1e5b63b6ef0b7e8"
+      "bytes": 22172,
+      "sha256": "f2b37ab4dc7324d9c49b621b8a8193f16afa7e9fada76061995ada99035bd35a"
     },
     "docs/design/en/02-requirements.md": {
-      "bytes": 121292,
-      "sha256": "9ba4c7aa3c325f3d9b6cf9a5633c358d247cc8a5c955c492e183dc7e7066819f"
+      "bytes": 121288,
+      "sha256": "448e9711bd95c9c02e301f44d5add13c0886a3bf7845fe0c275f3699ce9b0f8e"
     },
     "docs/design/en/03-architecture.md": {
-      "bytes": 102820,
-      "sha256": "e6fd6423b8d8c0e8eec22f06a0c842f632da93731e2fac1ef941698f2bab8b94"
+      "bytes": 102989,
+      "sha256": "cc3c6c376520a3332a54567e2a2fcda4a1e6af7f989a44347d8d4cc09eadab7b"
     },
     "docs/design/en/04-setup-and-integration.md": {
-      "bytes": 39760,
-      "sha256": "0c8d3748f91abd95d0715e78732d356f775cb9366de904408738486c6e23fe8d"
+      "bytes": 39756,
+      "sha256": "fd2fb30109e1a4a12d8ab9a32095bf9823dee828bedb30859186f3bb8b9ad702"
     },
     "docs/design/en/05-roadmap.md": {
       "bytes": 1534,
@@ -663,32 +662,32 @@
       "sha256": "82ed53850f16d4bce10f1800769536aadfbb392bd1742665146c52d3ff817cc4"
     },
     "docs/design/en/07-concurrent-worlds.md": {
-      "bytes": 2881,
-      "sha256": "00ab66fd5db9206d9b2ed7add65b86189d08f5cf13e3534b5f35284c3979f91f"
+      "bytes": 3018,
+      "sha256": "9af9994f0384330676a60ba3779db536c20c97fd8e4db3066054af8e4cdc75e8"
     },
     "docs/en/01-product-overview.md": {
-      "bytes": 8453,
-      "sha256": "f70c46b1d6de5e8e253216001ac4ffe05e4a0848b1560b567f94f69fd9ebb821"
+      "bytes": 8546,
+      "sha256": "55800538ea9d31b1c80189c59e457fc21a88022cad5437e3a58727dce7027c76"
     },
     "docs/en/02-requirements.md": {
-      "bytes": 10315,
-      "sha256": "a6a65532153a986a7cf7378f1c63c8b7e83d55b14e65b44c6cf651347fa9a812"
+      "bytes": 9962,
+      "sha256": "51cced5f3ff7678c9a9548e97e2cbb3924761b1b818afd9c316fafc6128e8412"
     },
     "docs/en/03-architecture.md": {
-      "bytes": 10662,
-      "sha256": "008101019334672a9520d9f959682edac46637316c11e716f79825297f1d5814"
+      "bytes": 10556,
+      "sha256": "6ad65c10d6277b9e5e35a0f1dc30c4658f86ddda4fe3ec5cfcb71d34296cd319"
     },
     "docs/en/04-setup-and-integration.md": {
-      "bytes": 12730,
-      "sha256": "b4c73e746b797d80047ccdbe617c441e176e6c61913a1e1f4286800afb0b5e67"
+      "bytes": 12563,
+      "sha256": "19bb34772013e76718cd5fd585c344df2017f9846b4837d35f710d61eaddad09"
     },
     "docs/en/CONTRIBUTING.md": {
       "bytes": 1727,
       "sha256": "133a0c440261eba9bb33e202209f4fc7dfb320054ae1672da6727277cce2e483"
     },
     "docs/en/README.md": {
-      "bytes": 6906,
-      "sha256": "2b3433ae8aa984de8f0a3e9b9ac4a0086fd9d46867ff5b1c6448c008da5528c8"
+      "bytes": 582,
+      "sha256": "a80df8fad1211df1c90c2397ba1d7d492042d7a220b2b9df11bcdecc14f974fc"
     },
     "docs/en/SECURITY.md": {
       "bytes": 1215,
@@ -703,12 +702,20 @@
       "sha256": "ceb46fe3064dc90a035920ff89e6d5d973e0a478c65e6bb288433f184c607db8"
     },
     "docs/progress/2026-10-21.en.md": {
-      "bytes": 3375,
-      "sha256": "2d84371ec754a7eb6ab1e4633ed623e2537f3d1b6a5135ad255c3f81a994a516"
+      "bytes": 3510,
+      "sha256": "96ade2e95b0c225ddf51cf820f9264339ee6442d0831264f7d4a48ca87a2cfc1"
     },
     "docs/progress/2026-10-21.zh.md": {
-      "bytes": 2967,
-      "sha256": "7990a60cce2108321ce8ed429743d2b3b03cab9a5ef72886b0d5218cf11923be"
+      "bytes": 3091,
+      "sha256": "af342a789ab370bc9d39107455e256ff83af7cf243f2043da0f6ac4c9993c607"
+    },
+    "docs/progress/2026-10-23.en.md": {
+      "bytes": 3964,
+      "sha256": "7467735fd76ac9de2b6c7857149f12b9aad4de3fdf0b4bb9ce2c54c4346ffc85"
+    },
+    "docs/progress/2026-10-23.zh.md": {
+      "bytes": 3397,
+      "sha256": "452ffd36a9ef3fb9a06016fcb875a4e1808a7b3ddaf88874e033ff2b3ad9e499"
     },
     "examples/coffee/definitions.json": {
       "bytes": 10898,
@@ -1983,8 +1990,8 @@
       "sha256": "1330a498a6615cf3efed29413c74047dc51e9142bf71ff2ab6bd22b094f663c4"
     },
     "package.json": {
-      "bytes": 1577,
-      "sha256": "f6a4b7baf304a1beaea495d916d892a1204c390921018deec142d2057d87d310"
+      "bytes": 1715,
+      "sha256": "ed265e6349ac3406311dfe5e461f55ff4a4dd4cfd0b380e9e2ae6ceb63795d48"
     },
     "packages/sdk-ts/package.json": {
       "bytes": 241,
@@ -2098,6 +2105,10 @@
       "bytes": 4915,
       "sha256": "6ae09c38c8dcd45f69179719d481c7a7f084d7e92e47b8875e87cc983b52efec"
     },
+    "scripts/integration-shards.test.mjs": {
+      "bytes": 6052,
+      "sha256": "21ecd721ccd888f24ea4a15b764b84b1db075583c9c5fa91f7f199f8f2dc073b"
+    },
     "scripts/memory-contract.test.mjs": {
       "bytes": 971,
       "sha256": "5505ab4c0abf1daace09e2daec48191b1dfa7e44e30d3febb60c2345d59d04de"
@@ -2119,8 +2130,8 @@
       "sha256": "9e21720ba1c81838afdf8eb79565c20c165a8b8a3530a2dbed4dcb5fb449a6a0"
     },
     "scripts/run-integration-shards.mjs": {
-      "bytes": 5870,
-      "sha256": "9b04398de0447c592e0de6ba5406689be3eb1912a79c824aaf628f2a5e388fb4"
+      "bytes": 9272,
+      "sha256": "db5cf1b6909ef6c8d967bbd8c400ab5fd5f038a246c8b4c13c82df56718dc517"
     },
     "scripts/sdk-config.test.mjs": {
       "bytes": 723,
@@ -2687,5 +2698,38 @@
       "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
       "note": "File hashes in this record were re-synchronised with the tree; the validation block still describes the 3c7f1cc snapshot measurements."
     }
-  ]
+  ],
+  "historical_validation": {
+    "candidate": "3c7f1cc00050efafae1025dd08edc57194c464f5",
+    "date": "2026-10-21",
+    "applies_to_current_candidate": false,
+    "results": {
+      "sdk_strict": "PASS",
+      "reference_strict": "PASS",
+      "reference_build": "PASS",
+      "studio_build": "PASS",
+      "go_build": "PASS",
+      "contract_tests": {
+        "pass": 22,
+        "fail": 2
+      },
+      "reference_tests": {
+        "pass": 4,
+        "fail": 2,
+        "suite_load_fail": 1
+      },
+      "database_campaign": {
+        "pass": 327,
+        "skip": 3,
+        "fail": 1,
+        "not_run": 275,
+        "previous_done_separate": 6
+      },
+      "development_and_automation": "PAUSED"
+    }
+  },
+  "working_contract_counts": {
+    "operations": 67,
+    "schemas": 181
+  }
 }

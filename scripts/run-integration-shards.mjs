@@ -1,138 +1,169 @@
 #!/usr/bin/env node
-// Runs the integration package as N concurrent shards.
-//
-// Every integration test creates its own randomly named MySQL database on the
-// approved loopback server and drops it afterwards (tests/integration/dbfixture),
-// so shards do not share state: they only contend for server capacity. Sharding
-// turns a three-hour serial gate into a roughly N-way shorter one without
-// weakening any assertion, because each test still runs exactly as written.
-//
-// Usage:
-//   node scripts/run-integration-shards.mjs --shards 4 [--out dir] [--dry-run]
-//   node scripts/run-integration-shards.mjs --shards 4 --run 'TestTurn|TestRecovery'
-//
-// Requires the same environment a serial run needs: LOREVIVA_TEST_DSN, and for
-// the customer/CLI targets LOREVIVA_TEST_GO_EXE.
+// Exit 0: complete initial pass/skip evidence; 1: failure/incomplete evidence;
+// 2: initial failures passed only on serial retry (review required, not clean).
+// Requires the same environment as a serial integration run.
+// Usage: node scripts/run-integration-shards.mjs --shards 4 [--run pattern]
+//        [--timeout 240m] [--out new-directory] [--no-retry] [--dry-run]
 import { spawn } from "node:child_process";
-import { mkdirSync, createWriteStream, openSync, closeSync, writeSync } from "node:fs";
+import { mkdirSync, createWriteStream, writeFileSync, readFileSync } from "node:fs";
+import { finished } from "node:stream/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
-const args = process.argv.slice(2);
-const option = (name, fallback) => {
-  const at = args.indexOf("--" + name);
-  return at === -1 ? fallback : args[at + 1];
-};
-const dryRun = args.includes("--dry-run");
-const shards = Math.max(1, Number(option("shards", "4")));
-const filter = option("run", "");
-const timeout = option("timeout", "240m");
-const retrySerial = !args.includes("--no-retry");
-const outDir = resolve(option("out", join(tmpdir(), "loreviva-shards-" + Date.now())));
 const root = resolve(import.meta.dirname, "..");
-
-function run(cmd, argv, extraEnv = {}) {
-  return new Promise((done) => {
-    const child = spawn(cmd, argv, { cwd: root, env: { ...process.env, ...extraEnv }, shell: false });
-    let stdout = "", stderr = "";
-    child.stdout.on("data", (b) => (stdout += b));
-    child.stderr.on("data", (b) => (stderr += b));
-    child.on("close", (code) => done({ code, stdout, stderr }));
-  });
-}
-
-const listed = await run("go", ["test", "-list", ".*", "./tests/integration"]);
-if (listed.code !== 0) {
-  console.error(listed.stderr || listed.stdout);
-  process.exit(listed.code ?? 1);
-}
-let names = listed.stdout.split(/\r?\n/).filter((l) => /^Test[A-Za-z0-9_]+$/.test(l));
-if (filter) {
-  const re = new RegExp(filter);
-  names = names.filter((n) => re.test(n));
-}
-if (names.length === 0) {
-  console.error("no matching tests");
-  process.exit(1);
-}
-// Heaviest first, so a slow shard starts early; rest round-robin by name.
-const plan = Array.from({ length: shards }, () => []);
-names.forEach((name, i) => plan[i % shards].push(name));
-
-if (dryRun) {
-  plan.forEach((shard, i) => console.log(`shard ${i + 1}: ${shard.length} tests  ${shard.slice(0, 3).join(", ")}...`));
-  console.log(`total ${names.length} tests in ${shards} shards`);
-  process.exit(0);
-}
-
-mkdirSync(outDir, { recursive: true });
-const expression = (shard) => "^(" + shard.join("|") + ")$";
-const started = Date.now();
-console.log(`running ${names.length} tests in ${shards} shards; logs in ${outDir}`);
-
-const results = await Promise.all(
-  plan.map(async (shard, index) => {
-    const shardRoot = join(outDir, "shard-" + (index + 1));
-    mkdirSync(shardRoot, { recursive: true });
-    const custody = join(shardRoot, "scan-material.jsonl");
-    closeSync(openSync(custody, "w"));
-    const logPath = join(shardRoot, "run.jsonl");
-    const log = createWriteStream(logPath);
-    const child = spawn(
-      "go",
-      ["test", "./tests/integration", "-p=1", "-count=1", "-timeout", timeout, "-json", "-run", expression(shard)],
-      { cwd: root, env: { ...process.env, TEMP: shardRoot, TMP: shardRoot, LOREVIVA_TEST_CUSTODY_FILE: custody } },
-    );
-    child.stdout.pipe(log);
-    child.stderr.pipe(log);
-    const code = await new Promise((done) => child.on("close", done));
-    log.end();
-    return { index: index + 1, code, logPath, count: shard.length };
-  }),
-);
-
-let passed = 0, failed = 0, skipped = 0;
-const failures = [];
-for (const shard of results) {
-  const text = await import("node:fs").then((fs) => fs.readFileSync(shard.logPath, "utf8"));
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.startsWith("{")) continue;
-    let event;
-    try { event = JSON.parse(line); } catch { continue; }
-    const test = event.Test || "";
-    if (!test || test.includes("/") || !["pass", "fail", "skip"].includes(event.Action)) continue;
-    if (event.Action === "pass") passed++;
-    else if (event.Action === "skip") skipped++;
-    else { failed++; failures.push(test); }
+function options(args) {
+  const result = { shards: "4", run: "", timeout: "240m", out: join(tmpdir(), "loreviva-shards-" + Date.now()) };
+  const seen = new Set();
+  for (let i = 0; i < args.length; i++) {
+    const key = args[i].slice(2);
+    if (!args[i].startsWith("--") || seen.has(key)) throw new Error("invalid or duplicate option: " + args[i]);
+    seen.add(key);
+    if (["dry-run", "no-retry"].includes(key)) result[key] = true;
+    else if (Object.hasOwn(result, key) && args[i + 1] && !args[i + 1].startsWith("--")) result[key] = args[++i];
+    else throw new Error("unknown option or missing value: " + args[i]);
   }
-  console.log(`shard ${shard.index}: ${shard.count} tests, exit ${shard.code}`);
+  result.shards = Number(result.shards);
+  if (!Number.isSafeInteger(result.shards) || result.shards < 1) throw new Error("--shards must be a positive integer");
+  if (!/^(?:\d+(?:\.\d+)?(?:ns|us|µs|ms|s|m|h))+$/.test(result.timeout) || !/[1-9]/.test(result.timeout)) {
+    throw new Error("--timeout must be a positive Go duration");
+  }
+  result.out = resolve(result.out);
+  if (result.run) result.filter = new RegExp(result.run);
+  return result;
 }
-
-// Some targets measure real elapsed time (a 25s purge deadline, a session that
-// must expire). Under N-way load those can exceed their own budget while the
-// same code passes alone. Re-run each failure once, serially, and report which
-// ones only passed that way: a load-sensitive result must not read as a product
-// failure, and must not silently count as a pass either.
-let onlySerial = [];
-if (retrySerial && failures.length) {
-  console.log(`re-running ${failures.length} failures serially`);
-  const again = await run("go", [
-    "test", "./tests/integration", "-p=1", "-count=1", "-timeout", timeout,
-    "-run", "^(" + failures.join("|") + ")$",
-  ]);
-  const stillFailing = failures.filter((f) => (again.stdout + again.stderr).includes("--- FAIL: " + f));
-  onlySerial = failures.filter((f) => !stillFailing.includes(f));
-  failures.length = 0;
-  failures.push(...stillFailing);
-  failed = stillFailing.length;
+async function run(argv, directory) {
+  const env = { ...process.env };
+  let streams, paths;
+  if (directory) {
+    // Refuse to overwrite an earlier attempt's evidence or custody file.
+    mkdirSync(directory);
+    const custody = join(directory, "scan-material.jsonl");
+    writeFileSync(custody, "", { flag: "wx" });
+    Object.assign(env, { TEMP: directory, TMP: directory, LOREVIVA_TEST_CUSTODY_FILE: custody });
+    paths = { stdout: join(directory, "stdout.jsonl"), stderr: join(directory, "stderr.log") };
+    streams = Object.values(paths).map(p => createWriteStream(p, { flags: "wx" }));
+  }
+  let stdout = "", stderr = "", error = null;
+  const child = spawn("go", argv, { cwd: root, env, shell: false });
+  const writes = streams?.map(stream => finished(stream).catch(e => {
+    error = e.message; child.kill();
+  }));
+  const completion = new Promise(done => {
+    child.on("error", e => { error = e.message; });
+    child.on("close", (code, signal) => done({ code, signal }));
+  });
+  if (streams) {
+    child.stdout.pipe(streams[0], { end: false });
+    child.stderr.pipe(streams[1], { end: false });
+  } else {
+    child.stdout.on("data", b => { stdout += b; });
+    child.stderr.on("data", b => { stderr += b; });
+  }
+  const status = await completion;
+  if (streams) {
+    streams.forEach(stream => stream.end());
+    await Promise.all(writes);
+    // Process close alone does not mean the log streams have finished writing.
+    stdout = readFileSync(paths.stdout, "utf8");
+  }
+  return { ...status, error, stdout, stderr, paths };
 }
-
-const minutes = ((Date.now() - started) / 60000).toFixed(1);
-console.log(`\n${names.length} targets: ${passed} pass, ${failed} fail, ${skipped} skip in ${minutes} min`);
-if (onlySerial.length) {
-  console.log("passed only in a serial retry (load sensitive): " + onlySerial.join(", "));
+function assess(result, expected) {
+  const issues = [], terminals = new Map(), packages = new Set(), packageEnds = [];
+  const expectedSet = new Set(expected), subFailures = new Set();
+  for (const line of result.stdout.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let event;
+    try { event = JSON.parse(line); } catch { issues.push("malformed JSON output"); continue; }
+    if (!event || typeof event !== "object" || typeof event.Action !== "string") {
+      issues.push("invalid test event"); continue;
+    }
+    // Go build events can precede test events and mention dependency packages.
+    if (event.Action.startsWith("build-")) {
+      if (event.Action === "build-fail") issues.push("package build failed");
+      continue;
+    }
+    if (!event.Package) { issues.push("test event has no package"); continue; }
+    packages.add(event.Package);
+    if (!event.Test) {
+      if (["pass", "fail", "skip"].includes(event.Action)) packageEnds.push(event.Action);
+      continue;
+    }
+    if (typeof event.Test !== "string") { issues.push("invalid test name"); continue; }
+    const top = event.Test.split("/")[0];
+    if (!expectedSet.has(top)) { issues.push("unplanned test: " + top); continue; }
+    if (event.Test.includes("/")) {
+      if (event.Action === "fail") subFailures.add(top);
+      continue;
+    }
+    if (!["pass", "fail", "skip"].includes(event.Action)) continue;
+    if (terminals.has(top)) issues.push("duplicate terminal: " + top);
+    else terminals.set(top, event.Action);
+  }
+  const missing = expected.filter(n => !terminals.has(n));
+  const failed = expected.filter(n => terminals.get(n) === "fail");
+  if (missing.length) issues.push("targets without terminal evidence: " + missing.join(", "));
+  if (packages.size !== 1) issues.push("expected exactly one test package");
+  if (packageEnds.length !== 1) issues.push("expected exactly one package terminal");
+  if (result.error) issues.push("process/log error: " + result.error);
+  if (result.signal) issues.push("terminated by signal: " + result.signal);
+  for (const name of subFailures) if (terminals.get(name) !== "fail") issues.push("child failure contradicts parent: " + name);
+  // Retry only a complete ordinary test failure, never infrastructure failure.
+  if (failed.length) {
+    if (result.code !== 1 || packageEnds[0] !== "fail") issues.push("failure exit/package mismatch");
+  } else if (result.code !== 0 || packageEnds[0] !== "pass") issues.push("unsuccessful process or package");
+  return { passed: expected.filter(n => terminals.get(n) === "pass"),
+    skipped: expected.filter(n => terminals.get(n) === "skip"),
+    failed, missing, issues: [...new Set(issues)] };
 }
-if (failures.length) {
-  console.log("failed: " + failures.join(", "));
-  process.exit(1);
+async function main() {
+  const opt = options(process.argv.slice(2));
+  const listed = await run(["test", "-list", ".*", "./tests/integration"]);
+  if (listed.code !== 0 || listed.signal || listed.error) throw new Error("test discovery failed: " + (listed.error || listed.stderr || listed.stdout));
+  let names = listed.stdout.split(/\r?\n/).filter(n => /^Test[A-Za-z0-9_]+$/.test(n));
+  if (new Set(names).size !== names.length) throw new Error("duplicate discovery target");
+  if (opt.filter) names = names.filter(n => opt.filter.test(n));
+  if (!names.length) throw new Error("no matching tests");
+  const plan = Array.from({ length: Math.min(opt.shards, names.length) }, () => []);
+  names.forEach((name, i) => plan[i % plan.length].push(name));
+  if (opt["dry-run"]) {
+    plan.forEach((shard, i) => console.log("shard " + (i + 1) + ": " + shard.join(", ")));
+    return 0;
+  }
+  mkdirSync(opt.out, { recursive: true });
+  const execute = async (targets, label) => {
+    const result = await run(["test", "./tests/integration", "-p=1", "-count=1",
+      "-timeout", opt.timeout, "-json", "-run", "^(" + targets.join("|") + ")$"], join(opt.out, label));
+    return { label, targets, code: result.code, signal: result.signal, error: result.error,
+      logs: result.paths, ...assess(result, targets) };
+  };
+  const attempts = await Promise.all(plan.map((targets, i) => execute(targets, "shard-" + (i + 1))));
+  const initialFailed = attempts.flatMap(r => r.failed);
+  const summary = { targets: names, initialPassed: attempts.flatMap(r => r.passed), initialFailed,
+    skipped: attempts.flatMap(r => r.skipped), missing: attempts.flatMap(r => r.missing),
+    failed: [...initialFailed], serialRecovered: [], attempts };
+  if (!opt["no-retry"] && attempts.every(r => r.issues.length === 0) && initialFailed.length) {
+    // One invocation runs failed targets serially with fresh custody and JSON.
+    const retry = await execute(initialFailed, "retry");
+    attempts.push(retry);
+    if (!retry.issues.length) {
+      summary.serialRecovered = retry.passed;
+      summary.failed = initialFailed.filter(n => !retry.passed.includes(n));
+    }
+  }
+  const incomplete = attempts.some(r => r.issues.length > 0);
+  summary.exitCode = incomplete || summary.failed.length ? 1 : summary.serialRecovered.length ? 2 : 0;
+  writeFileSync(join(opt.out, "summary.json"), JSON.stringify(summary, null, 2) + "\n", { flag: "wx" });
+  console.log(names.length + " targets: " + summary.initialPassed.length + " initial pass, "
+    + summary.failed.length + " unresolved fail, " + summary.skipped.length + " initial skip, "
+    + summary.missing.length + " missing, " + summary.serialRecovered.length + " serial recovery");
+  for (const attempt of attempts) {
+    console.log(attempt.label + ": exit " + attempt.code + (attempt.signal ? " signal " + attempt.signal : ""));
+    for (const issue of attempt.issues) console.error(attempt.label + ": " + issue);
+  }
+  if (summary.serialRecovered.length) console.log("passed only on serial retry (review required): " + summary.serialRecovered.join(", "));
+  console.log("evidence: " + opt.out);
+  return summary.exitCode;
 }
+try { process.exitCode = await main(); }
+catch (error) { console.error(error.message); process.exitCode = 1; }

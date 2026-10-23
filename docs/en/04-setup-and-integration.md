@@ -98,7 +98,7 @@ Memory metadata, private bodies, governance, and use policies have separate elig
 
 ## Next steps for customer integration
 
-The [TypeScript package](../../packages/sdk-ts/src/index.ts) retains generated types and validation/freezing of `baseUrl` and `sessionToken` configuration. The [administrative client](../../packages/sdk-ts/src/admin.ts), `createAdminClient`, uses the current credential supplied by `getOperatorBearer` for administrative contract calls, authenticated asset reads, and uploads, with generated request/response validation. It is not the complete customer SDK and provides no player session/interaction/SSE or customer identity adapter; administrative Operator credentials must not be sent to player clients.
+The [TypeScript package](../../packages/sdk-ts/src/index.ts) exports administrative/integration clients, prepared commands, BFF recovery, media and SSE types. The [thin backend](../../examples/thin-backend/) and [reference client](../../apps/reference-client/) provide reference integration. See [Quickstart](../integration/Quickstart.en.md) for prerequisites. Never send Operator credentials to players. Whole Task8/R0 remain unaccepted.
 
 The planned Integration Kit will provide restricted sessions, interaction, snapshot/event recovery, media updates, a reference client, and thin backend adapters. Customer backends remain responsible for player identities, business eligibility, industry rules, wallets/orders/payments/refunds, and receipts from original business services; clients do not hold Operator or model secrets.
 
@@ -113,7 +113,7 @@ pnpm test
 go test ./...
 ```
 
-Contract sources are maintained in `contracts/source/`; the working contract is 1.6.0 / 67 operations / 183 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
+Contract sources are maintained in `contracts/source/`; the working contract is 1.6.0 / 67 operations / 181 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
 
 ```powershell
 pnpm --dir apps/studio test
