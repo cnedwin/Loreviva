@@ -1,4 +1,4 @@
-> 设计文档 v3.0.2。本文定义产品目标与要求；本分支源码仍为 Task1–7 / 契约1.4.0，未包含开发中的1.6.0功能。可用能力和安装步骤见[本仓库支持范围](00-status.md)。
+> 公开设计阅读视图v3.0.2；当前产品设计为3.1.0，R0执行基线为3.0.1。源码包含工作契约1.6.0的Task8快照及Task9静态预检；完整Task8/R0尚未验收。见[支持范围](00-status.md)。
 
 # Loreviva 技术架构白皮书
 
@@ -17,7 +17,7 @@ Loreviva — The AI Platform for Living Worlds
 
 | 项目 | 技术选择 | 精确发行物要求 |
 | --- | --- | --- |
-| 公开HTTP契约 | `/world/v1`、OpenAPI 3.1.2；1.3.0兼容基线为51操作/131 Schema，批准1.4.0基线为58/156，工作1.6.0为65/177 | 原18公开及33行政/文件操作保持兼容；默认记忆响应兼容，provenance_v1须显式选择；SDK与客户支持范围按实际发行证据声明 |
+| 公开HTTP契约 | `/world/v1`、OpenAPI 3.1.2；1.3.0兼容基线为51操作/131 Schema，批准1.4.0基线为58/156，工作1.6.0为67/181 | 原18公开及33行政/文件操作保持兼容；默认记忆响应兼容，provenance_v1须显式选择；SDK与客户支持范围按实际发行证据声明 |
 | 数据Schema | JSON Schema 2020-12 | Schema与合法/非法固定样例共同版本化 |
 | 内容包 | `.wepkg`格式1.0，逻辑依赖与本地release分开 | 包摘要、文件清单与导入映射可追溯 |
 | 前端 | Vue 3.5.43稳定版、Node.js 24 LTS；TypeScript、Vite、Router、Pinia与可复用原生Vue/HTML/CSS/SVG组件 | 精确实物、严格类型及工程lock分别核验；ElementPlus不进入产品依赖，声明兼容性不得以弱化检查掩盖 |
@@ -288,7 +288,7 @@ epoch改变、游标过期或上下文不符返回409 VIEW_RESET；客户端清�
 
 ### 客户接入拥有与交付
 
-客户接入以Loreviva-Client-Contract为唯一selector，固定public_v1/integration_r0_v1两投影。1.6.0分配新增7操作/21 Schema（65/177）、17平台集合与2客户示例集合、typed participant/issuer桥，以及实际CONFIG/NOTIFICATIONS登记与Close/drain。Service世界owner与唯一player数据owner需真实同Tx桥，全局bearer hash覆盖Operator/SERVICE/CLIENT。既有Schema对象、锁序、0001–0007及wepkg保持兼容；新增表、文件、keyref和writer进入完整恢复库存，完整C恢复是单独能力。
+客户接入以Loreviva-Client-Contract为唯一selector，固定public_v1/integration_r0_v1两投影。客户接入1.5.0分配新增7操作/21 Schema（65/177），1.6.0另加内容包预检与能力读取，合计67/181；客户接入包含17平台集合与2客户示例集合、typed participant/issuer桥，以及实际CONFIG/NOTIFICATIONS登记与Close/drain。Service世界owner与唯一player数据owner需真实同Tx桥，全局bearer hash覆盖Operator/SERVICE/CLIENT。既有Schema对象、锁序、0001–0007及wepkg保持兼容；新增表、文件、keyref和writer进入完整恢复库存，完整C恢复是单独能力。
 
 <a id="task8-fix1-有限规格修订候选待采用"></a>
 
@@ -312,7 +312,7 @@ participant和delivery_streams由Store私有*sql.Tx固定两条INSERT，exact se
 
 integration专用initial adapter保存可选typed IntegrationInitialLineage在原runtime_instances.initialization JSON，旧Admin省略并保持原算法。保存policy、t/p/world/customer/player/create receipt、actor/source/acquisition、全部qualified对象/version/hash、字段指针、goal序号、origin边、rights/audience及body hash、空refs/缺asset的证据，与实际player aggregate source/node/grant同Tx。对后续正文Begin/Finish、source/use、Prepare/AuthorizeDispatch/StartSend/Approve/Commit须复用当前revalidator；未接通就不可用，删除/blocked/use撤回不由最新release或重导入恢复。安全metadata/必要治理及PROGRAM清理走原窄proof，不返正文。
 
-完整恢复集合C包含lineage、aggregate/acquisition、participant/create COMMIT/result、全部publish依赖/COMMIT/result，以及当前governance/tombstone/安装水位；完整C恢复仍须独立实现与验证。CREATE桥不新增公开字段/enum/表，保持65/177、17平台+2客户、0001–8、wepkg及源唯一性。
+完整恢复集合C包含lineage、aggregate/acquisition、participant/create COMMIT/result、全部publish依赖/COMMIT/result，以及当前governance/tombstone/安装水位；完整C恢复仍须独立实现与验证。CREATE桥不新增公开字段/enum/表，保留客户接入1.5.0基线65/177范围（当前整体1.6.0为67/181）、17平台+2客户、0001–8、wepkg及源唯一性。
 
 ## 11 三层账务、BYOK与UNKNOWN
 

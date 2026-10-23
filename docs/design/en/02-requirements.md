@@ -1,4 +1,4 @@
-> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.6.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
+> Published design reading view v3.0.2; current product design is 3.1.0 and R0 execution baseline is 3.0.1. Source includes Task8 and Task9 static preflight under working contract 1.6.0. Whole Task8/R0 remain unaccepted. See [support scope](00-status.md).
 
 # Loreviva Product Requirements
 

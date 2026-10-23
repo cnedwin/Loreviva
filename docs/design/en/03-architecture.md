@@ -1,4 +1,4 @@
-> Product design v3.0.2. This document defines goals and requirements. This branch still contains Tasks1–7 / contract1.4.0 source, without the in-development1.6.0 features. See [repository support scope](00-status.md) for implemented capabilities and setup.
+> Published design reading view v3.0.2; current product design is 3.1.0 and R0 execution baseline is 3.0.1. Source includes Task8 and Task9 static preflight under working contract 1.6.0. Whole Task8/R0 remain unaccepted. See [support scope](00-status.md).
 
 # Loreviva Technical Architecture Whitepaper
 
@@ -17,7 +17,7 @@ The engineering and documentation root is `<repository>`. Credentials, data and 
 
 | Item | Technology choice | Exact-artifact requirement |
 | --- | --- | --- |
-| Public HTTP contract | `/world/v1`, OpenAPI 3.1.2; the 1.3.0 compatibility baseline has 51 operations/131 schemas, the approved 1.4.0 baseline has 58/156, and working 1.6.0 has 65/177 | Original 18 public and 33 administrative/file operations retain compatibility; default memory responses remain compatible and provenance_v1 is explicitly selected. SDK and customer support claims follow actual release evidence |
+| Public HTTP contract | `/world/v1`, OpenAPI 3.1.2; the 1.3.0 compatibility baseline has 51 operations/131 schemas, the approved 1.4.0 baseline has 58/156, and working 1.6.0 has 67/181 | Original 18 public and 33 administrative/file operations retain compatibility; default memory responses remain compatible and provenance_v1 is explicitly selected. SDK and customer support claims follow actual release evidence |
 | Data Schema | JSON Schema 2020-12 | Schema/versioned fixed valid and invalid examples together |
 | Content package | `.wepkg` format 1.0, logical dependencies separate from local release | Traceable package digest, file manifest, import mapping |
 | Frontend | Vue 3.5.43 stable, Node.js 24 LTS; TypeScript, Vite, Router, Pinia, reusable native Vue/HTML/CSS/SVG components | Exact artifacts, strict types, engineering lock each verified; ElementPlus is excluded; declaration incompatibility must not be hidden by weakened checking |
@@ -318,7 +318,7 @@ Customer integration includes protocol discovery, customer-safe notification GET
 
 ### Customer integration ownership and delivery
 
-Customer integration uses Loreviva-Client-Contract as the sole selector for public_v1/integration_r0_v1. The 1.6.0 allocation adds 7 operations/21 schemas (65/177), 17 platform tables and two separate customer-example tables, typed participant/issuer bridges and actual CONFIG/NOTIFICATIONS registration with Close/drain. Service world ownership and the single-player data owner require a real same-Tx bridge; global bearer hashes cover Operator/SERVICE/CLIENT. Existing schema objects, lock ordinals, migrations0001–0007 and wepkg remain protected. Every new table, file, key reference and writer enters the complete recovery inventory; full C restoration is a separate capability.
+Customer integration uses Loreviva-Client-Contract as the sole selector for public_v1/integration_r0_v1. Customer integration1.5.0 adds 7 operations/21 schemas (65/177);1.6.0 adds package preflight and capabilities, totalling67/181. Customer integration includes 17 platform tables and two separate customer-example tables, typed participant/issuer bridges and actual CONFIG/NOTIFICATIONS registration with Close/drain. Service world ownership and the single-player data owner require a real same-Tx bridge; global bearer hashes cover Operator/SERVICE/CLIENT. Existing schema objects, lock ordinals, migrations0001–0007 and wepkg remain protected. Every new table, file, key reference and writer enters the complete recovery inventory; full C restoration is a separate capability.
 
 <a id="task8-fix1-bounded-specification-candidate-not-adopted"></a>
 
@@ -342,7 +342,7 @@ Current authorized publication and full origin chains are rebuilt from real cont
 
 The integration-only initial adapter stores optional typed IntegrationInitialLineage in existing runtime_instances.initialization JSON; old Admin omits it and retains its algorithm. It binds policy, t/p/world/customer/player/create receipt, actor/source/acquisition, all qualified objects/versions/hashes, field pointers, goal indexes, origin edges, rights/audience/body hashes and empty-ref/absent-asset evidence, atomically with player sources/nodes/grants. Later body Begin/Finish, source/use, Prepare/AuthorizeDispatch/StartSend/Approve/Commit use the same current revalidator or stay unavailable. Deletion/blocked/use revocation cannot be repaired using latest releases or reimport. Safe metadata, necessary governance and PROGRAM cleanup retain narrow proof without returning bodies.
 
-The complete recovery set C includes lineage, aggregate/acquisition, participant/create COMMIT/result, every publish dependency/COMMIT/result, current governance/tombstones and installation watermarks. Full C restoration still requires independent implementation and verification. The CREATE bridge adds no public fields/enums/tables and retains65/177,17 platform+2 customer tables,0001–8,wepkg and the single source.
+The complete recovery set C includes lineage, aggregate/acquisition, participant/create COMMIT/result, every publish dependency/COMMIT/result, current governance/tombstones and installation watermarks. Full C restoration still requires independent implementation and verification. The CREATE bridge adds no public fields/enums/tables and retains the customer-integration1.5.0 baseline scope65/177 (current whole1.6.0 is67/181),17 platform+2 customer tables,0001–8,wepkg and the single source.
 
 ## 11 Three-Layer Accounting, BYOK, and UNKNOWN
 

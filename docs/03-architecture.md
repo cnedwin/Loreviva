@@ -83,11 +83,11 @@ flowchart LR
 
 [Worker](../internal/app/worker.go)支持 `ADMIN/FILE_CLEANUP`、`CONTROL/INSTANCE_CONTROL`、`MIGRATION/INSTANCE_MIGRATION`，以及安装了 Memory 服务时的 `GOVERNANCE/MEMORY_GOVERNANCE`。正常启动会组合Memory服务，并在对应Harness拥有者就绪时登记`TURN/TURN`、`ADMIN/CANDIDATE`及`ADMIN/REHEARSAL`，按原任务、attempt和当前资格处理。
 
-本批Worker只能执行已登记的对应作业。Mock互动内核、世界控制和迁移已实现；原UNKNOWN与必要费用继续查询原请求身份，不重建采购。内部TURN和排练的成功不证明玩家会话/互动HTTP、SSE交付、真实模型或完整客户SDK已经接通。
+Worker执行已登记作业。Mock互动、世界控制和迁移已实现；UNKNOWN保留原请求身份。Task8 HTTP接入、SDK与SSE组件已有快照实现，但全链路验收未完成，不据此宣称真实模型质量。
 
 ## 契约与扩展
 
-已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.6.0（67 operations / 183 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)保留配置与类型能力，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；这不等于完整客户 SDK 或玩家 SSE。
+已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.6.0（67 operations / 181 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)导出接入传输、预备命令、BFF恢复、媒体与SSE类型，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；薄后端与参考客户端已有实现，完整Task8验收仍待完成。
 
 | Operation ID | Method | Path |
 | --- | --- | --- |
@@ -101,6 +101,6 @@ flowchart LR
 
 本地设置按确切 tenant/product scope 和独立 revision 持久化；普通设置依赖本地持久化与治理，不依赖模型供应商就绪。成员动作不取代主体、来源或私人记忆权利，自同意不授予他人或管理员动作；通知偏好不会外发消息。
 
-Task7 已提供原生 Vue Studio；Task8–12 的实施、完整 SDK、导入导出、计量管理和完整恢复等后续范围仍待完成。新增行业适配器可以提交候选或回执，不能越过事实、隐私或客户业务权威。LC、真实模型、真人体验、完整发行、收费与部署未验收。
+Task7提供原生Vue Studio；Task8已有接入实现，等待整体验收。Task9静态预检已实现；导入导出、完整计量、恢复与发行仍待完成。适配器不能越过事实、隐私或客户权威。LC、真实模型、真人体验、收费与部署未验收。
 
 返回[首页](../README.md) · 查看[搭建和接入](04-setup-and-integration.md)

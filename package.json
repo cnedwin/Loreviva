@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "packageManager": "pnpm@11.25.0",
   "scripts": {
     "scope:init": "node scripts/refresh-source-byte-scope.mjs --init",
@@ -12,14 +14,20 @@
     "generate:contracts": "node scripts/generate-contracts.mjs",
     "test:contracts": "node scripts/check-generated.mjs && node --test scripts/contracts.test.mjs scripts/review-regressions.test.mjs scripts/memory-contract.test.mjs scripts/admin-read-contract.test.mjs scripts/studio-contract.test.mjs tests/contracts/integration_profiles.test.mjs",
     "test:sdk": "node --test scripts/sdk-config.test.mjs scripts/studio-csp.test.mjs && pnpm --filter @loreviva/sdk-ts typecheck",
-    "test": "pnpm check:bytes && pnpm test:contracts && pnpm test:sdk",
+    "test": "pnpm check:bytes && pnpm test:contracts && pnpm test:sdk && pnpm test:integration-runner",
     "test:e2e": "playwright test",
     "build:studio": "pnpm --dir apps/studio build && node scripts/build-studio.mjs",
     "test:reference": "pnpm --dir apps/reference-client test",
     "check:reference": "tsc -p tests/sdk/tsconfig.json --noEmit && pnpm --dir apps/reference-client typecheck",
     "build:reference": "pnpm --dir apps/reference-client build",
     "reference:initialize": "node examples/thin-backend/reference-bff.ts initialize",
-    "reference:serve": "node examples/thin-backend/reference-bff.ts serve"
+    "reference:serve": "node examples/thin-backend/reference-bff.ts serve",
+    "test:integration-runner": "node --test scripts/integration-shards.test.mjs"
   },
-  "devDependencies": { "ajv": "8.18.0", "ajv-formats": "3.0.1", "typescript": "5.9.3", "@playwright/test": "1.64.0" }
+  "devDependencies": {
+    "ajv": "8.18.0",
+    "ajv-formats": "3.0.1",
+    "typescript": "5.9.3",
+    "@playwright/test": "1.64.0"
+  }
 }

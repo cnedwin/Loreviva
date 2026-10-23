@@ -31,7 +31,7 @@ The total hash (`ContextHash`) is still recorded and exposed, but it is **no lon
 ## Recovery
 
 - Recovery recomputes from the frozen provider result and consumes one further call, which the approval record must show explicitly.
-- **R0 limitation**: recovery requires no third-party commit in between. A third commit between approval and commit still yields a conflict refusal. Lifting that needs drift generations, deferred to a later version and not claimed for R0.
+- **Recovery scope**: approval and commit compare the same conflict subject by Kind, ID and OriginalHash; a later third-party commit changing CurrentHash does not by itself invalidate approval. Current authority, candidate resources and proof are still checked at commit. Changed subjects or failed current checks are refused; arbitrary concurrent recovery is not guaranteed.
 - The birth record accepts a recovery base that shares the same origin (source, core, route), because the drift comes from the same concurrency premise.
 
 ## Privacy and governance
