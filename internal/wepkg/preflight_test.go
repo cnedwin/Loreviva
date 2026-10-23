@@ -1,12 +1,15 @@
 package wepkg
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+
+	"loreviva.local/loreviva/internal/generated"
 )
 
 // schemaExample returns the manifest published inside the format schema. It is
@@ -268,4 +271,113 @@ func mustJSON(t *testing.T, v any) []byte {
 		t.Fatal(e)
 	}
 	return raw
+}
+
+func TestCheckReportsMatchWireContract(t *testing.T) {
+	body := []byte(`{"name":"wire fixture"}`)
+	sum := sha256.Sum256(body)
+	digest := hex.EncodeToString(sum[:])
+	m := Manifest{
+		FormatVersion: "1.0", PackageID: "wire.fixture", Kind: "WORLD", PackageVersion: "1.0.0",
+		Entrypoints: []string{"world"},
+		Entries:     []Entry{{LogicalID: "world", Kind: "WORLD", Path: "definitions/world.json", Version: "1.0.0", SHA256: digest, References: []string{}}},
+		Files: []FileRecord{{Path: "definitions/world.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json",
+			Rights: Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
+		Dependencies: []Dependency{},
+		Requirements: Requirements{Model: []Capability{}, Tool: []Capability{}, Presentation: []Capability{{CapabilityID: "text", Required: true}}},
+		Provenance:   Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}},
+	}
+	var err error
+	m.ContentSHA256, err = ContentHash(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := mustJSON(t, m)
+	manifestPart := member{name: "manifest.json", body: manifest}
+	bodyPart := member{name: "definitions/world.json", body: body}
+	archive := build(t, manifestPart, bodyPart)
+	report := Check(archive, DefaultLimits)
+	if report.Verdict != "PASS" {
+		t.Fatalf("fixture rejected: %v", codes(report.Findings))
+	}
+	rejected := Check(build(t, manifestPart, bodyPart, member{name: "extra.json", body: []byte(`{}`)}), DefaultLimits)
+	if rejected.Verdict != "REJECT" || !has(rejected.Findings, CodeFileUndeclared) {
+		t.Fatal("missing undeclared-file rejection")
+	}
+	wantLimits := map[string]int64{
+		"archive_bytes": DefaultLimits.ArchiveBytes, "manifest_bytes": DefaultLimits.ManifestBytes,
+		"entries": int64(DefaultLimits.Entries), "file_bytes": DefaultLimits.FileBytes,
+		"total_bytes": DefaultLimits.TotalBytes, "ratio": DefaultLimits.Ratio,
+		"path_length": int64(DefaultLimits.PathLength), "path_depth": int64(DefaultLimits.PathDepth),
+	}
+	for _, tc := range []struct {
+		name   string
+		report Report
+	}{{"PASS", report}, {"REJECT", rejected}} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Validate actual serialized reports, before same-type decoding can hide field spelling.
+			raw := mustJSON(t, tc.report)
+			if err := generated.Validate("PackagePreflightReport", raw); err != nil {
+				t.Errorf("report wire schema: %v", err)
+			}
+			var wire struct {
+				Limits json.RawMessage `json:"limits"`
+			}
+			if err := json.Unmarshal(raw, &wire); err != nil {
+				t.Fatal(err)
+			}
+			if err := generated.Validate("PackagePreflightLimits", wire.Limits); err != nil {
+				t.Errorf("limits wire schema: %v", err)
+			}
+			var limits map[string]int64
+			if err := json.Unmarshal(wire.Limits, &limits); err != nil {
+				t.Fatal(err)
+			}
+			if len(limits) != len(wantLimits) {
+				t.Fatalf("limit key count: got %d want %d", len(limits), len(wantLimits))
+			}
+			for key, want := range wantLimits {
+				if got, ok := limits[key]; !ok || got != want {
+					t.Errorf("limit %s missing or incorrect", key)
+				}
+			}
+		})
+	}
+	t.Run("determinism_and_repack", func(t *testing.T) {
+		again := Check(archive, DefaultLimits)
+		if !bytes.Equal(mustJSON(t, report), mustJSON(t, again)) {
+			t.Fatal("same input changed report bytes")
+		}
+		// Reuse identical member bodies in reverse container order, not a hand-edited report.
+		repackedBytes := build(t, bodyPart, manifestPart)
+		repacked := Check(repackedBytes, DefaultLimits)
+		if bytes.Equal(archive, repackedBytes) || report.ArchiveSHA256 == repacked.ArchiveSHA256 {
+			t.Fatal("fixture did not change container bytes")
+		}
+		if repacked.Verdict != "PASS" || repacked.ManifestSHA256 != report.ManifestSHA256 || repacked.ContentHashComputed != report.ContentHashComputed || repacked.ReportSHA256 != report.ReportSHA256 {
+			t.Fatal("repacking changed content or report identity")
+		}
+	})
+	for _, tc := range []struct {
+		name   string
+		change func(*Limits)
+	}{
+		{"archive_bytes", func(l *Limits) { l.ArchiveBytes++ }},
+		{"manifest_bytes", func(l *Limits) { l.ManifestBytes++ }},
+		{"entries", func(l *Limits) { l.Entries++ }},
+		{"file_bytes", func(l *Limits) { l.FileBytes++ }},
+		{"total_bytes", func(l *Limits) { l.TotalBytes++ }},
+		{"ratio", func(l *Limits) { l.Ratio++ }},
+		{"path_length", func(l *Limits) { l.PathLength++ }},
+		{"path_depth", func(l *Limits) { l.PathDepth++ }},
+	} {
+		t.Run("limit_"+tc.name, func(t *testing.T) {
+			limits := DefaultLimits
+			tc.change(&limits)
+			changed := Check(archive, limits)
+			if changed.Verdict != "PASS" || changed.ReportSHA256 == report.ReportSHA256 {
+				t.Fatal("applied limit did not change passing report identity")
+			}
+		})
+	}
 }

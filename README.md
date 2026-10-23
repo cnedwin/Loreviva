@@ -6,8 +6,8 @@ Loreviva lets creators compose world rules, characters, roles, skills, knowledge
 and model routes into interactive content that keeps developing, and lets clients
 connect through their own applications.
 
-> **Status: development snapshot, not a release.** Tasks 1–7 are implemented and
-> reviewed; Task 8 integration and Task 9 package work are incomplete; R0 is not accepted. Only the
+> **Status: development snapshot, not a release.** Tasks 1–8 have local acceptance
+> within their declared scopes; Tasks 9–12 and whole R0 remain incomplete. Only the
 > synthetic Mock model and Mock billing are enabled. Working contract **1.6.0
 > (67 operations / 181 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
 > operation declared in the contract is not evidence that a handler is mounted,
@@ -27,7 +27,7 @@ connect through their own applications.
 | Implemented | Bounded Mock harness, original-attempt recovery, candidate drafts, isolated rehearsals |
 | Implemented | Native Vue Studio, limited admin client, local settings, member and self-consent entry points |
 | Implemented | `.wepkg` static preflight: container, manifest, integrity, references, rights, primitives, deterministic report |
-| Implemented, whole Task8 unaccepted | TypeScript integration SDK, thin backend, Vue reference client and personal-memory governance |
+| Locally accepted within Task8 scope | TypeScript integration SDK, thin backend, Vue reference client and personal-memory governance |
 | Planned | Package import (isolated draft), rehearsal, local publish, export |
 | Planned | Metering, complete backup/restore, real model and hosted billing validation |
 
@@ -81,7 +81,7 @@ and skipped retries cannot erase an initial failure. Shared server load and timi
 still affect parallel runs; no fixed speedup is promised.
 
 See [current progress and R0 gaps](docs/progress/2026-10-23.en.md).
-Unattended development has resumed with Task8 final closure first. Product design is 3.1.0; published long-form
+The next implementation stage is Task9 content packages. Product design is 3.1.0; published long-form
 design reading views still retain 3.0.2, with R0 execution baseline 3.0.1.
 
 ## Contributing
