@@ -32,7 +32,7 @@ func ContentHash(m Manifest) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	canonical, e := wire.Canonical(raw)
+	canonical, e := wire.CanonicalBounded(raw, 8<<20)
 	if e != nil {
 		return "", e
 	}

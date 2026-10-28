@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"loreviva.local/loreviva/internal/app"
@@ -81,15 +82,22 @@ func (f packageFixture) get(t *testing.T, path string) *httptest.ResponseRecorde
 // one entry pointing at it, and the content digest computed with the same rule
 // the check applies.
 func validPackage(t *testing.T, body []byte) []byte {
+	return packageWithManifest(t, body, nil)
+}
+
+func packageWithManifest(t *testing.T, body []byte, alter func(map[string]any)) []byte {
 	t.Helper()
 	sum := sha256.Sum256(body)
 	digest := hex.EncodeToString(sum[:])
 	m := wepkg.Manifest{
 		FormatVersion: "1.0", PackageID: "coffee.demo", Kind: "WORLD", PackageVersion: "1.0.0",
-		Entrypoints: []string{"coffee_demo"},
-		Entries:     []wepkg.Entry{{LogicalID: "coffee_demo", Kind: "WORLD", Path: "definitions/coffee.json", Version: "1.0.0", SHA256: digest}},
-		Files:       []wepkg.FileRecord{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json", Rights: wepkg.Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
-		Provenance:  wepkg.Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}},
+		Entrypoints:   []string{"coffee_demo"},
+		Entries:       []wepkg.Entry{{LogicalID: "coffee_demo", Kind: "WORLD", Path: "definitions/coffee.json", Version: "1.0.0", SHA256: digest, References: []string{}}},
+		Files:         []wepkg.FileRecord{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json", Rights: wepkg.Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
+		Compatibility: wepkg.Compatibility{PublicAPIMajor: 1, PackageFormatMajor: 1, MinimumRuntimeContract: "1.0.0", RulePrimitiveSet: "core.v1"},
+		Dependencies:  []wepkg.Dependency{},
+		Requirements:  wepkg.Requirements{Model: []wepkg.Capability{}, Tool: []wepkg.ToolRequirement{}, TestedConfigurations: []wepkg.TestedConfiguration{}},
+		Provenance:    wepkg.Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}, CreatedAt: "2026-10-28T00:00:00Z", SyntheticExamplesOnly: true},
 	}
 	m.Requirements.Presentation = []wepkg.Capability{{CapabilityID: "text", Required: true}}
 	content, e := wepkg.ContentHash(m)
@@ -100,6 +108,16 @@ func validPackage(t *testing.T, body []byte) []byte {
 	manifest, e := json.Marshal(m)
 	if e != nil {
 		t.Fatal(e)
+	}
+	if alter != nil {
+		var document map[string]any
+		if e = json.Unmarshal(manifest, &document); e != nil {
+			t.Fatal(e)
+		}
+		alter(document)
+		if manifest, e = json.Marshal(document); e != nil {
+			t.Fatal(e)
+		}
 	}
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
@@ -247,6 +265,41 @@ func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 	}
 	if after := countRows(t, f.store); after != before {
 		t.Fatalf("rejected preflight wrote business state: %v -> %v", before, after)
+	}
+	for _, kind := range []string{"long_identity", "bad_hash", "missing_compatibility", "nested_unknown", "long_unknown"} {
+		archive := packageWithManifest(t, []byte(`{"name":"coffee"}`), func(doc map[string]any) {
+			switch kind {
+			case "long_identity":
+				doc["package_id"] = strings.Repeat("a", 300)
+			case "bad_hash":
+				doc["content_sha256"] = "invalid hash"
+			case "missing_compatibility":
+				delete(doc, "compatibility")
+			case "nested_unknown":
+				doc["provenance"].(map[string]any)["extra"] = true
+			case "long_unknown":
+				doc[strings.Repeat("untrusted", 1000)] = true
+			}
+		})
+		contentType, body := multipartBody(t, archive, "archive")
+		response := f.post(t, f.token, contentType, body)
+		if response.Code != 200 {
+			t.Fatalf("%s rejected package missing report: %d", kind, response.Code)
+		}
+		assertPackageWire(t, "PackagePreflightReport", response.Body.Bytes())
+		var rejected wepkg.Report
+		if err := json.Unmarshal(response.Body.Bytes(), &rejected); err != nil {
+			t.Fatal(err)
+		}
+		if rejected.Verdict != "REJECT" || rejected.PackageID != "" || rejected.Kind != "" || rejected.ContentHashComputed != "" {
+			t.Fatalf("%s malformed identity/processing leaked", kind)
+		}
+		if rejected.ManifestSHA256 == "" || rejected.ArchiveSHA256 == "" {
+			t.Fatalf("%s missing actual input hashes", kind)
+		}
+		if after := countRows(t, f.store); after != before {
+			t.Fatalf("%s preflight wrote inspected business rows", kind)
+		}
 	}
 }
 

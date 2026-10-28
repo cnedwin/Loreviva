@@ -155,7 +155,7 @@ func TestCheckGraphCoversReferencesEntrypointsAndDependencies(t *testing.T) {
 
 func TestCheckGraphRejectsUnregisteredCapability(t *testing.T) {
 	m := schemaExample(t)
-	m.Requirements.Tool = []Capability{{CapabilityID: "teleport", Required: true}}
+	m.Requirements.Tool = []ToolRequirement{{ToolCapabilityID: "teleport", RegisteredContractVersion: "1.0.0", Required: true}}
 	if findings := CheckGraph(m); !has(findings, CodeCapabilityUnknown) {
 		t.Fatalf("unregistered capability accepted: %v", codes(findings))
 	}
@@ -185,7 +185,7 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 	manifest := map[string]any{
 		"format_version": "1.0", "package_id": "coffee.demo", "kind": "WORLD", "package_version": "1.0.0",
 		"content_sha256": content,
-		"compatibility":  map[string]any{"package_format_major": 1},
+		"compatibility":  map[string]any{"public_api_major": 1, "package_format_major": 1, "minimum_runtime_contract": "1.0.0", "rule_primitive_set": "core.v1"},
 		"entrypoints":    []string{"coffee_demo"},
 		"entries": []any{map[string]any{"logical_id": "coffee_demo", "kind": "WORLD", "path": "definitions/coffee.json",
 			"version": "1.0.0", "sha256": digest, "references": []string{}}},
@@ -193,9 +193,9 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 			"media_type": "application/json", "rights": map[string]any{"license": "CC0-1.0", "source_reference": "synthetic",
 				"redistribution_allowed": true, "allowed_uses": []string{"WORLD_CONTENT"}}}},
 		"dependencies": []any{},
-		"requirements": map[string]any{"model_capabilities": []any{}, "tool_capabilities": []any{}, "presentation_capabilities": []any{
+		"requirements": map[string]any{"tested_configurations": []any{}, "model_capabilities": []any{}, "tool_capabilities": []any{}, "presentation_capabilities": []any{
 			map[string]any{"capability_id": "text", "required": true}}},
-		"provenance": map[string]any{"author_display_name": "test", "license": "CC0-1.0", "source_references": []string{"synthetic"}},
+		"provenance": map[string]any{"created_at": "2026-10-28T00:00:00Z", "synthetic_examples_only": true, "author_display_name": "test", "license": "CC0-1.0", "source_references": []string{"synthetic"}},
 	}
 	manifestRaw, _ := json.Marshal(manifest)
 	archive := build(t, member{name: "manifest.json", body: manifestRaw}, member{name: "definitions/coffee.json", body: body})
@@ -283,9 +283,10 @@ func TestCheckReportsMatchWireContract(t *testing.T) {
 		Entries:     []Entry{{LogicalID: "world", Kind: "WORLD", Path: "definitions/world.json", Version: "1.0.0", SHA256: digest, References: []string{}}},
 		Files: []FileRecord{{Path: "definitions/world.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json",
 			Rights: Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
-		Dependencies: []Dependency{},
-		Requirements: Requirements{Model: []Capability{}, Tool: []Capability{}, Presentation: []Capability{{CapabilityID: "text", Required: true}}},
-		Provenance:   Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}},
+		Dependencies:  []Dependency{},
+		Requirements:  Requirements{Model: []Capability{}, Tool: []ToolRequirement{}, Presentation: []Capability{{CapabilityID: "text", Required: true}}, TestedConfigurations: []TestedConfiguration{}},
+		Compatibility: Compatibility{PublicAPIMajor: 1, PackageFormatMajor: 1, MinimumRuntimeContract: "1.0.0", RulePrimitiveSet: "core.v1"},
+		Provenance:    Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}, CreatedAt: "2026-10-28T00:00:00Z", SyntheticExamplesOnly: true},
 	}
 	var err error
 	m.ContentSHA256, err = ContentHash(m)

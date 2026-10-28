@@ -8,6 +8,18 @@ import {generateContracts, loadSources, validateExamples} from './generate-contr
 import {checkGenerated} from './check-generated.mjs';
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = path.resolve(repo,'contracts/source');
+test('wepkg backend artifacts derive from the sole source and reject missing or changed copies',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'loreviva-wepkg-backend-'));
+ try {
+  const result=await generateContracts({sourceRoot,outputRoot:root});
+  for(const file of ['internal/generated/wepkg.schema.json','internal/generated/wepkg_validate.go'])assert.ok(result.outputs.includes(file),file);
+  const {wepkg}=await loadSources(sourceRoot);
+  assert.deepEqual(JSON.parse(await readFile(path.join(root,'internal/generated/wepkg.schema.json'),'utf8')),wepkg);
+  const target='internal/generated/wepkg_validate.go';
+  await writeFile(path.join(root,target),'stale');
+  assert.ok((await checkGenerated({sourceRoot,outputRoot:root})).includes(target));
+ } finally {await rm(root,{recursive:true,force:true})}
+});
 test('original18 operations permit only explicit memory protocol deltas; original43 DTOs remain immutable',async()=>{
  const old=JSON.parse(await readFile(path.join(repo,'scripts/fixtures/original-public-contract.json'),'utf8'));
  const {openapi}=await loadSources(sourceRoot);
