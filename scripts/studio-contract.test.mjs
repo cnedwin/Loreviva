@@ -17,7 +17,14 @@ test('studio_contract_exact_delta',async()=>{
  const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,67); assert.equal(Object.keys(o.components.schemas).length,181);
  const added=ops.filter(op=>ids.includes(op.operationId)); assert.deepEqual(added.map(o=>o.operationId).sort(),ids);
  for(const op of added)assert.deepEqual(op.security,[{OperatorBearer:[]}]);
- assert.equal(createHash('sha256').update(await readFile(new URL('../contracts/source/wepkg.schema.json',import.meta.url))).digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
+ // Only the adopted portable-body descriptor is additive. The remaining
+ // exact canonical bytes must still match the original approved baseline.
+ const packageRaw=await readFile(new URL('../contracts/source/wepkg.schema.json',import.meta.url));
+ const legacyPackage=JSON.parse(packageRaw.toString('utf8'));
+ assert.deepEqual(packageRaw,Buffer.from(JSON.stringify(legacyPackage,null,2)+'\n'));
+ assert.ok(Object.hasOwn(legacyPackage,'x-loreviva-portable-body'));
+ delete legacyPackage['x-loreviva-portable-body'];
+ assert.equal(createHash('sha256').update(JSON.stringify(legacyPackage,null,2)+'\n').digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
 });
 async function validator(){const {openapi:o}=await loadSources();const a=new Ajv2020({strict:false,allErrors:true});addFormats(a);a.addSchema({...o,$id:'https://schemas.loreviva.invalid/studio',$schema:o.jsonSchemaDialect});return (n,v)=>a.validate({$ref:'https://schemas.loreviva.invalid/studio#/components/schemas/'+n},v);}
 test('studio_contract_closed_branches',async()=>{

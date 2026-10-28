@@ -1,0 +1,2763 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.loreviva.invalid/generated/portable",
+  "$ref": "#/$defs/DraftInput",
+  "$defs": {
+    "AssetDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "ASSET"
+        },
+        "asset_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "media_type": {
+          "type": "string",
+          "enum": [
+            "text/plain",
+            "text/markdown",
+            "image/png",
+            "image/jpeg",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]
+        },
+        "size_bytes": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "client_capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Identity"
+          },
+          "maxItems": 10
+        },
+        "fallback": {
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "PLACEHOLDER",
+            "BLOCK"
+          ]
+        },
+        "file_path": {
+          "$ref": "#/$defs/PortableFilePath"
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "asset_sha256",
+        "media_type",
+        "size_bytes",
+        "client_capabilities",
+        "fallback",
+        "file_path"
+      ],
+      "additionalProperties": false
+    },
+    "CharacterDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "CHARACTER"
+        },
+        "biography": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "long_term_goals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "interests": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "maxItems": 20
+        },
+        "inner_conflicts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "expression_style": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "example_lines": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "boundaries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "initial_knowledge_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "relationship_policy": {
+          "type": "string",
+          "enum": [
+            "DIRECTIONAL",
+            "NONE"
+          ]
+        },
+        "appearance_asset_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationSettings"
+        },
+        "skill_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "biography",
+        "values",
+        "long_term_goals",
+        "interests",
+        "inner_conflicts",
+        "expression_style",
+        "example_lines",
+        "boundaries",
+        "initial_knowledge_refs",
+        "relationship_policy",
+        "appearance_asset_refs",
+        "generation",
+        "skill_refs"
+      ],
+      "additionalProperties": false
+    },
+    "ContentObject": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/WorldDefinition"
+        },
+        {
+          "$ref": "#/$defs/SceneDefinition"
+        },
+        {
+          "$ref": "#/$defs/PropDefinition"
+        },
+        {
+          "$ref": "#/$defs/RuleDefinition"
+        },
+        {
+          "$ref": "#/$defs/CharacterDefinition"
+        },
+        {
+          "$ref": "#/$defs/RoleDefinition"
+        },
+        {
+          "$ref": "#/$defs/SkillDefinition"
+        },
+        {
+          "$ref": "#/$defs/KnowledgeDefinition"
+        },
+        {
+          "$ref": "#/$defs/AssetDefinition"
+        },
+        {
+          "$ref": "#/$defs/PresentationTheme"
+        }
+      ]
+    },
+    "DefinitionRef": {
+      "$ref": "#/$defs/PortableRef"
+    },
+    "DependencyLock": {
+      "type": "object",
+      "properties": {
+        "release_id": {
+          "$ref": "#/$defs/Identity"
+        },
+        "object_id": {
+          "$ref": "#/$defs/Identity"
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "release_id",
+        "object_id",
+        "version",
+        "content_hash"
+      ],
+      "additionalProperties": false
+    },
+    "DraftInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "root_object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentObject"
+          },
+          "maxItems": 200,
+          "minItems": 1
+        },
+        "module_agent_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModuleAgentBinding"
+          },
+          "maxItems": 100
+        },
+        "skill_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SkillBinding"
+          },
+          "maxItems": 100
+        },
+        "body_version": {
+          "type": "string",
+          "const": "1.0"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "tags",
+        "root_object_id",
+        "objects",
+        "module_agent_bindings",
+        "skill_bindings",
+        "body_version"
+      ],
+      "additionalProperties": false
+    },
+    "Duty": {
+      "type": "string",
+      "enum": [
+        "FACT_VALIDATION",
+        "RIGHTS_CHECK",
+        "AUDIENCE_CHECK",
+        "NARRATIVE",
+        "STATE_COMMIT"
+      ]
+    },
+    "DutyAssignment": {
+      "type": "object",
+      "properties": {
+        "duty_id": {
+          "$ref": "#/$defs/Duty"
+        },
+        "role_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        }
+      },
+      "required": [
+        "duty_id",
+        "role_ref"
+      ],
+      "additionalProperties": false
+    },
+    "ExactUnsigned": {
+      "type": "string",
+      "description": "Exact unsigned integer; never parse using floating point.",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "GenerationSettings": {
+      "$ref": "#/$defs/PortableGeneration"
+    },
+    "Identity": {
+      "type": "string",
+      "description": "Nonempty case-sensitive ASCII identity; scope is checked independently.",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "InitialActorSetup": {
+      "type": "object",
+      "properties": {
+        "slot_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "character_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "scene_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "initial_goals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "knowledge_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "name_override": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "slot_id",
+        "character_ref",
+        "scene_ref",
+        "position",
+        "initial_goals",
+        "knowledge_refs"
+      ],
+      "additionalProperties": false
+    },
+    "KnowledgeDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "KNOWLEDGE"
+        },
+        "knowledge_type": {
+          "type": "string",
+          "const": "NOTE"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "source_location": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "binding_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "knowledge_type",
+        "text",
+        "binding_refs"
+      ],
+      "additionalProperties": false
+    },
+    "ModuleAgentBinding": {
+      "type": "object",
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "owner_object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "module_id": {
+          "type": "string",
+          "enum": [
+            "INTERACTION",
+            "PROACTIVE",
+            "AUTHORING",
+            "KNOWLEDGE_EXTRACTION",
+            "MEDIA",
+            "REHEARSAL",
+            "EVALUATION"
+          ]
+        },
+        "role_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationSettings"
+        }
+      },
+      "required": [
+        "binding_id",
+        "owner_object_id",
+        "module_id",
+        "role_ref",
+        "enabled",
+        "generation"
+      ],
+      "additionalProperties": false
+    },
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -100000,
+          "maximum": 100000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -100000,
+          "maximum": 100000
+        },
+        "z": {
+          "type": "number",
+          "minimum": -100000,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    },
+    "PresentationTheme": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "PRESENTATION_THEME"
+        },
+        "asset_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "motion_mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "$ref": "#/$defs/Identity"
+              },
+              "asset_ref": {
+                "$ref": "#/$defs/DefinitionRef"
+              }
+            },
+            "required": [
+              "action",
+              "asset_ref"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 30
+        },
+        "voice_mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "voice": {
+                "$ref": "#/$defs/Identity"
+              },
+              "asset_ref": {
+                "$ref": "#/$defs/DefinitionRef"
+              }
+            },
+            "required": [
+              "voice",
+              "asset_ref"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 30
+        },
+        "client_capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Identity"
+          },
+          "maxItems": 10
+        },
+        "fallback": {
+          "type": "string",
+          "enum": [
+            "TEXT",
+            "PLACEHOLDER",
+            "BLOCK"
+          ]
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "asset_refs",
+        "motion_mappings",
+        "voice_mappings",
+        "client_capabilities",
+        "fallback"
+      ],
+      "additionalProperties": false
+    },
+    "PropDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "PROP"
+        },
+        "custodian_slot": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "scene_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "unique": {
+          "type": "boolean"
+        },
+        "quantity": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "interaction_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "MOVE",
+              "READ",
+              "EDIT"
+            ]
+          },
+          "maxItems": 3
+        },
+        "rule_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        },
+        "asset_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "custodian_slot",
+        "scene_ref",
+        "position",
+        "unique",
+        "quantity",
+        "state",
+        "interaction_capabilities",
+        "rule_refs",
+        "asset_refs"
+      ],
+      "additionalProperties": false
+    },
+    "RoleDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "ROLE"
+        },
+        "duty_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Duty"
+          },
+          "maxItems": 5,
+          "uniqueItems": true
+        },
+        "implementation_kind": {
+          "type": "string",
+          "enum": [
+            "PROGRAM",
+            "AGENT"
+          ]
+        },
+        "task_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "TURN",
+              "REHEARSAL",
+              "CANDIDATE",
+              "PUBLISH_CHECK"
+            ]
+          },
+          "maxItems": 4
+        },
+        "input_schema_id": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        },
+        "output_schema_id": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        },
+        "knowledge_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationSettings"
+        },
+        "skill_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "instruction_template": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "failure_policy": {
+          "type": "string",
+          "enum": [
+            "BLOCK",
+            "RETURN_CANDIDATE"
+          ]
+        },
+        "budget_owner": {
+          "const": "PARENT"
+        },
+        "builtin_original": {
+          "type": "boolean",
+          "const": false
+        },
+        "tool_capability_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "duty_ids",
+        "implementation_kind",
+        "task_types",
+        "input_schema_id",
+        "output_schema_id",
+        "knowledge_refs",
+        "generation",
+        "skill_refs",
+        "instruction_template",
+        "failure_policy",
+        "budget_owner",
+        "builtin_original",
+        "tool_capability_ids"
+      ],
+      "additionalProperties": false
+    },
+    "RuleCondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "ACTOR_SLOT_EQUALS"
+            },
+            "slot_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            }
+          },
+          "required": [
+            "op",
+            "slot_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "PROP_CUSTODIAN_EQUALS"
+            },
+            "prop_ref": {
+              "$ref": "#/$defs/DefinitionRef"
+            },
+            "slot_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            }
+          },
+          "required": [
+            "op",
+            "prop_ref",
+            "slot_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "ALWAYS"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RuleDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "RULE"
+        },
+        "strength": {
+          "type": "string",
+          "enum": [
+            "HARD",
+            "SOFT",
+            "OPPORTUNITY"
+          ]
+        },
+        "primitive": {
+          "type": "string",
+          "enum": [
+            "SIGN_CUSTODY",
+            "STYLE",
+            "BOUNDED_OPPORTUNITY"
+          ]
+        },
+        "trigger": {
+          "type": "string",
+          "enum": [
+            "MOVE",
+            "EDIT",
+            "READ",
+            "TURN"
+          ]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        },
+        "condition": {
+          "$ref": "#/$defs/RuleCondition"
+        },
+        "effect": {
+          "type": "string",
+          "enum": [
+            "ALLOW",
+            "DENY"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "positive_examples": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 10
+        },
+        "negative_examples": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 10
+        },
+        "ambiguities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 10
+        },
+        "cooldown_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "end_condition": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "strength",
+        "primitive",
+        "trigger",
+        "targets",
+        "condition",
+        "effect",
+        "reason",
+        "positive_examples",
+        "negative_examples",
+        "ambiguities"
+      ],
+      "additionalProperties": false
+    },
+    "SceneDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "SCENE"
+        },
+        "coordinate_system": {
+          "type": "string",
+          "enum": [
+            "2D",
+            "2.5D"
+          ]
+        },
+        "background_asset_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "child_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 100
+        },
+        "adjacent_scene_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "PUBLIC",
+            "ACTOR_SCOPED"
+          ]
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "coordinate_system",
+        "position",
+        "child_refs",
+        "adjacent_scene_refs",
+        "visibility"
+      ],
+      "additionalProperties": false
+    },
+    "SkillBinding": {
+      "type": "object",
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "role_object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "skill_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "trigger": {
+          "type": "string",
+          "enum": [
+            "TURN",
+            "PRECHECK",
+            "MANUAL"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "budget_owner": {
+          "const": "PARENT"
+        }
+      },
+      "required": [
+        "binding_id",
+        "role_object_id",
+        "skill_ref",
+        "order",
+        "trigger",
+        "enabled",
+        "budget_owner"
+      ],
+      "additionalProperties": false
+    },
+    "SkillDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "SKILL"
+        },
+        "implementation_kind": {
+          "type": "string",
+          "enum": [
+            "PROGRAM",
+            "GENERATIVE"
+          ]
+        },
+        "input_schema_id": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        },
+        "output_schema_id": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        },
+        "conflicting_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 20
+        },
+        "max_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "max_duration_ms": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "max_cost_units": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationSettings"
+        },
+        "failure_policy": {
+          "type": "string",
+          "enum": [
+            "BLOCK",
+            "RETURN_CANDIDATE"
+          ]
+        },
+        "synthetic_examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "expected": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "input",
+              "expected"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 20
+        },
+        "builtin_original": {
+          "type": "boolean",
+          "const": false
+        },
+        "tool_capability_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required_capability_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "implementation_kind",
+        "input_schema_id",
+        "output_schema_id",
+        "conflicting_refs",
+        "max_depth",
+        "max_duration_ms",
+        "max_cost_units",
+        "generation",
+        "failure_policy",
+        "synthetic_examples",
+        "builtin_original",
+        "tool_capability_ids",
+        "required_capability_ids"
+      ],
+      "additionalProperties": false
+    },
+    "SourceRights": {
+      "type": "object",
+      "properties": {
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "redistribution_allowed": {
+          "const": true
+        },
+        "allowed_uses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "WORLD_CONTENT",
+              "CHARACTER_CONTENT",
+              "SKILL_CONTENT",
+              "KNOWLEDGE",
+              "PRESENTATION",
+              "SYNTHETIC_TEST"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "license",
+        "source_reference",
+        "redistribution_allowed",
+        "allowed_uses"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit shareable rights are required. A readable source is not automatically redistributable."
+    },
+    "WorldDefinition": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/SourceRights"
+        },
+        "audience_policy": {
+          "type": "string",
+          "enum": [
+            "PRODUCT_EDITORS",
+            "PRODUCT_READERS"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/ExactUnsigned"
+        },
+        "origin_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 30
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DefinitionRef"
+          },
+          "maxItems": 30
+        },
+        "kind": {
+          "const": "WORLD"
+        },
+        "background": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "PRIVATE",
+            "SHARED"
+          ]
+        },
+        "initial_scene_ref": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "initial_actor_setups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InitialActorSetup"
+          },
+          "maxItems": 20
+        },
+        "primary_actor_slot": {
+          "$ref": "#/$defs/PortableLogicalID"
+        },
+        "participant_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "CREATOR",
+              "CUSTOMER_VERIFIED_PLAYER"
+            ]
+          },
+          "maxItems": 2
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationSettings"
+        },
+        "budget_mode": {
+          "type": "string",
+          "const": "MOCK_ZERO"
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "surprise_policy": {
+          "type": "string",
+          "enum": [
+            "DISABLED",
+            "BOUNDED"
+          ]
+        },
+        "narrative_clock": {
+          "type": "string",
+          "enum": [
+            "EVENT",
+            "REALTIME"
+          ]
+        },
+        "client_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "IMAGE",
+              "AUDIO",
+              "2D",
+              "2.5D"
+            ]
+          },
+          "maxItems": 5
+        },
+        "duty_assignments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DutyAssignment"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "object_id",
+        "kind",
+        "name",
+        "description",
+        "tags",
+        "rights",
+        "audience_policy",
+        "version",
+        "source_refs",
+        "dependency_refs",
+        "background",
+        "language",
+        "mode",
+        "initial_scene_ref",
+        "initial_actor_setups",
+        "primary_actor_slot",
+        "participant_types",
+        "generation",
+        "budget_mode",
+        "retention_days",
+        "surprise_policy",
+        "narrative_clock",
+        "client_capabilities",
+        "duty_assignments"
+      ],
+      "additionalProperties": false
+    },
+    "PortableLogicalID": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+    },
+    "PortableFilePath": {
+      "type": "string",
+      "description": "Relative POSIX path; no drive, absolute path, dot segment or backslash.",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\\\:])[A-Za-z0-9._/-]+$",
+      "maxLength": 240
+    },
+    "PortablePackageID": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+    },
+    "PortableVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+    },
+    "PortableHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "PortableParameters": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "PortableRef": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "BUNDLE_OBJECT"
+            },
+            "object_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            }
+          },
+          "required": [
+            "kind",
+            "object_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "PACKAGE_ENTRY"
+            },
+            "logical_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            }
+          },
+          "required": [
+            "kind",
+            "logical_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "DEPENDENCY_EXPORT"
+            },
+            "package_id": {
+              "$ref": "#/$defs/PortablePackageID"
+            },
+            "package_version": {
+              "$ref": "#/$defs/PortableVersion"
+            },
+            "content_sha256": {
+              "$ref": "#/$defs/PortableHash"
+            },
+            "logical_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            }
+          },
+          "required": [
+            "kind",
+            "package_id",
+            "package_version",
+            "content_sha256",
+            "logical_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PortableGeneration": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "NONE"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "INHERIT"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "REQUIREMENT"
+            },
+            "capability_id": {
+              "$ref": "#/$defs/PortableLogicalID"
+            },
+            "parameters": {
+              "$ref": "#/$defs/PortableParameters"
+            }
+          },
+          "required": [
+            "mode",
+            "capability_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PortableRulesBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primitives"
+      ],
+      "properties": {
+        "primitives": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          }
+        }
+      }
+    }
+  },
+  "x-loreviva-portable-metadata": {
+    "body_version": "1.0",
+    "body_bytes": 1048576,
+    "plan_bytes": 8388608,
+    "root_kinds": [
+      "WORLD",
+      "CHARACTER",
+      "ROLE",
+      "SKILL",
+      "KNOWLEDGE",
+      "PRESENTATION_THEME"
+    ],
+    "assembly_edge_limit": 10000,
+    "assembly_vertex_limit": 64,
+    "diagnostic_limit": 32,
+    "reference_paths": [
+      {
+        "component": "AssetDefinition",
+        "object_kind": "ASSET",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "AssetDefinition",
+        "object_kind": "ASSET",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "CharacterDefinition",
+        "object_kind": "CHARACTER",
+        "owner_domain": "OBJECT",
+        "path": [
+          "appearance_asset_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "CharacterDefinition",
+        "object_kind": "CHARACTER",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "CharacterDefinition",
+        "object_kind": "CHARACTER",
+        "owner_domain": "OBJECT",
+        "path": [
+          "initial_knowledge_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "KNOWLEDGE"
+        ]
+      },
+      {
+        "component": "CharacterDefinition",
+        "object_kind": "CHARACTER",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "CharacterDefinition",
+        "object_kind": "CHARACTER",
+        "owner_domain": "OBJECT",
+        "path": [
+          "skill_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "SKILL"
+        ]
+      },
+      {
+        "component": "KnowledgeDefinition",
+        "object_kind": "KNOWLEDGE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "binding_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "KnowledgeDefinition",
+        "object_kind": "KNOWLEDGE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "KnowledgeDefinition",
+        "object_kind": "KNOWLEDGE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "ModuleAgentBinding",
+        "object_kind": "",
+        "owner_domain": "MODULE_BINDING",
+        "path": [
+          "role_ref"
+        ],
+        "expected_kinds": [
+          "ROLE"
+        ]
+      },
+      {
+        "component": "PresentationTheme",
+        "object_kind": "PRESENTATION_THEME",
+        "owner_domain": "OBJECT",
+        "path": [
+          "asset_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "PresentationTheme",
+        "object_kind": "PRESENTATION_THEME",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "PresentationTheme",
+        "object_kind": "PRESENTATION_THEME",
+        "owner_domain": "OBJECT",
+        "path": [
+          "motion_mappings",
+          "*",
+          "asset_ref"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "PresentationTheme",
+        "object_kind": "PRESENTATION_THEME",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "PresentationTheme",
+        "object_kind": "PRESENTATION_THEME",
+        "owner_domain": "OBJECT",
+        "path": [
+          "voice_mappings",
+          "*",
+          "asset_ref"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "PropDefinition",
+        "object_kind": "PROP",
+        "owner_domain": "OBJECT",
+        "path": [
+          "asset_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "PropDefinition",
+        "object_kind": "PROP",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "PropDefinition",
+        "object_kind": "PROP",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "PropDefinition",
+        "object_kind": "PROP",
+        "owner_domain": "OBJECT",
+        "path": [
+          "rule_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "RULE"
+        ]
+      },
+      {
+        "component": "PropDefinition",
+        "object_kind": "PROP",
+        "owner_domain": "OBJECT",
+        "path": [
+          "scene_ref"
+        ],
+        "expected_kinds": [
+          "SCENE"
+        ]
+      },
+      {
+        "component": "RoleDefinition",
+        "object_kind": "ROLE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "RoleDefinition",
+        "object_kind": "ROLE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "knowledge_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "KNOWLEDGE"
+        ]
+      },
+      {
+        "component": "RoleDefinition",
+        "object_kind": "ROLE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "RoleDefinition",
+        "object_kind": "ROLE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "skill_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "SKILL"
+        ]
+      },
+      {
+        "component": "RuleDefinition",
+        "object_kind": "RULE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "condition",
+          "prop_ref"
+        ],
+        "expected_kinds": [
+          "PROP"
+        ]
+      },
+      {
+        "component": "RuleDefinition",
+        "object_kind": "RULE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "RuleDefinition",
+        "object_kind": "RULE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "RuleDefinition",
+        "object_kind": "RULE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "targets",
+          "*"
+        ],
+        "expected_kinds": [
+          "PROP"
+        ]
+      },
+      {
+        "component": "SceneDefinition",
+        "object_kind": "SCENE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "adjacent_scene_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "SCENE"
+        ]
+      },
+      {
+        "component": "SceneDefinition",
+        "object_kind": "SCENE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "background_asset_ref"
+        ],
+        "expected_kinds": [
+          "ASSET"
+        ]
+      },
+      {
+        "component": "SceneDefinition",
+        "object_kind": "SCENE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "child_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "PROP",
+          "SCENE"
+        ]
+      },
+      {
+        "component": "SceneDefinition",
+        "object_kind": "SCENE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "SceneDefinition",
+        "object_kind": "SCENE",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "SkillBinding",
+        "object_kind": "",
+        "owner_domain": "SKILL_BINDING",
+        "path": [
+          "skill_ref"
+        ],
+        "expected_kinds": [
+          "SKILL"
+        ]
+      },
+      {
+        "component": "SkillDefinition",
+        "object_kind": "SKILL",
+        "owner_domain": "OBJECT",
+        "path": [
+          "conflicting_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "SKILL"
+        ]
+      },
+      {
+        "component": "SkillDefinition",
+        "object_kind": "SKILL",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "SkillDefinition",
+        "object_kind": "SKILL",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "dependency_refs",
+          "*"
+        ],
+        "expected_kinds": []
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "duty_assignments",
+          "*",
+          "role_ref"
+        ],
+        "expected_kinds": [
+          "ROLE"
+        ]
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "initial_actor_setups",
+          "*",
+          "character_ref"
+        ],
+        "expected_kinds": [
+          "CHARACTER"
+        ]
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "initial_actor_setups",
+          "*",
+          "knowledge_refs",
+          "*"
+        ],
+        "expected_kinds": [
+          "KNOWLEDGE"
+        ]
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "initial_actor_setups",
+          "*",
+          "scene_ref"
+        ],
+        "expected_kinds": [
+          "SCENE"
+        ]
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "initial_scene_ref"
+        ],
+        "expected_kinds": [
+          "SCENE"
+        ]
+      },
+      {
+        "component": "WorldDefinition",
+        "object_kind": "WORLD",
+        "owner_domain": "OBJECT",
+        "path": [
+          "origin_ref"
+        ],
+        "expected_kinds": []
+      }
+    ],
+    "diagnostic_fields": [
+      "action",
+      "adjacent_scene_refs",
+      "allowed_uses",
+      "ambiguities",
+      "appearance_asset_refs",
+      "asset_ref",
+      "asset_refs",
+      "asset_sha256",
+      "audience_policy",
+      "background",
+      "background_asset_ref",
+      "binding_id",
+      "binding_refs",
+      "biography",
+      "body_version",
+      "boundaries",
+      "budget_mode",
+      "budget_owner",
+      "builtin_original",
+      "capability_id",
+      "character_ref",
+      "child_refs",
+      "client_capabilities",
+      "condition",
+      "conflicting_refs",
+      "content_hash",
+      "content_sha256",
+      "cooldown_seconds",
+      "coordinate_system",
+      "custodian_slot",
+      "dependency_refs",
+      "description",
+      "duty_assignments",
+      "duty_id",
+      "duty_ids",
+      "effect",
+      "enabled",
+      "end_condition",
+      "example_lines",
+      "expected",
+      "expression_style",
+      "failure_policy",
+      "fallback",
+      "file_path",
+      "generation",
+      "implementation_kind",
+      "initial_actor_setups",
+      "initial_goals",
+      "initial_knowledge_refs",
+      "initial_scene_ref",
+      "inner_conflicts",
+      "input",
+      "input_schema_id",
+      "instruction_template",
+      "interaction_capabilities",
+      "interests",
+      "kind",
+      "knowledge_refs",
+      "knowledge_type",
+      "language",
+      "license",
+      "logical_id",
+      "long_term_goals",
+      "max_cost_units",
+      "max_depth",
+      "max_duration_ms",
+      "max_output_tokens",
+      "media_type",
+      "mode",
+      "module_agent_bindings",
+      "module_id",
+      "motion_mappings",
+      "name",
+      "name_override",
+      "narrative_clock",
+      "negative_examples",
+      "object_id",
+      "objects",
+      "op",
+      "order",
+      "origin_ref",
+      "output_schema_id",
+      "owner_object_id",
+      "package_id",
+      "package_version",
+      "parameters",
+      "participant_types",
+      "position",
+      "positive_examples",
+      "primary_actor_slot",
+      "primitive",
+      "primitives",
+      "prop_ref",
+      "quantity",
+      "reason",
+      "redistribution_allowed",
+      "relationship_policy",
+      "release_id",
+      "required_capability_ids",
+      "retention_days",
+      "rights",
+      "role_object_id",
+      "role_ref",
+      "root_object_id",
+      "rule_refs",
+      "scene_ref",
+      "size_bytes",
+      "skill_bindings",
+      "skill_ref",
+      "skill_refs",
+      "slot_id",
+      "source_location",
+      "source_reference",
+      "source_refs",
+      "state",
+      "strength",
+      "surprise_policy",
+      "synthetic_examples",
+      "tags",
+      "targets",
+      "task_types",
+      "temperature",
+      "text",
+      "tool_capability_ids",
+      "trigger",
+      "unique",
+      "values",
+      "version",
+      "visibility",
+      "voice",
+      "voice_mappings",
+      "x",
+      "y",
+      "z"
+    ],
+    "diagnostic_arrays": [
+      "adjacent_scene_refs",
+      "allowed_uses",
+      "ambiguities",
+      "appearance_asset_refs",
+      "asset_refs",
+      "binding_refs",
+      "boundaries",
+      "child_refs",
+      "client_capabilities",
+      "conflicting_refs",
+      "dependency_refs",
+      "duty_assignments",
+      "duty_ids",
+      "example_lines",
+      "initial_actor_setups",
+      "initial_goals",
+      "initial_knowledge_refs",
+      "inner_conflicts",
+      "interaction_capabilities",
+      "interests",
+      "knowledge_refs",
+      "long_term_goals",
+      "module_agent_bindings",
+      "motion_mappings",
+      "negative_examples",
+      "objects",
+      "participant_types",
+      "positive_examples",
+      "primitives",
+      "required_capability_ids",
+      "rule_refs",
+      "skill_bindings",
+      "skill_refs",
+      "source_refs",
+      "synthetic_examples",
+      "tags",
+      "targets",
+      "task_types",
+      "tool_capability_ids",
+      "values",
+      "voice_mappings"
+    ]
+  }
+}

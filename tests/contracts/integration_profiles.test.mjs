@@ -25,7 +25,15 @@ test('integration source adds only seven operations and 21 schemas, preserving e
  assert.deepEqual(Object.keys(o.components.schemas).filter(n=>!old.components.schemas[n]).sort(),names);
  assert.deepEqual(operations(o).filter(x=>!operations(old).some(y=>y.operationId===x.operationId)).map(x=>x.operationId).sort(),ids);
  assert.equal(operations(o).length,67);assert.equal(Object.keys(o.components.schemas).length,181);
- assert.equal(source_hashes['wepkg.schema.json'],'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
+ // Only the adopted portable-body descriptor is additive. The remaining
+ // exact canonical bytes must still match the original approved baseline.
+ const packageRaw=await readFile(new URL('../../contracts/source/wepkg.schema.json',import.meta.url));
+ assert.equal(source_hashes['wepkg.schema.json'],createHash('sha256').update(packageRaw).digest('hex'));
+ const legacyPackage=JSON.parse(packageRaw.toString('utf8'));
+ assert.deepEqual(packageRaw,Buffer.from(JSON.stringify(legacyPackage,null,2)+'\n'));
+ assert.ok(Object.hasOwn(legacyPackage,'x-loreviva-portable-body'));
+ delete legacyPackage['x-loreviva-portable-body'];
+ assert.equal(createHash('sha256').update(JSON.stringify(legacyPackage,null,2)+'\n').digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
  for(const op of operations(o).filter(x=>ids.includes(x.operationId))){const declared=op['x-implementation-status'];assert.ok(declared==='design_not_implemented'||declared==='implemented',op.operationId+' status '+declared);if(op.operationId==='preflightContentPackage'||op.operationId==='getContentPackageCapabilities')assert.equal(declared,'implemented',op.operationId);else assert.equal(declared,'design_not_implemented',op.operationId);}
 });
 test('new schemas reject authority injection, cross-tuples and unavailable media fields',async()=>{

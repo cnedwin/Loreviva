@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -81,6 +82,80 @@ func (f packageFixture) get(t *testing.T, path string) *httptest.ResponseRecorde
 // validPackage builds a package the preflight must accept: one declared file,
 // one entry pointing at it, and the content digest computed with the same rule
 // the check applies.
+
+// Derive a complete synthetic portable body from the registered example. This
+// fixture grants no local rights and configures no model or installation.
+func portablePackageWorldBody(t *testing.T) []byte {
+	t.Helper()
+	raw, e := os.ReadFile("../../contracts/source/openapi.yaml")
+	if e != nil {
+		t.Fatal(e)
+	}
+	var source struct {
+		Components struct {
+			Schemas map[string]json.RawMessage `json:"schemas"`
+		} `json:"components"`
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if e = decoder.Decode(&source); e != nil {
+		t.Fatal(e)
+	}
+	// Other registered schemas legitimately have scalar examples. Decode only
+	// the DraftInput example as an object, preserving the sole source unchanged.
+	var draft struct {
+		Examples []map[string]any `json:"examples"`
+	}
+	decoder = json.NewDecoder(bytes.NewReader(source.Components.Schemas["DraftInput"]))
+	decoder.UseNumber()
+	if e = decoder.Decode(&draft); e != nil {
+		t.Fatal(e)
+	}
+	examples := draft.Examples
+	if len(examples) != 1 {
+		t.Fatal("registered synthetic example missing")
+	}
+	doc := examples[0]
+	delete(doc, "dependency_locks")
+	doc["body_version"] = "1.0"
+	var adapt func(any)
+	adapt = func(value any) {
+		switch v := value.(type) {
+		case map[string]any:
+			if v["kind"] == "LOCAL_DRAFT" {
+				v["kind"] = "BUNDLE_OBJECT"
+			}
+			for _, x := range v {
+				adapt(x)
+			}
+		case []any:
+			for _, x := range v {
+				adapt(x)
+			}
+		}
+	}
+	adapt(doc)
+	for _, value := range doc["objects"].([]any) {
+		o := value.(map[string]any)
+		o["rights"] = map[string]any{"license": "CC0-1.0", "source_reference": "fixture:portable-http", "redistribution_allowed": true, "allowed_uses": []string{"WORLD_CONTENT"}}
+		if _, ok := o["generation"]; ok {
+			o["generation"] = map[string]any{"mode": "NONE"}
+		}
+		if o["kind"] == "ROLE" {
+			delete(o, "tool_ids")
+			o["tool_capability_ids"] = []string{}
+		}
+	}
+	body, e := json.Marshal(doc)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = generated.ValidatePortableBody("WORLD", body); e != nil {
+		t.Fatal("synthetic portable body invalid", e)
+	}
+	return body
+}
+
 func validPackage(t *testing.T, body []byte) []byte {
 	return packageWithManifest(t, body, nil)
 }
@@ -168,7 +243,7 @@ func countRows(t *testing.T, s *store.Store) [4]int {
 func TestContentPackagePreflightPassAndDeterminism(t *testing.T) {
 	f := newPackageFixture(t, "private-synthetic-preflight-operator-token-0001")
 	before := countRows(t, f.store)
-	archive := validPackage(t, []byte(`{"name":"coffee"}`))
+	archive := validPackage(t, portablePackageWorldBody(t))
 	contentType, body := multipartBody(t, archive, "archive")
 
 	first := f.post(t, f.token, contentType, body)
@@ -203,7 +278,7 @@ func TestContentPackagePreflightPassAndDeterminism(t *testing.T) {
 func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 	f := newPackageFixture(t, "private-synthetic-preflight-operator-token-0002")
 	before := countRows(t, f.store)
-	archive := validPackage(t, []byte(`{"name":"coffee"}`))
+	archive := validPackage(t, portablePackageWorldBody(t))
 	// Add a member nobody declared, then rebuild the archive around it: the
 	// report must say so rather than failing the request.
 	var buf bytes.Buffer
@@ -267,7 +342,7 @@ func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 		t.Fatalf("rejected preflight wrote business state: %v -> %v", before, after)
 	}
 	for _, kind := range []string{"long_identity", "bad_hash", "missing_compatibility", "nested_unknown", "long_unknown"} {
-		archive := packageWithManifest(t, []byte(`{"name":"coffee"}`), func(doc map[string]any) {
+		archive := packageWithManifest(t, portablePackageWorldBody(t), func(doc map[string]any) {
 			switch kind {
 			case "long_identity":
 				doc["package_id"] = strings.Repeat("a", 300)
@@ -301,11 +376,50 @@ func TestContentPackagePreflightRejectsWithCompleteReport(t *testing.T) {
 			t.Fatalf("%s preflight wrote inspected business rows", kind)
 		}
 	}
+
+	// Body rejection keeps the report envelope without echoing authored data or
+	// creating any of the inspected business rows.
+	for _, tc := range []struct {
+		name string
+		raw  []byte
+		code string
+	}{
+		{"readable_wrong_definition", []byte(`{"name":"private-body-marker"}`), wepkg.CodePortableBodySchema},
+		{"duplicate_body_key", []byte(`{"body_version":"1.0","body_version":"1.0"}`), wepkg.CodeEntryBodyInvalid},
+	} {
+		archive := validPackage(t, tc.raw)
+		contentType, body := multipartBody(t, archive, "archive")
+		response := f.post(t, f.token, contentType, body)
+		if response.Code != 200 {
+			t.Fatalf("%s: body rejection omitted report", tc.name)
+		}
+		assertPackageWire(t, "PackagePreflightReport", response.Body.Bytes())
+		var rejected wepkg.Report
+		if err := json.Unmarshal(response.Body.Bytes(), &rejected); err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, finding := range rejected.Findings {
+			if finding.Code == tc.code {
+				found = true
+			}
+		}
+		if rejected.Verdict != "REJECT" || !found || strings.Contains(response.Body.String(), "private-body-marker") {
+			t.Fatalf("%s: wrong or unsafe body refusal", tc.name)
+		}
+		repeat := f.post(t, f.token, contentType, body)
+		if repeat.Code != 200 || !bytes.Equal(response.Body.Bytes(), repeat.Body.Bytes()) {
+			t.Fatalf("%s: body report changed", tc.name)
+		}
+		if after := countRows(t, f.store); after != before {
+			t.Fatalf("%s: body preflight wrote inspected business rows", tc.name)
+		}
+	}
 }
 
 func TestContentPackagePreflightRequestShape(t *testing.T) {
 	f := newPackageFixture(t, "private-synthetic-preflight-operator-token-0003")
-	archive := validPackage(t, []byte(`{"name":"coffee"}`))
+	archive := validPackage(t, portablePackageWorldBody(t))
 
 	out := f.post(t, f.token, "application/json", []byte(`{}`))
 	if out.Code != 400 {
