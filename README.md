@@ -26,10 +26,12 @@ connect through their own applications.
 | Implemented | Scoped memory, sources and acquisition, private relationship boundaries, use policy, correction and deletion |
 | Implemented | Bounded Mock harness, original-attempt recovery, candidate drafts, isolated rehearsals |
 | Implemented | Native Vue Studio, limited admin client, local settings, member and self-consent entry points |
-| Implemented | `.wepkg` static preflight: container, manifest, integrity, references, rights, primitives, deterministic report |
+| Implemented | `.wepkg` preflight, complete portable bodies, qualified references and pure non-executable mapping plans |
 | Locally accepted within Task8 scope | TypeScript integration SDK, thin backend, Vue reference client and personal-memory governance |
 | Planned | Package import (isolated draft), rehearsal, local publish, export |
 | Planned | Metering, complete backup/restore, real model and hosted billing validation |
+
+Current package work adds complete body admission and deterministic candidate mapping, verified with 59 unit targets (313 with subtests), 13 generator tests, 16 Go/AJV comparisons, four actual HTTP targets and actual Studio/Settings flows. Plans grant no import authority. See the [portable-definition progress note](docs/progress/2026-10-28-portable-definitions.en.md) for retained failures and scope.
 
 ## Repository layout
 

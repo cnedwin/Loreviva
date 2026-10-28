@@ -19,13 +19,15 @@ Loreviva让创作者组合世界规则、角色、岗位、Skill、知识和模�
 | 已实现 | 有界Mock Harness、原attempt恢复、草稿候选、隔离排练 |
 | 已实现 | 原生Vue Studio、行政客户端、本地设置、成员与本人同意入口 |
 | 已完成Task8范围内本地验收 | TypeScript接入SDK、薄后端、Vue参考客户端、本人记忆治理 |
-| 已实现 | .wepkg静态预检：容器、清单、完整性、引用、权利、原语与确定性报告 |
+| 已实现 | .wepkg预检、完整可移植正文、限定引用与不可执行的纯映射计划 |
 | 待完成 | 内容包隔离草稿导入、试演、本地发布、导出 |
 | 待完成 | 完整计量、备份恢复、发行验证；真实模型和托管收费验证 |
 
+当前内容包工作增加完整正文准入与确定性候选映射，已验证59个单元目标（含子项313项）、13项生成器检查、16个Go/AJV对照、四项实际HTTP及真实Studio/Settings流程。纯计划不授予导入权限；具体范围和保留失败见进度说明。
+
 ## 文档入口
 
-- [当前进度与R0剩余工作](docs/progress/2026-10-23.zh.md)
+- [当前进度与R0剩余工作](docs/progress/2026-10-28-portable-definitions.zh.md)
 - [产品概述](docs/01-product-overview.md)
 - [需求与实现范围](docs/02-requirements.md)
 - [技术架构](docs/03-architecture.md)

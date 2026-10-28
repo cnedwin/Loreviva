@@ -1,8 +1,8 @@
 {
-  "source_hash": "8b47e97040db2fa8b3d9ef4ad65459b649c580b59fbfef74ca4a3208e88420ce",
+  "source_hash": "849006ddc6414a05aa710aef45bfaa8b3bb0f8fa868c852d8bc7eb66e09caf1e",
   "source_hashes": {
     "openapi.yaml": "cbf0ca5b4813414c3ebc89e67bf5ce633de48f55961d54906e060e5e2bc0eaa0",
-    "wepkg.schema.json": "d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03"
+    "wepkg.schema.json": "e19c77a0b15168caa348ead591f2434083a56ac6a96c642e681d9be364e76be0"
   },
   "profile_hashes": {
     "contracts/generated/profiles/public_v1.openapi.json": "338e8d86cda919f495170f3cdf0744ead0c7f1d6adc11a094174687539924479",
@@ -91,15 +91,58 @@
   "transport_artifacts": {
     "packages/sdk-ts/src/generated/transport.ts": {
       "bytes": 423911,
-      "sha256": "25d5029df5a340b0538b77610b07437a1507d5bf5c1c7eba0b05329d6ed7c6e0"
+      "sha256": "d5823d2878d546b71857801c5bec1646ce3260de540e4e3e1897fc1ec09aa021"
     },
     "packages/sdk-ts/src/generated/validators.cjs": {
       "bytes": 23233511,
-      "sha256": "ef853b41ac8682693a71ae710dc378b477de76c7d40deb76daa66ab9a606d501"
+      "sha256": "b7e382d6a5bbfac345a7aeb953a1a9f684b20c259fb92e1465d77ed4d5c95616"
     },
     "packages/sdk-ts/src/generated/validators.d.cts": {
       "bytes": 122973,
-      "sha256": "9a9b4e5edda4a8d72c282885f60bc1e8a987acea9c15882d0f7aff963f8f2e85"
+      "sha256": "ccd77f92885398486b9fe8180f086c8e5bf20da70a1a7e6d41acf2a6a2b3ad74"
+    }
+  },
+  "portable_projection": {
+    "source_components": {
+      "AssetDefinition": "26b86863597136232116cb6be652df5820ba42f137b766f429b1d16b4dbe99b4",
+      "CharacterDefinition": "49fae5ef2de110ff047933a15d72eb9774f7767c3d6bdeba7e413d2169df5edb",
+      "ContentObject": "86f0ae641c9da5e486b098f584d927868b27379c7b43ff6ace0eb30cdb6ef7fb",
+      "DefinitionRef": "9e659ba010c46dfc97e04b39b97b22093fa33c7513b9bb7934fab421063e71cf",
+      "DependencyLock": "abcba2f2c0801997c18a9026d582cc9d3c25dfddeb44ff70579254fa731531e8",
+      "DraftInput": "af04f322f7275e3b3077c7c364457e7e7ac29a8df670f198580584dbdae05ed3",
+      "Duty": "a3b79955ee616b289b0f842664d802646cacbcef79c02029f3ad1dfbad26a959",
+      "DutyAssignment": "3fe75263efc40e60fafd2c0cf83b1ddae822feb5c1fa26d025f143a390efa77a",
+      "ExactUnsigned": "4aca742afe6fb2a0379a617b2ae0f4799d54d448731d2c2f0c5d4dde5cdef509",
+      "GenerationSettings": "38cf70943fb7cb20c2075828e90639f0952ae87c5e79e3aec396f4be899c7d61",
+      "Identity": "8012edf6857ef5c91659b8ecfdf1cbe57899d1210a5315e92469de16d347bad6",
+      "InitialActorSetup": "633b91a020860f735a73e9b3c675abe771f11bf4cd76b520cb86a22bfc8470b2",
+      "KnowledgeDefinition": "807efbdf2846f9e4de067faaba49e19ef8d51690b65e7b292365d14df06126d6",
+      "ModuleAgentBinding": "d5c0bc4629d32825b91e9af9284f781675c3e38aba57c5337240efc81f7f815d",
+      "Position": "9be54199a0a05fcb4599f320ebf11c14edec52d8cfc0bef0037dee51292e845d",
+      "PresentationTheme": "5a7a6ba8a0564bb5ba2ade659686f25bd14bd8df94d8374afcdb1705b1a748ff",
+      "PropDefinition": "a1baf06caa1dd8718e6efaa562f12957a34489c2b5bc71634653c366416a7e6e",
+      "RoleDefinition": "931e5223c17f0d05bebc95de683a63754cc410577a18322063ae9201d092a54b",
+      "RuleCondition": "e848a97a5dffb36bc5e57dd038e5be666601e516b60cdeaa7eb2f0a7ad1de274",
+      "RuleDefinition": "2ed01f68c63b380ba5d4afe2bf85ecfbf17b92d6345c46a95efe07847885db12",
+      "SceneDefinition": "7ac4dde7ddf22d0e3b9f6bf08ed6101fa36363f82a3dc83662ef40dad3ade5a7",
+      "SkillBinding": "819b43749269edf24cf7933c978c8864886d77cbdb2b5ab8e6dc5bf02fef18a5",
+      "SkillDefinition": "8f0355a053285bc5c40f3d6e25edba3b05f2171fb9369d362e4d7355db4c4f96",
+      "SourceRights": "6f67b5d09348c94aa345e317bada41f432f943a2ae2586f28b0bcd5161e1d1d9",
+      "WorldDefinition": "83639e830ccc7709cf109a1c4bd290ff9a78ff080e513cb450abb84be07b963d"
+    },
+    "artifacts": {
+      "contracts/generated/wepkg-portable.schema.json": {
+        "bytes": 63004,
+        "sha256": "16791fc17edd914b979849331ce5d4c188e83d7b4749970ca542198d29c41ae0"
+      },
+      "internal/generated/wepkg-portable.schema.json": {
+        "bytes": 63004,
+        "sha256": "16791fc17edd914b979849331ce5d4c188e83d7b4749970ca542198d29c41ae0"
+      },
+      "internal/generated/wepkg_portable_validate.go": {
+        "bytes": 3722,
+        "sha256": "2498795c0226dea2a1feadf4093ef6c1494d060f2a343e2e58b726bcc9300a48"
+      }
     }
   }
 }

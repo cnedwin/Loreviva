@@ -172,7 +172,7 @@ func TestCheckRulePrimitivesRefusesUnknownPrimitive(t *testing.T) {
 }
 
 func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
-	body := []byte(`{"name":"coffee"}`)
+	body := mustJSON(t, portableSchemaFixture(t, "WORLD"))
 	sum := sha256.Sum256(body)
 	digest := hex.EncodeToString(sum[:])
 	records := []fileDigest{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body))}}
@@ -274,7 +274,7 @@ func mustJSON(t *testing.T, v any) []byte {
 }
 
 func TestCheckReportsMatchWireContract(t *testing.T) {
-	body := []byte(`{"name":"wire fixture"}`)
+	body := mustJSON(t, portableSchemaFixture(t, "WORLD"))
 	sum := sha256.Sum256(body)
 	digest := hex.EncodeToString(sum[:])
 	m := Manifest{

@@ -297,8 +297,187 @@ func ValidateManifest(data []byte,maxBytes int64) error {
 `;
 }
 
+// Project trusted canonical schemas through a closed, source-owned descriptor.
+// Instance data and schema examples are never interpreted as projection commands.
+export function buildPortableBodySchema(openapi,wepkg) {
+ const spec=wepkg['x-loreviva-portable-body'];
+ const keys=['body_version','body_bytes','plan_bytes','root_schema','root_kinds','object_components','operations','reference_targets','assembly_edge_limit','assembly_vertex_limit','diagnostic_limit'];
+ const exact=(value,allowed)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(k=>allowed.includes(k));
+ if(!exact(spec,keys)||keys.some(k=>!(k in spec))||spec.body_version!=='1.0'||spec.body_bytes!==1048576||spec.plan_bytes!==8388608||spec.root_schema!=='DraftInput'||spec.assembly_edge_limit!==10000||spec.assembly_vertex_limit!==64||spec.diagnostic_limit!==32)throw Error('Invalid portable projection descriptor');
+ const roots=['WORLD','CHARACTER','ROLE','SKILL','KNOWLEDGE','PRESENTATION_THEME'];
+ if(JSON.stringify(spec.root_kinds)!==JSON.stringify(roots))throw Error('Unsupported portable root set');
+ const source=openapi.components.schemas,components=source.ContentObject.oneOf.map(x=>x.$ref.split('/').at(-1));
+ if(JSON.stringify(components)!==JSON.stringify(spec.object_components))throw Error('Portable content component set changed');
+ const mapSchema=(value,visit)=>{
+  if(typeof value==='boolean')return value;
+  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Schema object required');
+  const out=structuredClone(value);visit(out);
+  for(const key of ['properties','patternProperties','$defs','definitions','dependentSchemas'])if(out[key])for(const name of Object.keys(out[key]))out[key][name]=mapSchema(out[key][name],visit);
+  for(const key of ['items','additionalProperties','unevaluatedProperties','contains','not','if','then','else','propertyNames','additionalItems','unevaluatedItems','contentSchema'])if(out[key]!==undefined)out[key]=Array.isArray(out[key])?out[key].map(x=>mapSchema(x,visit)):mapSchema(out[key],visit);
+  for(const key of ['allOf','anyOf','oneOf','prefixItems'])if(out[key])out[key]=out[key].map(x=>mapSchema(x,visit));
+  return out;
+ };
+ const needed=new Set();
+ const collect=node=>mapSchema(node,n=>{
+  if(n.$ref){if(!n.$ref.startsWith('#/components/schemas/'))throw Error('External source schema reference refused');const name=n.$ref.slice(21);if(!Object.hasOwn(source,name))throw Error('Missing source schema');if(!needed.has(name)){needed.add(name);collect(source[name]);}}
+ });
+ needed.add('DraftInput');collect(source.DraftInput);
+ const rewrite=node=>mapSchema(node,n=>{delete n.example;delete n.examples;if(n.$ref?.startsWith('#/components/schemas/'))n.$ref='#/$defs/'+n.$ref.slice(21);else if(n.$ref&&!n.$ref.startsWith('#/$defs/'))throw Error('External projected reference refused');});
+ const document={$schema:wepkg.$schema,$id:'https://schemas.loreviva.invalid/generated/portable',$ref:'#/$defs/DraftInput',$defs:{}};
+ for(const name of [...needed].sort())document.$defs[name]=rewrite(source[name]);
+ const get=(root,p)=>{
+  if(typeof p!=='string'||!p.startsWith('/'))throw Error('Local schema pointer required');
+  let at=root;for(const raw of p.slice(1).split('/')){const k=raw.replaceAll('~1','/').replaceAll('~0','~');if(['__proto__','prototype','constructor'].includes(k)||!at||!Object.hasOwn(at,k))throw Error('Missing or unsafe schema pointer');at=at[k];}return at;
+ };
+ const schemaFor=op=>{
+  const literal=Object.hasOwn(op,'schema'),hasSource=Object.hasOwn(op,'source')||Object.hasOwn(op,'from_pointer')||(op.op==='clone'&&Object.hasOwn(op,'pointer'));
+  if(literal&&hasSource)throw Error('Ambiguous schema origin');
+  if(literal)return rewrite(op.schema);
+  if(!Object.hasOwn(op,op.op==='clone'?'pointer':'from_pointer'))throw Error('Missing schema origin pointer');
+  const origin=op.source==='openapi'?openapi:op.source==='wepkg'?wepkg:null;if(!origin)throw Error('Unknown schema source');return rewrite(get(origin,op.from_pointer??op.pointer));
+ };
+ for(const op of spec.operations){
+  if(!op||typeof op!=='object')throw Error('Invalid projection operation');
+  if(op.op==='clone'){
+   if(!exact(op,['op','name','source','pointer','schema'])||!(/^[A-Za-z][A-Za-z0-9_]*$/.test(op.name))||['__proto__','prototype','constructor'].includes(op.name)||Object.hasOwn(document.$defs,op.name))throw Error('Invalid schema clone');
+   document.$defs[op.name]=schemaFor(op);
+  }else if(op.op==='replace-schema'){
+   if(!exact(op,['op','pointer','schema','source','from_pointer'])||!op.pointer?.startsWith('/$defs/'))throw Error('Invalid schema replacement');
+   get(document,op.pointer);const bits=op.pointer.split('/');const name=bits.pop().replaceAll('~1','/').replaceAll('~0','~');const parent=get(document,bits.join('/'));parent[name]=schemaFor(op);
+  }else if(['remove-property','replace-property','add-property'].includes(op.op)){
+   const allowed=op.op==='remove-property'?['op','component','property']:op.op==='replace-property'?['op','component','property','schema']:['op','component','property','schema','required'];
+   if(!exact(op,allowed)||!(/^[a-z][a-z0-9_]*$/.test(op.property))||['__proto__','prototype','constructor'].includes(op.property)||!Object.hasOwn(document.$defs,op.component)||(op.op!=='remove-property'&&!Object.hasOwn(op,'schema')))throw Error('Invalid property projection');
+   const node=document.$defs[op.component],present=Object.hasOwn(node.properties??{},op.property);
+   if(!node.properties||!Array.isArray(node.required)||(op.op==='add-property'?present:!present))throw Error('Source property/required set changed');
+   if(op.op==='remove-property'){delete node.properties[op.property];node.required=node.required.filter(x=>x!==op.property);}
+   else {node.properties[op.property]=schemaFor(op);if(op.op==='add-property'){if(typeof op.required!=='boolean')throw Error('Explicit required policy missing');if(op.required)node.required.push(op.property);}}
+  }else throw Error('Unknown portable projection operation');
+ }
+ mapSchema(document,n=>{if(n.$ref){if(!n.$ref.startsWith('#/$defs/'))throw Error('Nonlocal portable reference');get(document,n.$ref.slice(1));}});
+ const references=[];const fields=new Set(),arrays=new Set(),usedTargets=new Set();
+ mapSchema(document,n=>{for(const [name,value]of Object.entries(n.properties??{})){fields.add(name);if(value.type==='array'||value.items)arrays.add(name);}});
+ const knownKinds=new Set(components.map(name=>source[name].properties.kind.const??source[name].properties.kind.enum?.[0]));
+ const generalTargets=new Set(['origin_ref','dependency_refs','binding_refs']);
+ if(!spec.reference_targets||typeof spec.reference_targets!=='object'||Array.isArray(spec.reference_targets))throw Error('Target policy object required');
+ const scan=(node,component,path=[],field='',stack=[])=>{
+  if(typeof node==='boolean')return;
+  if(node.$ref){const target=node.$ref.slice(8);
+   if(['DefinitionRef','PortableRef'].includes(target)){
+    if(!Object.hasOwn(spec.reference_targets,field))throw Error('Missing reference target policy');
+    const policy=spec.reference_targets[field];
+    if(!Array.isArray(policy)||new Set(policy).size!==policy.length||policy.some(kind=>typeof kind!=='string'||!knownKinds.has(kind))||(generalTargets.has(field)?policy.length!==0:policy.length===0))throw Error('Invalid reference target policy');
+    usedTargets.add(field);
+    const sourceKind=source[component].properties?.kind;const objectKind=sourceKind?.const??sourceKind?.enum?.[0]??'';
+    references.push({component,object_kind:objectKind,owner_domain:component==='ModuleAgentBinding'?'MODULE_BINDING':component==='SkillBinding'?'SKILL_BINDING':'OBJECT',path,expected_kinds:[...spec.reference_targets[field]].sort()});return;
+   }
+   if(stack.includes(target))throw Error('Recursive portable source shape');scan(get(document,node.$ref.slice(1)),component,path,field,[...stack,target]);return;
+  }
+  for(const [name,value]of Object.entries(node.properties??{})){fields.add(name);if(value.type==='array'||value.items)arrays.add(name);scan(value,component,[...path,name],name,stack);}
+  if(node.items)scan(node.items,component,[...path,'*'],field,stack);
+  for(const key of ['oneOf','anyOf','allOf'])for(const branch of node[key]??[])scan(branch,component,path,field,stack);
+  for(const key of ['if','then','else','not'])if(node[key])scan(node[key],component,path,field,stack);
+ };
+ for(const name of [...components,'ModuleAgentBinding','SkillBinding'])scan(document.$defs[name],name);
+ if(JSON.stringify(Object.keys(spec.reference_targets).sort())!==JSON.stringify([...usedTargets].sort()))throw Error('Unused or missing reference target policy');
+ const unique=new Map(references.map(x=>[JSON.stringify([x.component,x.path]),x]));
+ const refPaths=[...unique.values()].sort((a,b)=>JSON.stringify([a.component,a.path])<JSON.stringify([b.component,b.path])?-1:1);
+ if(refPaths.length!==45)throw Error('Portable reference inventory changed; review every source position');
+ document['x-loreviva-portable-metadata']={body_version:spec.body_version,body_bytes:spec.body_bytes,plan_bytes:spec.plan_bytes,root_kinds:roots,assembly_edge_limit:spec.assembly_edge_limit,assembly_vertex_limit:spec.assembly_vertex_limit,diagnostic_limit:spec.diagnostic_limit,reference_paths:refPaths,diagnostic_fields:[...fields].sort(),diagnostic_arrays:[...arrays].sort()};
+ return {document,source_components:Object.fromEntries([...needed].sort().map(name=>[name,createHash('sha256').update(JSON.stringify(source[name])).digest('hex')]))};
+}
+
+function portableBackendValidator(header) { return `// ${header}
+package generated
+
+import (
+ _ "embed"
+ "encoding/json"
+ "errors"
+ "sync"
+
+ "github.com/santhosh-tekuri/jsonschema/v6"
+ "loreviva.local/loreviva/internal/wire"
+)
+
+//go:embed wepkg-portable.schema.json
+var portableSchemaDocument []byte
+var portableOnce sync.Once
+var portableCompiled *jsonschema.Schema
+var portableRulesCompiled *jsonschema.Schema
+var portableCompileError error
+var portableMetadata PortableSchemaMetadata
+
+type PortableReferencePath struct {
+ Component string \`json:"component"\`
+ ObjectKind string \`json:"object_kind"\`
+ OwnerDomain string \`json:"owner_domain"\`
+ Path []string \`json:"path"\`
+ ExpectedKinds []string \`json:"expected_kinds"\`
+}
+
+type PortableSchemaMetadata struct {
+ BodyVersion string \`json:"body_version"\`
+ BodyBytes int64 \`json:"body_bytes"\`
+ PlanBytes int64 \`json:"plan_bytes"\`
+ RootKinds []string \`json:"root_kinds"\`
+ ReferencePaths []PortableReferencePath \`json:"reference_paths"\`
+ DiagnosticFields []string \`json:"diagnostic_fields"\`
+ DiagnosticArrays []string \`json:"diagnostic_arrays"\`
+ AssemblyEdgeLimit int \`json:"assembly_edge_limit"\`
+ AssemblyVertexLimit int \`json:"assembly_vertex_limit"\`
+ DiagnosticLimit int \`json:"diagnostic_limit"\`
+}
+
+func initializePortableSchema() {
+ var document map[string]any
+ if err:=json.Unmarshal(portableSchemaDocument,&document);err!=nil {portableCompileError=err;return}
+ metadata,err:=json.Marshal(document["x-loreviva-portable-metadata"])
+ if err!=nil {portableCompileError=err;return}
+ if err=json.Unmarshal(metadata,&portableMetadata);err!=nil {portableCompileError=err;return}
+ compiler:=jsonschema.NewCompiler()
+ compiler.AssertFormat()
+ compiler.UseRegexpEngine(CompileManifestPattern)
+ compiler.UseLoader(manifestNoLoader{})
+ const resource="https://schemas.loreviva.invalid/generated/portable"
+ if err=compiler.AddResource(resource,document);err!=nil {portableCompileError=err;return}
+ portableCompiled,portableCompileError=compiler.Compile(resource)
+ if portableCompileError==nil {portableRulesCompiled,portableCompileError=compiler.Compile(resource+"#/$defs/PortableRulesBody")}
+}
+
+// ValidatePortableBody checks original bytes with the source-owned fixed bound.
+// Passing structure grants no local permission, resource ownership, or import.
+func ValidatePortableBody(kind string,data []byte) error {
+ value,err:=wire.ParseBounded(data,1048576)
+ if err!=nil {return wire.ErrJSON}
+ portableOnce.Do(initializePortableSchema)
+ if portableCompileError!=nil {return errors.New("portable schema initialization failed")}
+ if kind=="RULES" {return portableRulesCompiled.Validate(value)}
+ allowed:=false
+ for _,root:=range portableMetadata.RootKinds {if root==kind {allowed=true;break}}
+ if !allowed {return errors.New("unsupported portable body kind")}
+ return portableCompiled.Validate(value)
+}
+
+// PortableMetadata returns copies of generated positions, never caller hints.
+func PortableMetadata() (PortableSchemaMetadata,error) {
+ portableOnce.Do(initializePortableSchema)
+ if portableCompileError!=nil {return PortableSchemaMetadata{},errors.New("portable schema initialization failed")}
+ out:=portableMetadata
+ out.RootKinds=append([]string{},out.RootKinds...)
+ out.DiagnosticFields=append([]string{},out.DiagnosticFields...)
+ out.DiagnosticArrays=append([]string{},out.DiagnosticArrays...)
+ out.ReferencePaths=append([]PortableReferencePath{},out.ReferencePaths...)
+ for i:=range out.ReferencePaths {
+  out.ReferencePaths[i].Path=append([]string{},out.ReferencePaths[i].Path...)
+  out.ReferencePaths[i].ExpectedKinds=append([]string{},out.ReferencePaths[i].ExpectedKinds...)
+ }
+ return out,nil
+}
+`; }
+
 export async function generateContracts({sourceRoot=canonicalSourceRoot,outputRoot=repo}={}) {
  const {openapi,wepkg,source_hash,source_hashes}=await loadSources(sourceRoot);const ops=operations(openapi);
+ const portable=buildPortableBodySchema(openapi,wepkg);
  const profiles=resolveIntegrationProfiles(openapi);
  const header='Code generated by Loreviva contracts '+GENERATOR_VERSIONS.loreviva+'; DO NOT EDIT. Source SHA-256: '+source_hash;
  const browser=browserValidators(openapi,ops,profiles,header);
@@ -355,6 +534,9 @@ func Decode(name string,data []byte,target any) error {
 }
 `;
  const files={
+  'contracts/generated/wepkg-portable.schema.json':json(portable.document),
+  'internal/generated/wepkg-portable.schema.json':json(portable.document),
+  'internal/generated/wepkg_portable_validate.go':portableBackendValidator(header),
   'internal/generated/wepkg.schema.json':json(wepkg),
   'internal/generated/wepkg_validate.go':manifestBackendValidator(header),
   'contracts/generated/openapi.json':json(openapi),
@@ -371,6 +553,7 @@ func Decode(name string,data []byte,target any) error {
  for(const [name,doc]of Object.entries(profiles)){const output='contracts/generated/profiles/'+name+'.openapi.json';files[output]=json(doc);profile_hashes[output]=createHash('sha256').update(files[output]).digest('hex');}
  const manifest={source_hash,source_hashes,profile_hashes,generator_versions:GENERATOR_VERSIONS,operation_ids:ops.map(op=>op.operationId),limitations:['Go top-level raw JSON DTOs alias json.RawMessage to preserve JSON methods; validate original wire JSON via generated.Decode before domain use.','TypeScript retains allOf sibling shapes and translates required finite enum discriminants with const/enum if predicates, then/else field requirements, single-field not(required), and small array bounds. Regex, formats, string/number ranges, uniqueness, propertyNames, array upper bounds above 16, arbitrary if predicates and general not/dependent constraints still require full JSON Schema validation.','OpenAPI source must use JSON syntax (valid YAML); no alternate authority or runtime timestamps.']};
  manifest.transport_artifacts=Object.fromEntries(['packages/sdk-ts/src/generated/transport.ts','packages/sdk-ts/src/generated/validators.cjs','packages/sdk-ts/src/generated/validators.d.cts'].map(p=>[p,{bytes:Buffer.byteLength(files[p]),sha256:createHash('sha256').update(files[p]).digest('hex')}]));
+ manifest.portable_projection={source_components:portable.source_components,artifacts:Object.fromEntries(['contracts/generated/wepkg-portable.schema.json','internal/generated/wepkg-portable.schema.json','internal/generated/wepkg_portable_validate.go'].map(p=>[p,{bytes:Buffer.byteLength(files[p]),sha256:createHash('sha256').update(files[p]).digest('hex')}]))};
  files['contracts/generated/manifest.json']=json(manifest);
  assertGeneratedLF(files);
  const outputs=Object.keys(files).sort();

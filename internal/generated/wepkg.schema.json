@@ -544,5 +544,672 @@
         "synthetic_examples_only": true
       }
     }
-  ]
+  ],
+  "x-loreviva-portable-body": {
+    "body_version": "1.0",
+    "body_bytes": 1048576,
+    "plan_bytes": 8388608,
+    "root_schema": "DraftInput",
+    "root_kinds": [
+      "WORLD",
+      "CHARACTER",
+      "ROLE",
+      "SKILL",
+      "KNOWLEDGE",
+      "PRESENTATION_THEME"
+    ],
+    "object_components": [
+      "WorldDefinition",
+      "SceneDefinition",
+      "PropDefinition",
+      "RuleDefinition",
+      "CharacterDefinition",
+      "RoleDefinition",
+      "SkillDefinition",
+      "KnowledgeDefinition",
+      "AssetDefinition",
+      "PresentationTheme"
+    ],
+    "operations": [
+      {
+        "op": "clone",
+        "name": "PortableLogicalID",
+        "source": "wepkg",
+        "pointer": "/$defs/entry/properties/logical_id"
+      },
+      {
+        "op": "clone",
+        "name": "PortableFilePath",
+        "source": "wepkg",
+        "pointer": "/$defs/file/properties/path"
+      },
+      {
+        "op": "clone",
+        "name": "PortablePackageID",
+        "source": "wepkg",
+        "pointer": "/properties/package_id"
+      },
+      {
+        "op": "clone",
+        "name": "PortableVersion",
+        "source": "wepkg",
+        "pointer": "/properties/package_version"
+      },
+      {
+        "op": "clone",
+        "name": "PortableHash",
+        "source": "wepkg",
+        "pointer": "/properties/content_sha256"
+      },
+      {
+        "op": "clone",
+        "name": "PortableParameters",
+        "source": "openapi",
+        "pointer": "/components/schemas/GenerationSettings/properties/parameters"
+      },
+      {
+        "op": "clone",
+        "name": "PortableRef",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "BUNDLE_OBJECT"
+                },
+                "object_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "object_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "PACKAGE_ENTRY"
+                },
+                "logical_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "logical_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "DEPENDENCY_EXPORT"
+                },
+                "package_id": {
+                  "$ref": "#/$defs/PortablePackageID"
+                },
+                "package_version": {
+                  "$ref": "#/$defs/PortableVersion"
+                },
+                "content_sha256": {
+                  "$ref": "#/$defs/PortableHash"
+                },
+                "logical_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "package_id",
+                "package_version",
+                "content_sha256",
+                "logical_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "op": "clone",
+        "name": "PortableGeneration",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "NONE"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "INHERIT"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "REQUIREMENT"
+                },
+                "capability_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                },
+                "parameters": {
+                  "$ref": "#/$defs/PortableParameters"
+                }
+              },
+              "required": [
+                "mode",
+                "capability_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/DefinitionRef",
+        "schema": {
+          "$ref": "#/$defs/PortableRef"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/SourceRights",
+        "source": "wepkg",
+        "from_pointer": "/$defs/rights"
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/GenerationSettings",
+        "schema": {
+          "$ref": "#/$defs/PortableGeneration"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SceneDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PropDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RuleDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "CharacterDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "KnowledgeDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "AssetDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PresentationTheme",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "DraftInput",
+        "property": "root_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "ModuleAgentBinding",
+        "property": "binding_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "ModuleAgentBinding",
+        "property": "owner_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillBinding",
+        "property": "binding_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillBinding",
+        "property": "role_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "InitialActorSetup",
+        "property": "slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "primary_actor_slot",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PropDefinition",
+        "property": "custodian_slot",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/RuleCondition/oneOf/0/properties/slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/RuleCondition/oneOf/1/properties/slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "DraftInput",
+        "property": "dependency_locks"
+      },
+      {
+        "op": "add-property",
+        "component": "DraftInput",
+        "property": "body_version",
+        "schema": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "builtin_original",
+        "schema": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "RoleDefinition",
+        "property": "tool_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "RoleDefinition",
+        "property": "tool_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "input_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "output_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "builtin_original",
+        "schema": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "SkillDefinition",
+        "property": "tool_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "SkillDefinition",
+        "property": "tool_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "input_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "output_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "SkillDefinition",
+        "property": "registered_capability_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "SkillDefinition",
+        "property": "required_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "remove-property",
+        "component": "AssetDefinition",
+        "property": "asset_id"
+      },
+      {
+        "op": "add-property",
+        "component": "AssetDefinition",
+        "property": "file_path",
+        "schema": {
+          "$ref": "#/$defs/PortableFilePath"
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "KnowledgeDefinition",
+        "property": "knowledge_type",
+        "schema": {
+          "type": "string",
+          "const": "NOTE"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "source_asset_id"
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "source_asset_hash"
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "extraction_report_id"
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "budget_mode",
+        "schema": {
+          "type": "string",
+          "const": "MOCK_ZERO"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "WorldDefinition",
+        "property": "industry_package_ref"
+      },
+      {
+        "op": "clone",
+        "name": "PortableRulesBody",
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primitives"
+          ],
+          "properties": {
+            "primitives": {
+              "type": "array",
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/PortableLogicalID"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "reference_targets": {
+      "initial_scene_ref": [
+        "SCENE"
+      ],
+      "scene_ref": [
+        "SCENE"
+      ],
+      "adjacent_scene_refs": [
+        "SCENE"
+      ],
+      "role_ref": [
+        "ROLE"
+      ],
+      "character_ref": [
+        "CHARACTER"
+      ],
+      "knowledge_refs": [
+        "KNOWLEDGE"
+      ],
+      "initial_knowledge_refs": [
+        "KNOWLEDGE"
+      ],
+      "skill_ref": [
+        "SKILL"
+      ],
+      "skill_refs": [
+        "SKILL"
+      ],
+      "conflicting_refs": [
+        "SKILL"
+      ],
+      "asset_ref": [
+        "ASSET"
+      ],
+      "asset_refs": [
+        "ASSET"
+      ],
+      "background_asset_ref": [
+        "ASSET"
+      ],
+      "appearance_asset_refs": [
+        "ASSET"
+      ],
+      "rule_refs": [
+        "RULE"
+      ],
+      "prop_ref": [
+        "PROP"
+      ],
+      "targets": [
+        "PROP"
+      ],
+      "origin_ref": [],
+      "dependency_refs": [],
+      "binding_refs": [],
+      "child_refs": [
+        "SCENE",
+        "PROP"
+      ]
+    },
+    "assembly_edge_limit": 10000,
+    "assembly_vertex_limit": 64,
+    "diagnostic_limit": 32
+  }
 }

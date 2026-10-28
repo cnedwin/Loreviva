@@ -2,7 +2,7 @@
 
 [Repository overview](../../README.md) · [中文](../../README.zh-CN.md)
 
-- [Current progress and R0 gaps](../progress/2026-10-23.en.md)
+- [Current progress and R0 gaps](../progress/2026-10-28-portable-definitions.en.md)
 - [Product overview](01-product-overview.md)
 - [Requirements and implementation scope](02-requirements.md)
 - [Architecture](03-architecture.md)
@@ -11,3 +11,5 @@
 
 English documentation is a same-source reading view of the Chinese specification.
 Task8 has local acceptance within its declared scope. Task9 content-package work and the remaining R0 packages are still incomplete.
+
+Portable body admission and deterministic non-executable plans have local verification. Persistent isolated import/export and whole Task9/R0 remain incomplete.
