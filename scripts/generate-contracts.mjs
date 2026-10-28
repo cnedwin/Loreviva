@@ -235,6 +235,68 @@ function transportDescriptors(openapi,profiles,header){
 export function assertGeneratedLF(files){
  for(const [name,body] of Object.entries(files))if(typeof body!=='string'||body.includes('\r'))throw Error('Generated output must be LF without CR: '+name);
 }
+function manifestBackendValidator(header) {
+ return `// ${header}
+package generated
+
+import (
+ _ "embed"
+ "encoding/json"
+ "errors"
+ "sync"
+ "time"
+ "github.com/dlclark/regexp2"
+ "github.com/santhosh-tekuri/jsonschema/v6"
+ "loreviva.local/loreviva/internal/wire"
+)
+
+//go:embed wepkg.schema.json
+var manifestSchemaBytes []byte
+var manifestOnce sync.Once
+var manifestSchema *jsonschema.Schema
+var manifestCompileError error
+
+type manifestRegexp struct { expression *regexp2.Regexp }
+func (r *manifestRegexp) MatchString(s string) bool {
+ matched,err:=r.expression.MatchString(s)
+ return err==nil && matched
+}
+func (r *manifestRegexp) String() string { return r.expression.String() }
+
+// CompileManifestPattern preserves source ECMAScript semantics, including
+// lookaheads, with finite work. A timeout or engine error never grants a match.
+func CompileManifestPattern(pattern string) (jsonschema.Regexp,error) {
+ expression,err:=regexp2.Compile(pattern,regexp2.ECMAScript)
+ if err!=nil { return nil,errors.New("invalid manifest pattern") }
+ expression.MatchTimeout=100*time.Millisecond
+ return &manifestRegexp{expression:expression},nil
+}
+
+type manifestNoLoader struct{}
+func (manifestNoLoader) Load(string) (any,error) { return nil,errors.New("external schema loading disabled") }
+
+// ValidateManifest validates original bytes against the sole generated schema;
+// it never reads runtime schema files or fetches remote resources.
+func ValidateManifest(data []byte,maxBytes int64) error {
+ value,err:=wire.ParseBounded(data,maxBytes)
+ if err!=nil { return wire.ErrJSON }
+ manifestOnce.Do(func(){
+  var document any
+  if err:=json.Unmarshal(manifestSchemaBytes,&document);err!=nil {manifestCompileError=err;return}
+  compiler:=jsonschema.NewCompiler()
+  compiler.AssertFormat()
+  compiler.UseRegexpEngine(CompileManifestPattern)
+  compiler.UseLoader(manifestNoLoader{})
+  const resource="https://schemas.loreviva.invalid/generated/wepkg"
+  if err:=compiler.AddResource(resource,document);err!=nil {manifestCompileError=err;return}
+  manifestSchema,manifestCompileError=compiler.Compile(resource)
+ })
+ if manifestCompileError!=nil || manifestSchema==nil {return errors.New("manifest schema initialization failed")}
+ return manifestSchema.Validate(value)
+}
+`;
+}
+
 export async function generateContracts({sourceRoot=canonicalSourceRoot,outputRoot=repo}={}) {
  const {openapi,wepkg,source_hash,source_hashes}=await loadSources(sourceRoot);const ops=operations(openapi);
  const profiles=resolveIntegrationProfiles(openapi);
@@ -293,6 +355,8 @@ func Decode(name string,data []byte,target any) error {
 }
 `;
  const files={
+  'internal/generated/wepkg.schema.json':json(wepkg),
+  'internal/generated/wepkg_validate.go':manifestBackendValidator(header),
   'contracts/generated/openapi.json':json(openapi),
   'contracts/generated/wepkg.schema.json':json(wepkg),
   'internal/generated/types.go':go,

@@ -2,19 +2,28 @@ package wepkg
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/big"
 	"regexp"
+	"sort"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"loreviva.local/loreviva/internal/generated"
+	"loreviva.local/loreviva/internal/wire"
 )
 
 var (
-	idPattern      = regexp.MustCompile(`^[a-z][a-z0-9._-]{0,95}$`)
-	versionPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$`)
-	hashPattern    = regexp.MustCompile(`^[a-f0-9]{64}$`)
+	idPattern              = regexp.MustCompile(`^[a-z][a-z0-9._-]{0,95}$`)
+	versionPattern         = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$`)
+	hashPattern            = regexp.MustCompile(`^[a-f0-9]{64}$`)
+	diagnosticIndexPattern = regexp.MustCompile(`^[0-9]{1,5}$`)
 )
 
-// Rights and Provenance are only read here: the manifest schema already
-// requires them, so the preflight checks the semantic layer the schema cannot
-// (see policy.go) rather than repeating required-field checks.
+// The generated manifest validator enforces required fields before decoding.
+// Preflight then checks registered capabilities, references, and file integrity.
 type Rights struct {
 	License               string   `json:"license"`
 	SourceReference       string   `json:"source_reference"`
@@ -49,32 +58,57 @@ type Dependency struct {
 type Capability struct {
 	CapabilityID string `json:"capability_id"`
 	Required     bool   `json:"required"`
+	SchemaPath   string `json:"schema_path,omitempty"`
+}
+
+type ToolRequirement struct {
+	ToolCapabilityID          string `json:"tool_capability_id"`
+	RegisteredContractVersion string `json:"registered_contract_version"`
+	Required                  bool   `json:"required"`
+}
+type TestedConfiguration struct {
+	ConfigurationID          string   `json:"configuration_id"`
+	ModelCapabilities        []string `json:"model_capabilities"`
+	PresentationCapabilities []string `json:"presentation_capabilities"`
+	EvidencePath             string   `json:"evidence_path"`
+	EvidenceKind             string   `json:"evidence_kind"`
+	Limitations              []string `json:"limitations"`
+}
+type Compatibility struct {
+	PublicAPIMajor         int64  `json:"public_api_major"`
+	PackageFormatMajor     int64  `json:"package_format_major"`
+	MinimumRuntimeContract string `json:"minimum_runtime_contract"`
+	RulePrimitiveSet       string `json:"rule_primitive_set"`
 }
 
 type Requirements struct {
-	Model        []Capability `json:"model_capabilities"`
-	Tool         []Capability `json:"tool_capabilities"`
-	Presentation []Capability `json:"presentation_capabilities"`
+	Model                []Capability          `json:"model_capabilities"`
+	Tool                 []ToolRequirement     `json:"tool_capabilities"`
+	Presentation         []Capability          `json:"presentation_capabilities"`
+	TestedConfigurations []TestedConfiguration `json:"tested_configurations"`
 }
 
 type Provenance struct {
-	AuthorDisplayName string   `json:"author_display_name"`
-	License           string   `json:"license"`
-	SourceReferences  []string `json:"source_references"`
+	AuthorDisplayName     string   `json:"author_display_name"`
+	License               string   `json:"license"`
+	SourceReferences      []string `json:"source_references"`
+	CreatedAt             string   `json:"created_at"`
+	SyntheticExamplesOnly bool     `json:"synthetic_examples_only"`
 }
 
 type Manifest struct {
-	FormatVersion  string       `json:"format_version"`
-	PackageID      string       `json:"package_id"`
-	Kind           string       `json:"kind"`
-	PackageVersion string       `json:"package_version"`
-	ContentSHA256  string       `json:"content_sha256"`
-	Entrypoints    []string     `json:"entrypoints"`
-	Entries        []Entry      `json:"entries"`
-	Files          []FileRecord `json:"files"`
-	Dependencies   []Dependency `json:"dependencies"`
-	Requirements   Requirements `json:"requirements"`
-	Provenance     Provenance   `json:"provenance"`
+	FormatVersion  string        `json:"format_version"`
+	PackageID      string        `json:"package_id"`
+	Kind           string        `json:"kind"`
+	PackageVersion string        `json:"package_version"`
+	ContentSHA256  string        `json:"content_sha256"`
+	Compatibility  Compatibility `json:"compatibility"`
+	Entrypoints    []string      `json:"entrypoints"`
+	Entries        []Entry       `json:"entries"`
+	Files          []FileRecord  `json:"files"`
+	Dependencies   []Dependency  `json:"dependencies"`
+	Requirements   Requirements  `json:"requirements"`
+	Provenance     Provenance    `json:"provenance"`
 }
 
 var (
@@ -102,6 +136,9 @@ func ParseManifest(raw []byte, lim Limits) (Manifest, []Finding) {
 		return m, []Finding{{Severity: Error, Code: CodeManifestInvalid,
 			Detail: fmt.Sprintf("manifest %d bytes exceeds %d", len(raw), lim.ManifestBytes)}}
 	}
+	if err := generated.ValidateManifest(raw, lim.ManifestBytes); err != nil {
+		return m, manifestAdmissionFindings(raw, err)
+	}
 	var top map[string]json.RawMessage
 	if e := json.Unmarshal(raw, &top); e != nil {
 		return m, []Finding{{Severity: Error, Code: CodeManifestInvalid, Detail: "manifest is not a JSON object"}}
@@ -112,8 +149,15 @@ func ParseManifest(raw []byte, lim Limits) (Manifest, []Finding) {
 			findings = append(findings, Finding{Severity: Error, Code: CodeManifestSchema, Object: key, Detail: "unknown manifest member"})
 		}
 	}
-	if e := json.Unmarshal(raw, &m); e != nil {
-		return m, []Finding{{Severity: Error, Code: CodeManifestInvalid, Detail: "manifest does not match the declared shape"}}
+	// Schema integer accepts exact decimal/exponent spellings. Normalize only
+	// validated integer tokens for DTO decoding; validation and input hashes
+	// always use the original bytes, never this derived representation.
+	decoded, err := manifestDTOBytes(top)
+	if err != nil {
+		return Manifest{}, []Finding{{Severity: Error, Code: CodeManifestInvalid, Detail: "manifest integer representation is invalid"}}
+	}
+	if e := json.Unmarshal(decoded, &m); e != nil {
+		return Manifest{}, []Finding{{Severity: Error, Code: CodeManifestInvalid, Detail: "manifest does not match the declared shape"}}
 	}
 
 	check := func(ok bool, object, detail string) {
@@ -169,4 +213,162 @@ func ParseManifest(raw []byte, lim Limits) (Manifest, []Finding) {
 	}
 	Order(findings)
 	return m, findings
+}
+
+// Select bounded, sorted unique locations across the complete error tree. Never
+// expose the schema library's rendered errors, which may include input values.
+func manifestAdmissionFindings(raw []byte, err error) []Finding {
+	if errors.Is(err, wire.ErrJSON) {
+		return []Finding{{Severity: Error, Code: CodeManifestInvalid, Object: "manifest", Detail: "manifest is not strict bounded JSON"}}
+	}
+	locations := []string{}
+	add := func(location string) {
+		if location == "" {
+			location = "manifest"
+		}
+		i := sort.SearchStrings(locations, location)
+		if i < len(locations) && locations[i] == location {
+			return
+		}
+		if i >= 32 {
+			return
+		}
+		locations = append(locations, "")
+		copy(locations[i+1:], locations[i:])
+		locations[i] = location
+		if len(locations) > 32 {
+			locations = locations[:32]
+		}
+	}
+	safe := func(parts []string) string {
+		out := ""
+		for i, part := range parts {
+			// Only format-owned field names and array indices are displayable.
+			// Arbitrary property names may themselves contain private payloads.
+			index := i > 0 && manifestDiagnosticArray(parts[i-1]) && diagnosticIndexPattern.MatchString(part)
+			if !manifestDiagnosticField(part) && !index {
+				break
+			}
+			next := part
+			if out != "" {
+				next = out + "." + part
+			}
+			if utf8.RuneCountInString(next) > 128 {
+				break
+			}
+			out = next
+		}
+		return out
+	}
+	var visit func(*jsonschema.ValidationError)
+	visit = func(e *jsonschema.ValidationError) {
+		if len(e.Causes) == 0 {
+			add(safe(e.InstanceLocation))
+			return
+		}
+		for _, child := range e.Causes {
+			visit(child)
+		}
+	}
+	var validation *jsonschema.ValidationError
+	if errors.As(err, &validation) {
+		visit(validation)
+	} else {
+		add("manifest")
+	}
+	var top map[string]json.RawMessage
+	_ = json.Unmarshal(raw, &top)
+	for key := range top {
+		if !manifestFields[key] {
+			add(safe([]string{key}))
+		}
+	}
+	// Explicit false keeps its stable semantic refusal code, but is still an
+	// invalid const:true Schema value and cannot yield a usable manifest.
+	var files []struct {
+		Rights struct {
+			RedistributionAllowed json.RawMessage `json:"redistribution_allowed"`
+		} `json:"rights"`
+	}
+	_ = json.Unmarshal(top["files"], &files)
+	falseRights := false
+	for _, file := range files {
+		if strings.TrimSpace(string(file.Rights.RedistributionAllowed)) == "false" {
+			falseRights = true
+			break
+		}
+	}
+	if falseRights && len(locations) > 31 {
+		locations = locations[:31]
+	}
+	findings := make([]Finding, 0, len(locations)+1)
+	for _, location := range locations {
+		findings = append(findings, Finding{Severity: Error, Code: CodeManifestSchema, Object: location, Detail: "manifest does not satisfy the package format"})
+	}
+	if falseRights {
+		findings = append(findings, Finding{Severity: Error, Code: CodeRightsNotDistributable, Object: "files", Detail: "the source may not be redistributed"})
+	}
+	Order(findings)
+	return findings
+}
+
+func manifestDiagnosticField(name string) bool {
+	if manifestFields[name] {
+		return true
+	}
+	switch name {
+	case "extra", "public_api_major", "package_format_major", "minimum_runtime_contract", "rule_primitive_set", "logical_id", "path", "version", "sha256", "references", "size_bytes", "media_type", "rights", "license", "source_reference", "redistribution_allowed", "allowed_uses", "logical_exports", "model_capabilities", "tool_capabilities", "presentation_capabilities", "tested_configurations", "capability_id", "required", "schema_path", "tool_capability_id", "registered_contract_version", "configuration_id", "evidence_path", "evidence_kind", "limitations", "author_display_name", "created_at", "source_references", "synthetic_examples_only":
+		return true
+	}
+	return false
+}
+
+func manifestDiagnosticArray(name string) bool {
+	switch name {
+	case "entrypoints", "entries", "files", "dependencies", "references", "logical_exports", "allowed_uses", "model_capabilities", "tool_capabilities", "presentation_capabilities", "tested_configurations", "limitations", "source_references":
+		return true
+	}
+	return false
+}
+
+func manifestDTOBytes(top map[string]json.RawMessage) ([]byte, error) {
+	normalize := func(raw json.RawMessage) (json.RawMessage, error) {
+		n, ok := new(big.Rat).SetString(strings.TrimSpace(string(raw)))
+		if !ok || !n.IsInt() || !n.Num().IsInt64() {
+			return nil, errors.New("noninteger DTO token")
+		}
+		return json.Marshal(n.Num().Int64())
+	}
+	var compatibility map[string]json.RawMessage
+	if err := json.Unmarshal(top["compatibility"], &compatibility); err != nil {
+		return nil, err
+	}
+	for _, key := range []string{"public_api_major", "package_format_major"} {
+		value, err := normalize(compatibility[key])
+		if err != nil {
+			return nil, err
+		}
+		compatibility[key] = value
+	}
+	var err error
+	top["compatibility"], err = json.Marshal(compatibility)
+	if err != nil {
+		return nil, err
+	}
+	var files []map[string]json.RawMessage
+	if err = json.Unmarshal(top["files"], &files); err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		value, e := normalize(file["size_bytes"])
+		if e != nil {
+			return nil, e
+		}
+		file["size_bytes"] = value
+	}
+	top["files"], err = json.Marshal(files)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(top)
 }

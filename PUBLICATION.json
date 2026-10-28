@@ -1,7 +1,7 @@
 {
   "format": "loreviva.publication.v1",
   "repository": "https://github.com/cnedwin/Loreviva.git",
-  "base_public_commit": "996b3e952ab91d81b1e1abbd44bbe72f94804cb8",
+  "base_public_commit": "c6419bfce8c4e2ebf172fb7b2a7a23bd29bdeea7",
   "completed_tasks": [
     1,
     2,
@@ -15,31 +15,40 @@
   "in_progress_tasks": [
     9
   ],
-  "scope": "Correct eight preflight limits JSON fields and validate actual report/HTTP bytes. Task8 is locally accepted; whole Task9 and R0 remain unaccepted.",
+  "scope": "Validate complete content-package manifests before decoding; bounded safe rejection reports and legal large digests. Whole Task9 and R0 remain incomplete.",
   "working_contract": "1.6.0",
-  "review_status": "bounded_repair_independently_approved_not_a_release",
+  "review_status": "manifest_admission_independently_approved_not_a_release",
   "validation": {
-    "unit_red": "Actual schema mismatch reproduced; original failing run retained.",
+    "unit_red": "Actual schema, digest, report, integer and diagnostic failures retained.",
     "unit_green": {
-      "top_level": 20,
-      "including_subtests": 31,
+      "top_level": 32,
+      "including_subtests": 139,
       "fail": 0,
       "skip": 0
+    },
+    "generator": {
+      "pass_count": 7,
+      "fail": 0,
+      "generated_drift": 0
     },
     "actual_HTTP": {
       "top_level": 4,
       "fail": 0,
       "skip": 0,
-      "capture_seconds": 16.875,
-      "business_write_check": "Inspected business-row counts unchanged for PASS and representative REJECT."
+      "capture_seconds": 46.328,
+      "business_write_check": "Inspected business-row counts unchanged for valid and malformed packages.",
+      "owned_processes": 39,
+      "remaining_owned_processes": 0,
+      "owned_schemas": 4,
+      "remaining_owned_schemas": 0
     },
-    "digest_compatibility": "Corrected nested serialization changes the report digest. Preflight reports are stateless; no stored receipt or migration is changed.",
+    "digest_compatibility": "Existing small canonical digest behavior is retained; legal large record inputs use an explicit bound. Invalid manifests stop before semantic traversal. No persistent receipt or migration is introduced.",
     "whole_Task8": "LOCALLY_ACCEPTED_WITH_DECLARED_BOUNDARIES",
     "whole_Task9": "NOT_ACCEPTED",
     "R0": "NOT_ACCEPTED",
     "independent_public_candidate": {
       "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
-      "source_files": 664,
+      "source_files": 671,
       "commands": 9,
       "offline_install": {
         "reused": 165,
@@ -51,24 +60,30 @@
         {
           "name": "workspace-tests",
           "tests": [
-            24,
+            25,
             3,
             25,
             16
           ],
-          "passes": [
-            24,
+          "pass": [
+            25,
             3,
             25,
             16
           ],
-          "failures": [
+          "fail": [
             0,
             0,
             0,
             0
           ],
-          "skips": [
+          "skipped": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "cancelled": [
             0,
             0,
             0,
@@ -80,13 +95,16 @@
           "tests": [
             9
           ],
-          "passes": [
+          "pass": [
             9
           ],
-          "failures": [
+          "fail": [
             0
           ],
-          "skips": [
+          "skipped": [
+            0
+          ],
+          "cancelled": [
             0
           ]
         }
@@ -98,8 +116,8 @@
           "loreviva.local/loreviva/internal/auth",
           "loreviva.local/loreviva/internal/settings"
         ],
-        "top_level": 37,
-        "including_subtests": 55,
+        "top_level": 48,
+        "including_subtests": 162,
         "fail": 0,
         "test_skip": 0
       },
@@ -110,7 +128,13 @@
         "Go internal vet"
       ],
       "source_bytes_unchanged": true,
-      "database_retests": false
+      "database_retests": false,
+      "post_validation_document_alignment": {
+        "paths": [
+          "THIRD_PARTY_NOTICES.md"
+        ],
+        "scope": "Ajv version labels and bilingual retained-filename explanation only; executable and upstream license bytes unchanged. Exact byte and Git gates remain separate."
+      }
     },
     "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
   },
@@ -194,6 +218,10 @@
     "LICENSES/ajv-formats-3.0.1-LICENSE.txt": {
       "bytes": 1074,
       "sha256": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf"
+    },
+    "LICENSES/dlclark-regexp2-v1.11.0-MIT.txt": {
+      "bytes": 1072,
+      "sha256": "9be5d04bb4d706914d5bf943710da4afeb42048f7c529902fb57c82762a991a9"
     },
     "LICENSES/edwards25519-v1.2.0-LICENSE.txt": {
       "bytes": 1479,
@@ -316,8 +344,8 @@
       "sha256": "90ff5f05f683fa3763b69bb6a874d9b4283a14ce720d50478ce390a9e5655c59"
     },
     "THIRD_PARTY_NOTICES.md": {
-      "bytes": 11304,
-      "sha256": "89292c4ae4a74670679fe802223f5084409c8024236e89f0069ffda2fb8b78a5"
+      "bytes": 12414,
+      "sha256": "d24c9734acfaac822c8ee984ff8e3294681e8c44f3b7d58b77b8c14ca5bfeb22"
     },
     "VERSIONING.md": {
       "bytes": 2415,
@@ -791,6 +819,14 @@
       "bytes": 8609,
       "sha256": "01af9069f73181e136620bf5fd932f4372ff50b9200b7fe025e89e2c7564c248"
     },
+    "docs/progress/2026-10-28.en.md": {
+      "bytes": 2888,
+      "sha256": "a0162fd5f8a2e5592b0f8754a013291b8d6fdb7dacdde4ed7f139f5b0c94a890"
+    },
+    "docs/progress/2026-10-28.zh.md": {
+      "bytes": 2272,
+      "sha256": "7f2fc20c26c86ca481aa272513098d3a5b0c3b5bf929dd8343fa1b5e5b00c5a0"
+    },
     "examples/coffee/definitions.json": {
       "bytes": 10898,
       "sha256": "4c1332e963bc34d111d50917b6b44955e6335fae15fa6f857c1ce9761635e1a2"
@@ -820,8 +856,8 @@
       "sha256": "dcd06a543c33360765521f37f95b99c3b95b218def049e5b5348dc39a3416653"
     },
     "go.mod": {
-      "bytes": 539,
-      "sha256": "4bf17fdfb135db6b3252c20e5822300f85e8a419d28fe9ac06f847746504bcde"
+      "bytes": 575,
+      "sha256": "a046c05616d4255eaa802553891c5aa0278b6ebaec23624e0f355e26b6cef18c"
     },
     "go.sum": {
       "bytes": 4454,
@@ -1266,6 +1302,14 @@
     "internal/generated/validate.go": {
       "bytes": 1944,
       "sha256": "b3bab86951c7bc17c0fd5687b1d423ce5b9bddc903512459bc590d887b31f68d"
+    },
+    "internal/generated/wepkg.schema.json": {
+      "bytes": 15804,
+      "sha256": "d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03"
+    },
+    "internal/generated/wepkg_validate.go": {
+      "bytes": 2327,
+      "sha256": "9879a87c6946fc5a4d12df5d348480e7ee01a0756140e968f8e881d9244d9f2e"
     },
     "internal/harness/admin_jobs.go": {
       "bytes": 3979,
@@ -1992,36 +2036,44 @@
       "sha256": "112104af8a9f9032760dd72a4c346cd7cdae6f7e88b8cc54ca5fa65b10ab2add"
     },
     "internal/wepkg/finding.go": {
-      "bytes": 5320,
-      "sha256": "2f7724309e5f76ce59c0a2563f92cae8b99f7d8a2d80cfd9fd8e0b43a3be48df"
+      "bytes": 5818,
+      "sha256": "1b9b945868fb70f505c093995e92b2ceca8a90ca57884ae2bc6e7daeeb3e1d6c"
     },
     "internal/wepkg/graph.go": {
-      "bytes": 4952,
-      "sha256": "b7f121735d689681f92bf7b05785953a39ace114005606d5cbbce7c47b5df756"
+      "bytes": 5123,
+      "sha256": "893b7b74fb6d0b2bfab7004fde32651a15b7724959799ba85365e7b4dd48668d"
     },
     "internal/wepkg/integrity.go": {
-      "bytes": 3571,
-      "sha256": "8d75e00861466493684a435c2f2147e9f94201a39902e041412d50c13af545d8"
+      "bytes": 3585,
+      "sha256": "e399b7d75f3160fe47b3ac06682af7f03c01ebc95e927957a09c8dd02744463b"
     },
     "internal/wepkg/limits.go": {
       "bytes": 1544,
       "sha256": "2347e1033edc87897650907097b98be78a2be15267767782be88b8c1a1b43cab"
     },
     "internal/wepkg/manifest.go": {
-      "bytes": 8002,
-      "sha256": "a688291616ca9187c3a8b47ef052033adbe2f216daa651260fa9700a80127b38"
+      "bytes": 15223,
+      "sha256": "14454d4a6e50b7c1a084a7165dda16961b4c1c5f79b4aacdd5b8de2d09e0b573"
+    },
+    "internal/wepkg/manifest_admission_test.go": {
+      "bytes": 18107,
+      "sha256": "535aa476b29bb6ada4cb23b8312045e96ff323ce6eb16eb5307d919d33d7600a"
     },
     "internal/wepkg/preflight.go": {
-      "bytes": 3331,
-      "sha256": "45fb147e393fac1fe9199795658700bf8900adb4f292e02547a189740f5f0e0e"
+      "bytes": 3467,
+      "sha256": "a294e357442cd6f4b5d2d84b6498c789e0c02450c50b8cfd76e52eea91b696e1"
     },
     "internal/wepkg/preflight_test.go": {
-      "bytes": 15060,
-      "sha256": "dc9213e43f989298959e57c042488bd0a4faf4f6cbf6951f56a885cb6541f93d"
+      "bytes": 15558,
+      "sha256": "ae274f76dfa75947a0cb49ebb1c8db97bf47ac7285e4fae9161974c9b07187a2"
+    },
+    "internal/wire/bounded_test.go": {
+      "bytes": 1446,
+      "sha256": "bd364dfa0b94183715f26796d35bf6885f777e12a3bffde9845697932ca21eb8"
     },
     "internal/wire/json.go": {
-      "bytes": 4368,
-      "sha256": "a21d9499d951b74a743be653da6706841c0fcb7b7754ed46cf30bdd04be78750"
+      "bytes": 4863,
+      "sha256": "8fb1a14ed4c20b5e37f1efa08239023b0d75d9e4d9ed02f86a276cde926d589c"
     },
     "internal/wire/json_test.go": {
       "bytes": 537,
@@ -2156,8 +2208,8 @@
       "sha256": "b435bfc8dd2df02d615b65a00063ad2f04c698541d0b57d6ab1e43a2499d7aef"
     },
     "scripts/contracts.test.mjs": {
-      "bytes": 6111,
-      "sha256": "05388ab36e66139a5d398cad26fc04a0d84ce8557b320851f62ae926ad220faa"
+      "bytes": 6933,
+      "sha256": "ada71f6c77aa7d64fd37c1a0cd5606973a7713a7e7034799d48a0ffc071d7100"
     },
     "scripts/fixtures/conditional-types.ts": {
       "bytes": 4136,
@@ -2176,8 +2228,8 @@
       "sha256": "46b51720f5a0c7133767504969f6b8cb0146cca320041063963e20939197f5f9"
     },
     "scripts/generate-contracts.mjs": {
-      "bytes": 25773,
-      "sha256": "fbf073d32271b78d478480d86dfcb88980212fbbcb53f985aff070bad1067058"
+      "bytes": 28160,
+      "sha256": "21383f933ff369e7db9ac0673047cca3ff65962faf582ea932e70364467a87f1"
     },
     "scripts/integration-profiles.mjs": {
       "bytes": 4915,
@@ -2216,8 +2268,8 @@
       "sha256": "b8be77b86c6d5a34ae089b7db500934ef01f3f86af6b1578b7031b85eba46273"
     },
     "scripts/source-byte-inventory.json": {
-      "bytes": 28648,
-      "sha256": "1044c117e8d2303cc93918e526725b7a953365e68820afd8bc6d031e423df40f"
+      "bytes": 28946,
+      "sha256": "90bc681e0752df232143be2bce3fc10a41ec34ba221a6765ea97f975b349cdd4"
     },
     "scripts/source-byte-scope.test.mjs": {
       "bytes": 20163,
@@ -2360,8 +2412,8 @@
       "sha256": "9326ef0c62470715cea44601a71c288345ca278c6ca750582864a83ae36d2762"
     },
     "tests/integration/content_package_preflight_test.go": {
-      "bytes": 10778,
-      "sha256": "e539335b08050a2f4eb65b6c181339e1211e7ba0dc7a63b1df06ce2725b95d1d"
+      "bytes": 13022,
+      "sha256": "c8cf71808ed50fc76ccb682c4969c96988823c094f82ca6e776138204d99ec5e"
     },
     "tests/integration/content_release_withdrawal_test.go": {
       "bytes": 37097,
@@ -3003,6 +3055,105 @@
       "whole_task8": "NOT_ACCEPTED",
       "R0": "NOT_ACCEPTED",
       "real_model_human_commercial_deployment": "NOT_ACCEPTED"
+    }
+  },
+  "validation_history_before_manifest_admission": {
+    "public_commit": "c6419bfce8c4e2ebf172fb7b2a7a23bd29bdeea7",
+    "validation": {
+      "unit_red": "Actual schema mismatch reproduced; original failing run retained.",
+      "unit_green": {
+        "top_level": 20,
+        "including_subtests": 31,
+        "fail": 0,
+        "skip": 0
+      },
+      "actual_HTTP": {
+        "top_level": 4,
+        "fail": 0,
+        "skip": 0,
+        "capture_seconds": 16.875,
+        "business_write_check": "Inspected business-row counts unchanged for PASS and representative REJECT."
+      },
+      "digest_compatibility": "Corrected nested serialization changes the report digest. Preflight reports are stateless; no stored receipt or migration is changed.",
+      "whole_Task8": "LOCALLY_ACCEPTED_WITH_DECLARED_BOUNDARIES",
+      "whole_Task9": "NOT_ACCEPTED",
+      "R0": "NOT_ACCEPTED",
+      "independent_public_candidate": {
+        "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
+        "source_files": 664,
+        "commands": 9,
+        "offline_install": {
+          "reused": 165,
+          "downloaded": 0,
+          "frozen_store": true,
+          "frozen_lockfile": true
+        },
+        "script_summaries": [
+          {
+            "name": "workspace-tests",
+            "tests": [
+              24,
+              3,
+              25,
+              16
+            ],
+            "passes": [
+              24,
+              3,
+              25,
+              16
+            ],
+            "failures": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "skips": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "byte-regressions",
+            "tests": [
+              9
+            ],
+            "passes": [
+              9
+            ],
+            "failures": [
+              0
+            ],
+            "skips": [
+              0
+            ]
+          }
+        ],
+        "go_units": {
+          "requested_packages": 8,
+          "packages_with_tests_passed": 6,
+          "packages_without_tests": [
+            "loreviva.local/loreviva/internal/auth",
+            "loreviva.local/loreviva/internal/settings"
+          ],
+          "top_level": 37,
+          "including_subtests": 55,
+          "fail": 0,
+          "test_skip": 0
+        },
+        "builds": [
+          "Studio typecheck and build",
+          "Reference typecheck and build",
+          "Go all packages build",
+          "Go internal vet"
+        ],
+        "source_bytes_unchanged": true,
+        "database_retests": false
+      },
+      "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
     }
   }
 }

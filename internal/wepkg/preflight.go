@@ -36,6 +36,12 @@ func Check(raw []byte, lim Limits) Report {
 
 	m, manifestFindings := ParseManifest(manifestRaw, lim)
 	rep.Findings = append(rep.Findings, manifestFindings...)
+	if m.FormatVersion == "" {
+		Order(rep.Findings)
+		rep.Verdict = Verdict(rep.Findings)
+		rep.ReportSHA256 = rep.Hash()
+		return rep
+	}
 	rep.PackageID, rep.PackageVersion, rep.Kind = m.PackageID, m.PackageVersion, m.Kind
 	rep.ContentHashDeclared = m.ContentSHA256
 	if computed, e := ContentHash(m); e == nil {

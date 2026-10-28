@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 type Severity string
@@ -84,6 +85,19 @@ type Report struct {
 // Order sorts findings so two runs over the same bytes produce identical JSON.
 // severity first (errors before warnings), then code, path, object, detail.
 func Order(findings []Finding) {
+	for i := range findings {
+		// Bound before ordering and hashing; an omitted location is preferable
+		// to slicing an untrusted payload into a serialized diagnostic.
+		if utf8.RuneCountInString(findings[i].Path) > 240 {
+			findings[i].Path = ""
+		}
+		if utf8.RuneCountInString(findings[i].Object) > 128 {
+			findings[i].Object = "manifest"
+		}
+		if utf8.RuneCountInString(findings[i].Detail) > 512 {
+			findings[i].Detail = "diagnostic omitted: exceeds safe display limit"
+		}
+	}
 	sort.SliceStable(findings, func(i, j int) bool {
 		a, b := findings[i], findings[j]
 		if (a.Severity == Error) != (b.Severity == Error) {

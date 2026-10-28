@@ -8,6 +8,7 @@ Original Loreviva source uses [Apache-2.0](LICENSE). Third-party code retains it
 
 | 模块 | 版本 | 声明方式 | 许可 | 上游正文副本 |
 | --- | --- | --- | --- | --- |
+| github.com/dlclark/regexp2 | v1.11.0 | 直接 / direct | MIT | [LICENSE](LICENSES/dlclark-regexp2-v1.11.0-MIT.txt) |
 | github.com/go-kratos/kratos/v3 | v3.0.0 | 直接 | MIT | [LICENSE](LICENSES/go-kratos-v3.0.0-LICENSE.txt) |
 | github.com/go-sql-driver/mysql | v1.10.1 | 直接 | MPL-2.0 | [LICENSE](LICENSES/go-sql-driver-mysql-v1.10.1-LICENSE.txt) |
 | github.com/santhosh-tekuri/jsonschema/v6 | v6.0.2 | 直接 | Apache-2.0 | [LICENSE](LICENSES/jsonschema-v6.0.2-LICENSE.txt) |
@@ -36,13 +37,17 @@ The MySQL Go driver's MPL-2.0 remains separate from Apache-2.0 for original proj
 
 | 包 | 版本 | 用途 | 许可 | 上游正文副本 |
 | --- | --- | --- | --- | --- |
-| ajv | 8.17.1 | 直接开发依赖，Schema 校验 | MIT | [LICENSE](LICENSES/ajv-8.17.1-LICENSE.txt) |
+| ajv | 8.18.0 | 直接开发依赖，Schema 校验 | MIT | [LICENSE](LICENSES/ajv-8.17.1-LICENSE.txt) |
 | ajv-formats | 3.0.1 | 直接开发依赖，格式校验 | MIT | [LICENSE](LICENSES/ajv-formats-3.0.1-LICENSE.txt) |
 | typescript | 5.9.3 | 直接开发依赖，SDK 类型检查 | Apache-2.0 | [LICENSE](LICENSES/typescript-5.9.3-LICENSE.txt) |
 | fast-deep-equal | 3.1.3 | Ajv 的传递依赖 | MIT | [LICENSE](LICENSES/fast-deep-equal-3.1.3-LICENSE.txt) |
 | fast-uri | 3.1.8 | Ajv 的传递依赖 | BSD-3-Clause | [LICENSE](LICENSES/fast-uri-3.1.8-LICENSE.txt) |
 | json-schema-traverse | 1.0.0 | Ajv 的传递依赖 | MIT | [LICENSE](LICENSES/json-schema-traverse-1.0.0-LICENSE.txt) |
 | require-from-string | 2.0.2 | Ajv 的传递依赖 | MIT | [license](LICENSES/require-from-string-2.0.2-LICENSE.txt) |
+
+Ajv 当前版本为8.18.0。许可副本保留历史文件名 `ajv-8.17.1-LICENSE.txt`；正文与实际安装的8.18.0上游 LICENSE 原始字节完全一致。
+
+The current Ajv version is 8.18.0. The retained license keeps its historical filename, `ajv-8.17.1-LICENSE.txt`; its original bytes are identical to the installed upstream 8.18.0 LICENSE.
 
 表中用途是声明接点，不是全部运行时用途。Ajv 的生成校验代码及所引用的 Ajv runtime、ajv-formats、fast-deep-equal 也进入交付的 SDK/Studio JavaScript，适用各自 MIT 保留要求。
 
@@ -58,7 +63,7 @@ Table purposes describe declaration points, not every runtime use. Generated Ajv
 | @vue/runtime-dom | 3.5.43 | MIT | [LICENSE](LICENSES/vue-3.5.43/LICENSE.txt) |
 | Pinia | 4.0.3 | MIT | [LICENSE](LICENSES/pinia-4.0.3/LICENSE.txt) |
 | Vue Router | 5.4.0 | MIT | [LICENSE](LICENSES/vue-router-5.4.0/LICENSE.txt) |
-| ajv | 8.17.1 | MIT | [LICENSE](LICENSES/ajv-8.17.1-LICENSE.txt) |
+| ajv | 8.18.0 | MIT | [LICENSE](LICENSES/ajv-8.17.1-LICENSE.txt) |
 | ajv-formats | 3.0.1 | MIT | [LICENSE](LICENSES/ajv-formats-3.0.1-LICENSE.txt) |
 | fast-deep-equal | 3.1.3 | MIT | [LICENSE](LICENSES/fast-deep-equal-3.1.3-LICENSE.txt) |
 
@@ -95,3 +100,9 @@ Go, Node.js, pnpm, MySQL Community, dependency caches, node_modules, native buil
 依赖升级、引入新第三方源码或分发二进制、容器、安装包时，应按实际分发范围更新许可与 NOTICE。本文是本源码及已列嵌入材料的保留说明，不是全 SBOM，也不表示完整产品、模型内容或商业使用已验收。
 
 Dependency upgrades, new third-party source or distribution of binaries, containers or installers require license/NOTICE updates for the actual scope. This document records retention for this source package and listed embedded materials; it is not a full SBOM or acceptance of the complete product, model content or commercial use.
+
+## dlclark/regexp2 v1.11.0
+
+采用 MIT 许可，版权归 Doug Clark。已有锁定模块作为直接依赖，用于有时限的 ECMAScript Schema 正则匹配。[上游 v1.11.0](https://github.com/dlclark/regexp2/tree/v1.11.0) 与[完整许可原文](LICENSES/dlclark-regexp2-v1.11.0-MIT.txt)分别保留版本与原始字节。
+
+MIT, copyright Doug Clark. The already locked module is a direct dependency for bounded ECMAScript Schema patterns. The [upstream v1.11.0 source](https://github.com/dlclark/regexp2/tree/v1.11.0) and [complete license](LICENSES/dlclark-regexp2-v1.11.0-MIT.txt) retain the version and original license bytes.

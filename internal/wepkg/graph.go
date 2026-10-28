@@ -57,12 +57,12 @@ func CheckGraph(m Manifest) []Finding {
 	for _, id := range m.Entrypoints {
 		if !entries[id] {
 			findings = append(findings, Finding{Severity: Error, Code: CodeEntrypointUnknown, Object: "entrypoints",
-				Detail: "names unknown entry " + id})
+				Detail: "names an unknown entry"})
 			continue
 		}
 		if !rootKinds[kinds[id]] {
 			findings = append(findings, Finding{Severity: Error, Code: CodeEntrypointKind, Object: "entrypoints",
-				Detail: fmt.Sprintf("%s is a %s entry, not a publishable root", id, kinds[id])})
+				Detail: "entry kind is not a publishable root"})
 		}
 	}
 
@@ -88,17 +88,22 @@ func CheckGraph(m Manifest) []Finding {
 		for _, ref := range e.References {
 			if !entries[ref] && !exports[ref] {
 				findings = append(findings, Finding{Severity: Error, Code: CodeReferenceUnresolved,
-					Object: fmt.Sprintf("entries[%d]", i), Detail: "unresolved reference " + ref})
+					Object: fmt.Sprintf("entries[%d]", i), Detail: "unresolved logical reference"})
 			}
 		}
 	}
 
-	for _, group := range [][]Capability{m.Requirements.Model, m.Requirements.Tool, m.Requirements.Presentation} {
+	for _, group := range [][]Capability{m.Requirements.Model, m.Requirements.Presentation} {
 		for _, c := range group {
 			if !RegisteredCapabilities[c.CapabilityID] {
 				findings = append(findings, Finding{Severity: Error, Code: CodeCapabilityUnknown,
-					Object: "requirements", Detail: "unregistered capability " + c.CapabilityID})
+					Object: "requirements", Detail: "unregistered capability"})
 			}
+		}
+	}
+	for _, c := range m.Requirements.Tool {
+		if !RegisteredCapabilities[c.ToolCapabilityID] {
+			findings = append(findings, Finding{Severity: Error, Code: CodeCapabilityUnknown, Object: "requirements", Detail: "unregistered capability"})
 		}
 	}
 	Order(findings)
@@ -119,7 +124,7 @@ func CheckRulePrimitives(m Manifest, body []byte) []Finding {
 	var findings []Finding
 	for _, p := range doc.Primitives {
 		if !RulePrimitives[p] {
-			findings = append(findings, Finding{Severity: Error, Code: CodePrimitiveForbidden, Object: "rules", Detail: "unsupported primitive " + p})
+			findings = append(findings, Finding{Severity: Error, Code: CodePrimitiveForbidden, Object: "rules", Detail: "unsupported rule primitive"})
 		}
 	}
 	Order(findings)
