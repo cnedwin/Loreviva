@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Loreviva public design contract",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "description": "Development specification3.0.1; additive administrative contract1.1.0. Canonical source: contracts/source/openapi.yaml in independent Loreviva engineering checkout. Existing18 public operations retain their original wire shapes. Machine contract is not evidence of future task handlers, real models, billing or acceptance. All fixtures are synthetic."
   },
   "servers": [
@@ -12890,6 +12890,239 @@
         "x-implementation-status": "implemented",
         "description": "Read-only bounded extraction. Does not create assets or grant local import rights.",
         "summary": "Read one exact declared file from the original validated archive"
+      }
+    },
+    "/world/v1/admin/document-capabilities": {
+      "get": {
+        "operationId": "getDocumentCapabilities",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authorized read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentCapabilities"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "summary": "Read fixed safe-document limits and supported subset",
+        "description": "Local read-only preview limits; no OCR, model egress or knowledge adoption."
+      }
+    },
+    "/world/v1/admin/assets/{asset_id}/document-preview": {
+      "post": {
+        "operationId": "previewContentDocument",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authorized read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentPreviewRequest"
+              }
+            }
+          }
+        },
+        "summary": "Inspect a current authorized KNOWLEDGE asset as inert text",
+        "description": "Bounded read-only preview. No job, draft, tool invocation or publication; explicit missing content remains blocked from adoption.",
+        "x-implementation-status": "implemented"
       }
     }
   },
@@ -26485,7 +26718,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.9.0"
+            "const": "1.10.0"
           },
           "source_hash": {
             "type": "string",
@@ -27140,6 +27373,22 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "getDocumentCapabilities": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "previewContentDocument": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -27217,7 +27466,9 @@
               "exportContentPackage",
               "getPackageExport",
               "downloadPackageExport",
-              "readContentPackageFile"
+              "readContentPackageFile",
+              "getDocumentCapabilities",
+              "previewContentDocument"
             ],
             "additionalProperties": false
           },
@@ -27248,7 +27499,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.9.0",
+            "contract_version": "1.10.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -27386,7 +27637,9 @@
               "exportContentPackage": "AVAILABLE",
               "getPackageExport": "AVAILABLE",
               "downloadPackageExport": "AVAILABLE",
-              "readContentPackageFile": "AVAILABLE"
+              "readContentPackageFile": "AVAILABLE",
+              "getDocumentCapabilities": "AVAILABLE",
+              "previewContentDocument": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -28760,6 +29013,459 @@
               "license": "CC0-1.0",
               "allowed_uses": [],
               "source_location": "fixture:static-note"
+            }
+          }
+        ]
+      },
+      "DocumentLimits": {
+        "type": "object",
+        "properties": {
+          "input_bytes": {
+            "type": "integer",
+            "const": 8388608
+          },
+          "expanded_bytes": {
+            "type": "integer",
+            "const": 16777216
+          },
+          "member_bytes": {
+            "type": "integer",
+            "const": 4194304
+          },
+          "output_bytes": {
+            "type": "integer",
+            "const": 524288
+          },
+          "chunks": {
+            "type": "integer",
+            "const": 1000
+          },
+          "pages": {
+            "type": "integer",
+            "const": 200
+          },
+          "zip_entries": {
+            "type": "integer",
+            "const": 128
+          },
+          "expansion_ratio": {
+            "type": "integer",
+            "const": 100
+          },
+          "xml_depth": {
+            "type": "integer",
+            "const": 64
+          },
+          "pdf_objects": {
+            "type": "integer",
+            "const": 4096
+          },
+          "tokens": {
+            "type": "integer",
+            "const": 200000
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "const": 3000
+          },
+          "encoded_response_bytes": {
+            "type": "integer",
+            "const": 1048576
+          }
+        },
+        "required": [
+          "input_bytes",
+          "expanded_bytes",
+          "member_bytes",
+          "output_bytes",
+          "chunks",
+          "pages",
+          "zip_entries",
+          "expansion_ratio",
+          "xml_depth",
+          "pdf_objects",
+          "tokens",
+          "timeout_ms",
+          "encoded_response_bytes"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "input_bytes": 8388608,
+            "expanded_bytes": 16777216,
+            "member_bytes": 4194304,
+            "output_bytes": 524288,
+            "chunks": 1000,
+            "pages": 200,
+            "zip_entries": 128,
+            "expansion_ratio": 100,
+            "xml_depth": 64,
+            "pdf_objects": 4096,
+            "tokens": 200000,
+            "timeout_ms": 3000,
+            "encoded_response_bytes": 1048576
+          }
+        ]
+      },
+      "DocumentCapabilities": {
+        "type": "object",
+        "properties": {
+          "parser_version": {
+            "type": "string",
+            "const": "bounded-text-v1"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TXT",
+                "MD",
+                "DOCX",
+                "PDF"
+              ]
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "limits": {
+            "$ref": "#/components/schemas/DocumentLimits"
+          },
+          "read_only": {
+            "type": "boolean",
+            "const": true
+          },
+          "ocr": {
+            "type": "boolean",
+            "const": false
+          },
+          "supported_subset": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "execution_ready": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "parser_version",
+          "formats",
+          "limits",
+          "read_only",
+          "ocr",
+          "supported_subset",
+          "execution_ready"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "parser_version": "bounded-text-v1",
+            "formats": [
+              "TXT",
+              "MD",
+              "DOCX",
+              "PDF"
+            ],
+            "limits": {
+              "input_bytes": 8388608,
+              "expanded_bytes": 16777216,
+              "member_bytes": 4194304,
+              "output_bytes": 524288,
+              "chunks": 1000,
+              "pages": 200,
+              "zip_entries": 128,
+              "expansion_ratio": 100,
+              "xml_depth": 64,
+              "pdf_objects": 4096,
+              "tokens": 200000,
+              "timeout_ms": 3000,
+              "encoded_response_bytes": 1048576
+            },
+            "read_only": true,
+            "ocr": false,
+            "supported_subset": [
+              "UTF8 literal text; ordinary WordprocessingML body; standard-font text PDF"
+            ],
+            "execution_ready": false
+          }
+        ]
+      },
+      "DocumentPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "expected_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "product_id",
+          "expected_sha256"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "expected_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "DocumentChunk": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 524288
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "byte_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8388608
+          },
+          "byte_end": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8388608
+          },
+          "paragraph": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200000
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "location",
+          "text",
+          "sha256"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "location": "line:1",
+            "text": "Synthetic source\n",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "line": 1,
+            "byte_start": 0,
+            "byte_end": 17
+          }
+        ]
+      },
+      "DocumentMissing": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{0,79}$"
+          }
+        },
+        "required": [
+          "location",
+          "code"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "location": "page:1",
+            "code": "PDF_UNSUPPORTED_FONT"
+          }
+        ]
+      },
+      "DocumentExtractionReport": {
+        "type": "object",
+        "properties": {
+          "parser_version": {
+            "type": "string",
+            "const": "bounded-text-v1"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "TXT",
+              "MD",
+              "DOCX",
+              "PDF"
+            ]
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETE",
+              "PARTIAL",
+              "OCR_REQUIRED",
+              "UNSUPPORTED"
+            ]
+          },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentChunk"
+            },
+            "maxItems": 1000
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentMissing"
+            },
+            "maxItems": 1000
+          },
+          "ocr": {
+            "type": "boolean",
+            "const": false
+          },
+          "execution_ready": {
+            "type": "boolean",
+            "const": false
+          },
+          "adoptable": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "parser_version",
+          "format",
+          "source_sha256",
+          "size_bytes",
+          "status",
+          "chunks",
+          "missing",
+          "ocr",
+          "execution_ready",
+          "adoptable"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "parser_version": "bounded-text-v1",
+            "format": "TXT",
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": "17",
+            "status": "COMPLETE",
+            "chunks": [
+              {
+                "location": "line:1",
+                "text": "Synthetic source\n",
+                "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "line": 1,
+                "byte_start": 0,
+                "byte_end": 17
+              }
+            ],
+            "missing": [],
+            "ocr": false,
+            "execution_ready": false,
+            "adoptable": false
+          }
+        ]
+      },
+      "DocumentPreview": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/FileRecord"
+          },
+          "report": {
+            "$ref": "#/components/schemas/DocumentExtractionReport"
+          }
+        },
+        "required": [
+          "asset",
+          "report"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "asset": {
+              "scope": {
+                "tenant_id": "demo-local",
+                "product_id": "coffee"
+              },
+              "asset_id": "synthetic-source",
+              "owner_subject_id": "synthetic-owner",
+              "state": "READY",
+              "name": "synthetic.txt",
+              "purpose": "KNOWLEDGE",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "media_type": "text/plain",
+              "size_bytes": "17",
+              "rights": {
+                "origin_kind": "SYNTHETIC",
+                "source_label": "Synthetic source",
+                "license": "Apache-2.0",
+                "allowed_uses": []
+              },
+              "audience_policy": "PRODUCT_EDITORS",
+              "created_at": "2026-10-30T00:00:00Z"
+            },
+            "report": {
+              "parser_version": "bounded-text-v1",
+              "format": "TXT",
+              "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": "17",
+              "status": "COMPLETE",
+              "chunks": [
+                {
+                  "location": "line:1",
+                  "text": "Synthetic source\n",
+                  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "line": 1,
+                  "byte_start": 0,
+                  "byte_end": 17
+                }
+              ],
+              "missing": [],
+              "ocr": false,
+              "execution_ready": false,
+              "adoptable": false
             }
           }
         ]

@@ -10,11 +10,11 @@ const ids=['getAdminSettings','commandAdminSettings','listAdminMembers','command
 test('studio_contract_exact_delta',async()=>{
  const old=JSON.parse(await readFile(new URL('./fixtures/contract13-approved-baseline.json',import.meta.url),'utf8'));
  const approved=JSON.parse(await readFile(new URL('../tests/contracts/fixtures/contract14-approved-baseline.json',import.meta.url),'utf8'));
- const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.9.0');
+ const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.10.0');
  for(const [p,v]of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v]of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);
  assert.deepEqual(Object.keys(o.components.schemas).filter(n=>approved.components.schemas[n]&&!old.components.schemas[n]).sort(),names);
- const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,75); assert.equal(Object.keys(o.components.schemas).length,197);
+ const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,77); assert.equal(Object.keys(o.components.schemas).length,204);
  const added=ops.filter(op=>ids.includes(op.operationId)); assert.deepEqual(added.map(o=>o.operationId).sort(),ids);
  for(const op of added)assert.deepEqual(op.security,[{OperatorBearer:[]}]);
  // Only the adopted portable-body descriptor is additive. The remaining

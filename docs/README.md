@@ -1,3 +1,5 @@
+> 当前安全文档预览与剩余范围见[文档提取](progress/2026-10-30-documents.zh.md)。完整导入和Task9/R0仍未验收。
+
 # Documentation
 
 English is the primary language; every English document has a Chinese companion.

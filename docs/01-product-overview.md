@@ -1,3 +1,5 @@
+> 当前安全文档预览与剩余范围见[文档提取](progress/2026-10-30-documents.zh.md)。完整导入和Task9/R0仍未验收。
+
 > 当前内容包审核、导出与第二安装进展见 [内容包安装迁移](progress/2026-10-29-transfer.zh.md)；Task9/R0仍未整体验收。
 
 # Loreviva 产品概述

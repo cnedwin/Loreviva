@@ -85,6 +85,12 @@ func failure(w http.ResponseWriter, e error) {
 		message = "Local commit outcome unknown; retry original key to recover original result."
 		recovery = "USE_ORIGINAL_KEY"
 		retry = false
+	case errors.Is(e, files.ErrDocumentPreviewLimit):
+		status = 422
+		code = "VALIDATION_FAILED"
+		message = "Document preview exceeds the current encoded response limit."
+		recovery = "FIX_REQUEST"
+		retry = false
 	case errors.Is(e, content.ErrBlocked) || errors.Is(e, files.ErrMetadata):
 		status = 422
 		code = "VALIDATION_FAILED"
@@ -371,6 +377,7 @@ func (r *Runtime) Handler() http.Handler {
 	r.adminReadRoutes(mux)
 	r.settingsRoutes(mux)
 	r.assetRoutes(mux)
+	r.documentRoutes(mux)
 	mux.HandleFunc("GET "+root+"/capabilities", r.adminControl("", "content.read", r.capabilities))
 	r.packageRoutes(mux)
 	r.instanceRoutes(mux)

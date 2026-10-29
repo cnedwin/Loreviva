@@ -1,12 +1,12 @@
 {
-  "source_hash": "b96513ebbf2ce15d55a8008a79e9cacb8ebccc532c934df86c241296d0f34399",
+  "source_hash": "0b62f4e621dea60151463c36aa37bf18d898b68e7b47366dd9d87162809827d4",
   "source_hashes": {
-    "openapi.yaml": "f1850f2dce33a3456edc607f5579611d5c79fcdc54c37c62fd4d25e60ac9f011",
+    "openapi.yaml": "ef4daf2ca00f484c6f247dc340b37b5a48b5fc181913834da096daeb711e1145",
     "wepkg.schema.json": "e19c77a0b15168caa348ead591f2434083a56ac6a96c642e681d9be364e76be0"
   },
   "profile_hashes": {
-    "contracts/generated/profiles/public_v1.openapi.json": "a5d2622945bfbb5e3deb788d6f0e358c19a7fd95538b7fb3a9208f2cc84d5228",
-    "contracts/generated/profiles/integration_r0_v1.openapi.json": "8785ebe4063ed38eced75cf7449b9dd0b242f53dc5ce1bdefcf30597f223a9b4"
+    "contracts/generated/profiles/public_v1.openapi.json": "93303ccce6541fcd2e076532d08e81073d70fb1e0038ed3005c77efdf4db568b",
+    "contracts/generated/profiles/integration_r0_v1.openapi.json": "c2deeed5a2f0834ba7eb1bf3067b0956af59bb3a277988506b6b9aa612ed8fb1"
   },
   "generator_versions": {
     "loreviva": "1.6.1",
@@ -17,6 +17,7 @@
   "operation_ids": [
     "uploadContentAsset",
     "getContentAsset",
+    "previewContentDocument",
     "getCreatorCapabilities",
     "listContentDrafts",
     "createContentDraft",
@@ -40,6 +41,7 @@
     "getPackageImportResult",
     "preflightContentPackage",
     "previewContentPackage",
+    "getDocumentCapabilities",
     "listAdminInstances",
     "createAdminInstance",
     "getAdminInstance",
@@ -98,16 +100,16 @@
   ],
   "transport_artifacts": {
     "packages/sdk-ts/src/generated/transport.ts": {
-      "bytes": 469330,
-      "sha256": "0de218debd44d116ea5176ef80702216109a4c8fec73127224807e3f006898c3"
+      "bytes": 481039,
+      "sha256": "2e943571fdd772ffccf9da62f423436e961c66d74c4b204fbf8344e8f0c2f4ac"
     },
     "packages/sdk-ts/src/generated/validators.cjs": {
-      "bytes": 25961614,
-      "sha256": "6330fcc9cbb09057d7717481a52b4804f625a7eb78c6a5c7bc97284bf0b2a924"
+      "bytes": 26702710,
+      "sha256": "ff83887a32d086fa088a2613af8c9107b6d53d407f1d1a047b0bcdab96a7050b"
     },
     "packages/sdk-ts/src/generated/validators.d.cts": {
-      "bytes": 136515,
-      "sha256": "3a66bc80152564a8e4af7ac04d34b9245e1121a9ecc4736353b8712f8ca1acaf"
+      "bytes": 140391,
+      "sha256": "dd2551ecf6e0ef46f13e66543be762bbf634e0ed94e87cc64804e0d839d31c2a"
     }
   },
   "portable_projection": {
@@ -149,7 +151,7 @@
       },
       "internal/generated/wepkg_portable_validate.go": {
         "bytes": 3722,
-        "sha256": "a558e442264bfd5977c11ce8d2630893b9b6aaca2786a64ead6277e0822c00e8"
+        "sha256": "b0b811f58e30f4a592c7fb74eee2890f229d04ee5a26757a0b0ee856ae228205"
       }
     }
   }
