@@ -294,7 +294,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return errors.New("schema migration lock unavailable")
 	}
 	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK(?)", lock)
-	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity} {
+	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity, migrations.PackageImport} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
 		e = conn.QueryRowContext(ctx, "SELECT sha256 FROM schema_migrations WHERE version=?", version+1).Scan(&existing)
@@ -411,6 +411,14 @@ func (s *Store) checkFinish(ctx context.Context, tx *sql.Tx, r BarrierRequest, o
 	}
 	if e := s.checkOperatorBarrier(ctx, tx, r); e != nil {
 		return e
+	}
+	if len(owning) == 1 && owning[0] != nil && owning[0].packageImportInspection != nil {
+		if owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.inspectPackageImportFinish(ctx, owning[0], owning[0].packageImportInspection); e != nil {
+			return e
+		}
 	}
 	if len(owning) == 1 && owning[0] != nil {
 		if owning[0].newRouteAdmission {

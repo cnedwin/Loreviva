@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import {computed,ref,watch,onBeforeUnmount} from 'vue';
-import type {Release,DependencyLock,PackagePreviewOptions,PackageImportPreview,PackagePreviewRequirements,GenerationSettings} from '@loreviva/sdk-ts';
+import {computed,ref,shallowRef,watch,onBeforeUnmount} from 'vue';
+import {AdminTransportError} from '@loreviva/sdk-ts';
+import {useRouter} from 'vue-router';
+import type {AdminClient,PackageImportOptions,PackageImportResult,Release,DependencyLock,PackagePreviewOptions,PackageImportPreview,PackagePreviewRequirements,GenerationSettings} from '@loreviva/sdk-ts';
 import {useProjectStore} from '../stores/project';
 import {definitionHash} from '../lib/presets';
 import FieldErrors from './FieldErrors.vue';
+const router=useRouter();const resolvedMapping=ref<PackageImportOptions['mapping']>();const imported=ref<PackageImportResult>();const copyImport=ref(false);const recoveryKey=ref('');const importing=ref(false);let importController:AbortController|undefined;let importEpoch=0;
+type CapturedImport={key:string;file:File;options:PackageImportOptions;product:string;tenant:string;bearer:string;client:AdminClient};const pendingImport=shallowRef<CapturedImport>();
 const props=defineProps<{releases:Release[]}>();const s=useProjectStore();const file=ref<File>();const entry=ref('');const discovery=ref<PackageImportPreview>();const result=ref<PackageImportPreview>();const error=ref<unknown>();const busy=ref(false);const attested=ref(false);const inputKey=ref(0);
 const dependencyChoices=ref<Record<string,string>>({});const modelChoices=ref<Record<string,string>>({});const capabilityChoices=ref<Record<string,string>>({});const assetChoices=ref<Record<string,string>>({});let epoch=0;let controller:AbortController|undefined;
 const requirements=computed<PackagePreviewRequirements|undefined>(()=>discovery.value?.status==='NEEDS_MAPPING'?discovery.value.requirements:undefined);
 const choices=computed(()=>props.releases.flatMap(release=>release.input.objects.map(object=>({key:release.release_id+'/'+object.object_id,label:release.input.name+' / '+object.name+' · '+object.kind,release,object}))));
 const generating=computed(()=>requirements.value?.capabilities.filter(c=>c.family==='MODEL'&&c.usages.some(use=>use==='GENERATION'))??[]);
 const localCapabilities=computed(()=>requirements.value?.capabilities.filter(c=>c.usages.some(use=>use==='SKILL')||(c.family==='PRESENTATION'&&c.required)||(c.family==='MODEL'&&c.required&&!c.usages.some(use=>use==='GENERATION')))??[]);
-function invalidate(){epoch++;controller?.abort();controller=undefined;result.value=undefined;error.value=undefined;busy.value=false}
+function invalidate(){epoch++;controller?.abort();controller=undefined;result.value=undefined;resolvedMapping.value=undefined;imported.value=undefined;error.value=undefined;busy.value=false}
 function reset(){invalidate();file.value=undefined;discovery.value=undefined;entry.value='';attested.value=false;dependencyChoices.value={};modelChoices.value={};capabilityChoices.value={};assetChoices.value={};inputKey.value++}
 function chooseFile(event:Event){const selected=(event.target as HTMLInputElement).files?.[0];reset();file.value=selected}
 function codeLabel(code:string){return ({SOURCE_REPRESENTATION:'来源信息超出本地格式限制，请调整内容包后再检查',SOURCE_USE_REQUIRED:'请核对每个对象的编辑与复用许可',LOCAL_DEPENDENCY_UNAVAILABLE:'所选依赖当前不可用或不符合来源许可',LOCAL_DEFINITION_BLOCKED:'当前定义、职责或模型配置仍有缺口',MODEL_MAPPING_REQUIRED:'请明确选择符合要求的本地模型与参数',CAPABILITY_MAPPING_REQUIRED:'所需能力尚未完成本地匹配',MAPPING_LIMIT:'依赖数量超出当前预览范围',UNUSED_MAPPING:'存在多余映射，请重新读取并选择',PORTABLE_PACKAGE_INVALID:'内容包未通过完整检查',PORTABLE_ENTRY_INVALID:'所选入口不可用'} as Record<string,string>)[code]??'请检查此项映射与当前可用范围'}
 async function send(options:PackagePreviewOptions,stage:'DISCOVER'|'RESOLVE'){
  const selected=file.value;if(!selected)throw Error('请先选择内容包');invalidate();const current=++epoch;const product=s.productId;const tenant=s.tenantId;const bearer=s.bearer;const client=s.client;const local=new AbortController();controller=local;busy.value=true;if(stage==='DISCOVER'){discovery.value=undefined;attested.value=false;dependencyChoices.value={};modelChoices.value={};capabilityChoices.value={};assetChoices.value={}}
  try{const response=await client.previewPackage(product,selected,options,crypto.randomUUID(),local.signal);if(current!==epoch||product!==s.productId||tenant!==s.tenantId||bearer!==s.bearer||client!==s.client||file.value!==selected)return;
-  if(stage==='DISCOVER'&&response.status==='NEEDS_MAPPING'){discovery.value=response;entry.value=response.entrypoint;dependencyChoices.value={};modelChoices.value={};capabilityChoices.value={};assetChoices.value={};attested.value=false;result.value=undefined}else result.value=response;
+  if(stage==='DISCOVER'&&response.status==='NEEDS_MAPPING'){discovery.value=response;entry.value=response.entrypoint;dependencyChoices.value={};modelChoices.value={};capabilityChoices.value={};assetChoices.value={};attested.value=false;result.value=undefined}else {result.value=response;if(stage==='RESOLVE'&&response.status==='RESOLVED'&&options.stage==='RESOLVE')resolvedMapping.value=options;}
  }catch(e){if(current===epoch&&!local.signal.aborted)error.value=e}finally{if(current===epoch){busy.value=false;controller=undefined}}
 }
 async function discover(){try{await send({stage:'DISCOVER',...(entry.value?{entrypoint:entry.value}:{})},'DISCOVER')}catch(e){error.value=e}}
@@ -36,26 +40,50 @@ async function resolve(){
   await send({stage:'RESOLVE',entrypoint:initial.entrypoint,namespace:initial.namespace,dependency_mappings:mappings,additional_locks:[...additional.values()],model_mappings:models,local_capabilities:capabilities,asset_mappings:assets,rights:req.objects.map(o=>({object_id:o.object_id,allowed_uses:['EDIT','COPY']})),rights_attested:true},'RESOLVE');
  }catch(e){if(current===epoch)error.value=e}finally{if(current===epoch)busy.value=false}
 }
-watch([()=>s.productId,()=>s.tenantId,()=>s.bearer,()=>s.client],reset);watch(()=>props.releases,()=>{if(result.value)invalidate()});onBeforeUnmount(()=>{epoch++;controller?.abort()});
+function sameImportScope(c:Pick<CapturedImport,'product'|'tenant'|'bearer'|'client'>){return c.product===s.productId&&c.tenant===s.tenantId&&c.bearer===s.bearer&&c.client===s.client}
+async function runImport(c:CapturedImport){
+ if(!sameImportScope(c))return;const generation=++importEpoch;const local=new AbortController();importController=local;importing.value=true;error.value=undefined;
+ try{const response=await c.client.importPackage(c.product,c.file,c.options,c.key,local.signal);if(generation!==importEpoch||!sameImportScope(c)||pendingImport.value?.key!==c.key)return;imported.value=response;recoveryKey.value=c.key;pendingImport.value=undefined}
+ catch(e){if(generation===importEpoch&&sameImportScope(c)){error.value=e;if(e instanceof AdminTransportError&&e.status!==0&&(e.body as {code?:string})?.code!=='EXTERNAL_UNKNOWN')pendingImport.value=undefined}}
+ finally{if(generation===importEpoch){importing.value=false;importController=undefined}}
+}
+async function importIsolated(){
+ if(pendingImport.value)return runImport(pendingImport.value);if(!file.value||result.value?.status!=='RESOLVED'||!resolvedMapping.value)return;
+ const key=crypto.randomUUID();const options:PackageImportOptions={mapping:JSON.parse(JSON.stringify(resolvedMapping.value)),expected_preview_sha256:result.value.preview_sha256,...(copyImport.value?{copy_key:key}:{})};
+ const captured={key,file:file.value,options,product:s.productId,tenant:s.tenantId,bearer:s.bearer,client:s.client};pendingImport.value=captured;recoveryKey.value=key;await runImport(captured);
+}
+function stopWaiting(){importController?.abort();importing.value=false}
+async function recoverImport(){
+ const key=recoveryKey.value;if(!key)return;const captured={product:s.productId,tenant:s.tenantId,bearer:s.bearer,client:s.client};const generation=++importEpoch;importing.value=true;error.value=undefined;
+ try{const result=await captured.client.call('getPackageImportResult',{path:{request_key:key},query:{product_id:captured.product}});if(generation!==importEpoch||!sameImportScope(captured)||key!==recoveryKey.value)return;imported.value=result;pendingImport.value=undefined}
+ catch(e){if(generation===importEpoch&&sameImportScope(captured))error.value=e}finally{if(generation===importEpoch)importing.value=false}
+}
+async function openImport(){if(!imported.value)return;const id=imported.value.receipt.draft_id;await s.loadDraft(id);await router.push('/editor')}
+function resetImportScope(){importEpoch++;importController?.abort();importController=undefined;pendingImport.value=undefined;imported.value=undefined;recoveryKey.value='';importing.value=false;copyImport.value=false;reset()}
+watch([()=>s.productId,()=>s.tenantId,()=>s.bearer,()=>s.client],resetImportScope);watch(()=>props.releases,()=>{if(result.value)invalidate()});onBeforeUnmount(()=>{epoch++;importEpoch++;controller?.abort();importController?.abort()});
 </script>
 <template>
 <section class="panel" aria-labelledby="package-preview-title">
- <h2 id="package-preview-title">内容包导入预览</h2><p>读取世界、角色或其他创作材料，匹配本地依赖并检查编辑候选。本页不会导入或发布内容。</p>
+ <h2 id="package-preview-title">内容包导入预览</h2><p>读取世界、角色或其他创作材料，匹配本地依赖并检查编辑候选。预览不保存内容；明确导入后创建隔离草稿，发布仍需后续检查。</p>
  <FieldErrors :error="error"/>
- <label>选择内容包<input :key="inputKey" type="file" accept=".wepkg" @change="chooseFile"></label><p v-if="file" class="muted">已选择：{{file.name}}</p>
- <div class="actions"><button :disabled="!file||busy" @click="discover">{{discovery?'重新读取内容包':'读取内容包'}}</button><button :disabled="!file&&!busy" @click="reset">取消预览</button></div>
+ <label>选择内容包<input :key="inputKey" type="file" :disabled="importing||!!pendingImport" accept=".wepkg" @change="chooseFile"></label><p v-if="file" class="muted">已选择：{{file.name}}</p>
+ <div class="actions"><button :disabled="!file||busy||importing||!!pendingImport" @click="discover">{{discovery?'重新读取内容包':'读取内容包'}}</button><button :disabled="(!file&&!busy)||importing||!!pendingImport" @click="reset">取消预览</button></div>
  <template v-if="requirements">
-  <label>创作入口<select v-model="entry" :disabled="busy" @change="discover"><option v-for="item in requirements.entries" :key="item.logical_id" :value="item.logical_id">{{item.logical_id}} · {{item.kind}}</option></select></label>
+  <label>创作入口<select v-model="entry" :disabled="busy||importing||!!pendingImport" @change="discover"><option v-for="item in requirements.entries" :key="item.logical_id" :value="item.logical_id">{{item.logical_id}} · {{item.kind}}</option></select></label>
   <h3>来源与使用范围</h3><ul><li v-for="object in requirements.objects" :key="object.object_id"><strong>{{object.object_id}}</strong> · {{object.kind}} · {{object.license}}<p class="muted break">{{object.source_reference}} · 原版本 {{object.source_version}}</p></li></ul>
-  <label><input v-model="attested" type="checkbox" @change="invalidate">我已核对来源许可，允许在本项目编辑和复用以上内容。</label>
-  <template v-if="requirements.references.length"><h3>匹配外部内容</h3><label v-for="reference in requirements.references" :key="reference.pointer">{{reference.logical_id}} · {{reference.expected_kinds.join(' / ')||'内容对象'}}<select v-model="dependencyChoices[reference.pointer]" :aria-label="reference.logical_id+' · '+(reference.expected_kinds.join(' / ')||'内容对象')" @change="invalidate"><option value="">请选择本地已发布内容</option><option v-for="choice in choices.filter(c=>!reference.expected_kinds.length||reference.expected_kinds.includes(c.object.kind))" :key="choice.key" :value="choice.key">{{choice.label}}</option></select></label></template>
-  <template v-if="generating.length"><h3>选择本地模型</h3><label v-for="capability in generating" :key="capability.capability_id">{{capability.capability_id}}<select :aria-label="'模型 '+capability.capability_id" v-model="modelChoices[capability.capability_id]" @change="invalidate"><option value="">请选择模型</option><option value="MOCK">本地演示模型</option></select><span class="muted">模型当前状态将在检查时验证。</span></label></template>
-  <template v-if="localCapabilities.length"><h3>匹配已登记能力</h3><label v-for="capability in localCapabilities" :key="capability.family+capability.capability_id">{{capability.capability_id}}<select :aria-label="'能力 '+capability.capability_id" v-model="capabilityChoices[capability.capability_id]" @change="invalidate"><option value="">请选择对应能力</option><option value="TEXT">文字</option><option v-if="capability.family!=='MODEL'&&capability.family!=='PRESENTATION'" value="SIGN_CUSTODY">道具保管规则</option></select></label></template>
-  <template v-if="requirements.files.length"><h3>匹配已有资产</h3><label v-for="asset in requirements.files" :key="asset.file_path">{{asset.file_path}} · {{asset.media_type}}<input v-model="assetChoices[asset.file_path]" placeholder="已上传的本地资产标识" @input="invalidate"></label></template>
+  <label><input v-model="attested" :disabled="importing||!!pendingImport" type="checkbox" @change="invalidate">我已核对来源许可，允许在本项目编辑和复用以上内容。</label>
+  <template v-if="requirements.references.length"><h3>匹配外部内容</h3><label v-for="reference in requirements.references" :key="reference.pointer">{{reference.logical_id}} · {{reference.expected_kinds.join(' / ')||'内容对象'}}<select :disabled="importing||!!pendingImport" v-model="dependencyChoices[reference.pointer]" :aria-label="reference.logical_id+' · '+(reference.expected_kinds.join(' / ')||'内容对象')" @change="invalidate"><option value="">请选择本地已发布内容</option><option v-for="choice in choices.filter(c=>!reference.expected_kinds.length||reference.expected_kinds.includes(c.object.kind))" :key="choice.key" :value="choice.key">{{choice.label}}</option></select></label></template>
+  <template v-if="generating.length"><h3>选择本地模型</h3><label v-for="capability in generating" :key="capability.capability_id">{{capability.capability_id}}<select :disabled="importing||!!pendingImport" :aria-label="'模型 '+capability.capability_id" v-model="modelChoices[capability.capability_id]" @change="invalidate"><option value="">请选择模型</option><option value="MOCK">本地演示模型</option></select><span class="muted">模型当前状态将在检查时验证。</span></label></template>
+  <template v-if="localCapabilities.length"><h3>匹配已登记能力</h3><label v-for="capability in localCapabilities" :key="capability.family+capability.capability_id">{{capability.capability_id}}<select :disabled="importing||!!pendingImport" :aria-label="'能力 '+capability.capability_id" v-model="capabilityChoices[capability.capability_id]" @change="invalidate"><option value="">请选择对应能力</option><option value="TEXT">文字</option><option v-if="capability.family!=='MODEL'&&capability.family!=='PRESENTATION'" value="SIGN_CUSTODY">道具保管规则</option></select></label></template>
+  <template v-if="requirements.files.length"><h3>匹配已有资产</h3><label v-for="asset in requirements.files" :key="asset.file_path">{{asset.file_path}} · {{asset.media_type}}<input :disabled="importing||!!pendingImport" v-model="assetChoices[asset.file_path]" placeholder="已上传的本地资产标识" @input="invalidate"></label></template>
   <p v-if="requirements.capabilities.some(c=>c.family==='TOOL')" class="muted">此包声明了工具需求，当前版本的预览会明确报告支持范围。</p>
-  <button class="primary" :disabled="busy||!attested" @click="resolve">检查本地匹配</button>
+  <button class="primary" :disabled="busy||!attested||importing||!!pendingImport" @click="resolve">检查本地匹配</button>
  </template>
  <p v-if="busy" role="status">正在检查…</p>
  <section v-if="result" aria-live="polite"><h3>{{result.status==='RESOLVED'?'本地匹配通过，尚未导入':'仍有需要处理的项目'}}</h3><ul><li v-for="(finding,index) in result.findings" :key="index">{{codeLabel(finding.code)}}</li></ul><template v-if="result.status==='RESOLVED'"><p>已生成 {{result.input.objects.length}} 个对象的编辑预览。后续导入仍需独立检查和确认。</p><ul><li v-for="object in result.input.objects" :key="object.object_id">{{object.name}} · {{object.kind}}</li></ul><details><summary>查看候选内容</summary><pre class="preview">{{JSON.stringify(result.input,null,2)}}</pre></details></template></section>
+ <section v-if="result?.status==='RESOLVED'&&!imported&&!pendingImport" aria-label="保存隔离导入"><label><input v-model="copyImport" type="checkbox" :disabled="importing">创建独立副本（使用新的对象标识）</label><button class="primary" :disabled="importing" @click="importIsolated">导入为隔离草稿</button><p class="muted">保存后可编辑和隔离试演；复制或恢复仍保留隔离，当前不能直接发布。</p></section>
+ <section v-if="pendingImport" aria-live="polite"><h3>原导入请求尚待确认</h3><p>请求标识：<code>{{pendingImport.key}}</code>。停止等待不代表服务端已经撤销，请查询原结果。</p><button v-if="importing" @click="stopWaiting">停止等待</button><button :disabled="importing" @click="recoverImport">查询原导入结果</button><button :disabled="importing" @click="importIsolated">用原请求重试</button></section>
+ <section aria-label="恢复导入回执"><label>原导入请求标识<input v-model="recoveryKey" :disabled="importing||!!pendingImport" autocomplete="off"></label><button :disabled="!recoveryKey||importing" @click="recoverImport">读取已提交导入</button><p class="muted">服务重启后仍可用原请求标识查询；未查到回执时不要据此认定已经回滚。</p></section>
+ <section v-if="imported" aria-live="polite"><h3>隔离草稿已保存</h3><p>{{imported.receipt.package_id}} · {{imported.receipt.package_version}}</p><p class="break">草稿标识：{{imported.receipt.draft_id}}</p><button @click="openImport">打开隔离草稿</button></section>
 </section>
 </template>

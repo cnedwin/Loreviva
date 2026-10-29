@@ -1,5 +1,7 @@
 # 技术架构与实现边界
 
+当前范围（2026-10-29）：Task1–8保留声明范围内采用；Task9已接通预览和持久隔离导入，隔离转出、导出/第二安装及Task9/R0整体尚未完成。工作契约1.8.0：70操作/192 Schema，迁移0001–0009。见[当前内容包验证](progress/2026-10-29-p3.zh.md)。
+
 Loreviva — The AI Platform for Living Worlds。
 
 本页描述本地已批准 Tasks 1–7 的实现及后续架构方向。公开文档是规范的整理分发视图，不产生新的字段源；协议生成从 [contracts/source](../contracts/source/openapi.yaml) 出发。
@@ -9,7 +11,7 @@ Loreviva — The AI Platform for Living Worlds。
 | 项目 | 本批状态 |
 | --- | --- |
 | 后端 | Go 1.27.2、Kratos 3.0.0、模块化单应用；见 [go.mod](../go.mod) |
-| 数据库 | MySQL Community LTS / InnoDB，`database/sql`；嵌入迁移 0001–0008 |
+| 数据库 | MySQL Community LTS / InnoDB，`database/sql`；嵌入迁移 0001–0009 |
 | 工具链 | Node.js 24、pnpm 11.25.0、TypeScript；精确依赖见 [package.json](../package.json) 与 lockfile |
 | 文件 | 私有本机目录、应用鉴权代理；不公开挂载文件根 |
 | 前端 | 原生 Vue Studio，真实构建产物由 Go 嵌入并提供 `/studio/` |
@@ -87,7 +89,7 @@ Worker执行已登记作业。Mock互动、世界控制和迁移已实现；UNKN
 
 ## 契约与扩展
 
-已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.6.0（67 operations / 181 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)导出接入传输、预备命令、BFF恢复、媒体与SSE类型，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；薄后端与参考客户端已有实现，完整Task8验收仍待完成。
+已批准机器契约基线为 1.4.0（58 operations / 156 schemas），当前工作契约为 1.8.0（70 operations / 192 schemas）；source1.3 的 51/131、source1.2 的 49/123 及原 18 操作/43 DTO各保留其历史比较含义。source1.3 新增 `resolveDraftGeneration` 与 `listAdminTasks`；source1.4 新增下表七个 Settings 操作。[OpenAPI](../contracts/source/openapi.yaml)和[wepkg Schema](../contracts/source/wepkg.schema.json)是维护源；Go/TypeScript 类型与校验产物由生成器派生。现有 [TypeScript SDK 入口](../packages/sdk-ts/src/index.ts)导出接入传输、预备命令、BFF恢复、媒体与SSE类型，[行政客户端](../packages/sdk-ts/src/admin.ts)新增有限行政 HTTP 调用、鉴权资产读取和上传；薄后端与参考客户端已有实现，Task8已在声明范围内本地采用。
 
 | Operation ID | Method | Path |
 | --- | --- | --- |
@@ -101,6 +103,6 @@ Worker执行已登记作业。Mock互动、世界控制和迁移已实现；UNKN
 
 本地设置按确切 tenant/product scope 和独立 revision 持久化；普通设置依赖本地持久化与治理，不依赖模型供应商就绪。成员动作不取代主体、来源或私人记忆权利，自同意不授予他人或管理员动作；通知偏好不会外发消息。
 
-Task7提供原生Vue Studio；Task8已有接入实现，等待整体验收。Task9静态预检已实现；导入导出、完整计量、恢复与发行仍待完成。适配器不能越过事实、隐私或客户权威。LC、真实模型、真人体验、收费与部署未验收。
+Task7提供原生Vue Studio；Task8接入已在声明范围内本地采用。Task9已接通预检、本地匹配、预览与原子隔离导入；隔离转出、导出/第二安装、完整计量、恢复与发行仍待完成。适配器不能越过事实、隐私或客户权威。LC、真实模型、真人体验、收费与部署未验收。
 
 返回[首页](../README.md) · 查看[搭建和接入](04-setup-and-integration.md)

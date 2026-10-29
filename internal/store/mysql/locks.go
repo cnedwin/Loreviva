@@ -94,6 +94,8 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 }
 
 type unit struct {
+	packageImportInspection *packageImportInspection
+	contentAction           string
 	packagePreviewRead      bool
 	integrationMemoryBirth  *integrationMemoryBirthPlan
 	integrationDelivery     *integrationDeliveryPlan
@@ -185,7 +187,7 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 		rank, kind = 90, "content_release"
 	case "assets", "file_staging", "memory_asset_lineage":
 		rank, kind = 90, "asset"
-	case "content_checks", "admin_results", "seed_receipts":
+	case "content_checks", "admin_results", "seed_receipts", "content_package_imports", "content_package_import_lineage":
 		rank, kind = 90, "content_check"
 	case "inbox":
 		rank = 100

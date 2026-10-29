@@ -1,6 +1,6 @@
 {
   "format": "loreviva.studio-build.v1",
-  "source_hash": "087cd6beabe30bfc177d36006a75a1fa7a60998f12fd5cf99d8d04e6766d9d3d",
+  "source_hash": "84a0b6910d675cac5e48da0525f1323c6634c5df1f28aa70e595045ac90e9f58",
   "inputs": [
     {
       "path": "apps/studio/index.html",
@@ -64,8 +64,8 @@
     },
     {
       "path": "apps/studio/src/components/PackagePreview.vue",
-      "size": 12895,
-      "sha256": "b5bf556838fb3af58a8f025ffebe6ee365aa77f427748a9b48fdea31054e2505"
+      "size": 18361,
+      "sha256": "e630d58f1517b757679f4b150a4bd59e44f7bafc65e8964843b981989075eb3a"
     },
     {
       "path": "apps/studio/src/components/PropertyPanel.vue",
@@ -284,23 +284,23 @@
     },
     {
       "path": "contracts/generated/manifest.json",
-      "size": 6622,
-      "sha256": "bd04ebbbe77d65e74e06806a4517e9e43708381fed6ca14056f2da488476e6c0"
+      "size": 6680,
+      "sha256": "a3c72aa880da73b154eac4d60c5ee5b1e2c087bcaa0beb576e8b465556715e68"
     },
     {
       "path": "contracts/generated/openapi.json",
-      "size": 865122,
-      "sha256": "8eccd3336cc84d60d88fdd01988fb8c7dcfbb24550fd03e4f2b1ce463af01538"
+      "size": 879822,
+      "sha256": "688079cfa0291618769a38e5a71b4c6fab75022e9e76433f523392fa5002bae8"
     },
     {
       "path": "contracts/generated/profiles/integration_r0_v1.openapi.json",
-      "size": 869553,
-      "sha256": "64fee7f5188e972f0ba5b78d2881828355acd847e7f762590f0746dc53f59509"
+      "size": 884253,
+      "sha256": "37fbc23c9e82d16d92f9f2b103d651708c8123432b9775901cf5a49d90efccf8"
     },
     {
       "path": "contracts/generated/profiles/public_v1.openapi.json",
-      "size": 870374,
-      "sha256": "90a3443f8b95b2617989c0002b189a15c331556371509f682e442e2472f6bbba"
+      "size": 885074,
+      "sha256": "a9e353b9008802d5934c29b9f989f91994ccbf23d5214094959fff2bddd4190f"
     },
     {
       "path": "contracts/generated/wepkg-portable.schema.json",
@@ -314,8 +314,8 @@
     },
     {
       "path": "contracts/source/openapi.yaml",
-      "size": 865122,
-      "sha256": "5da0e94bf165e430be41777c82c05da7df431ab026d6e82ef8425f19b2d21533"
+      "size": 879822,
+      "sha256": "9a18b990754378498ee20c095180753d98af40d7301966fc3b4b6132639deac9"
     },
     {
       "path": "contracts/source/wepkg.schema.json",
@@ -334,8 +334,8 @@
     },
     {
       "path": "packages/sdk-ts/src/admin.ts",
-      "size": 7256,
-      "sha256": "15dff9eb340016475dbfa8d631d41779dcb4e4a7bf01438d8f85eae673982ad5"
+      "size": 9040,
+      "sha256": "c9c20c86ffb4d3d7e89d6c694ef08c34fa5afb1943d4f335b8baf7db3536b194"
     },
     {
       "path": "packages/sdk-ts/src/cache.ts",
@@ -349,23 +349,23 @@
     },
     {
       "path": "packages/sdk-ts/src/generated/contracts.ts",
-      "size": 158267,
-      "sha256": "b451e06f0cef2adfa7c2b17c7466d68a7cdb0ff5f109a1168541d2c58f9579bd"
+      "size": 161284,
+      "sha256": "72321b5b6103363f44f39fb89c91c242a1bfee734301493788f9cfc00dacb9bb"
     },
     {
       "path": "packages/sdk-ts/src/generated/transport.ts",
-      "size": 428372,
-      "sha256": "dca3c8e47bb2d43bba7c92a73fe259c1182d45cb825cd117f76e3470d1a615f4"
+      "size": 440309,
+      "sha256": "529ed70425c607abd6711fde33ceb9a2042dff769503b20392f4d1ddc3f76590"
     },
     {
       "path": "packages/sdk-ts/src/generated/validators.cjs",
-      "size": 23631248,
-      "sha256": "476633e6bc3f9b15b5dca2cfd967e137b5370da75eda5ca2ab34a9b955bd784c"
+      "size": 24319535,
+      "sha256": "0ffdf06e68969a07976408ba66c1aa1ddc6bc40dfd565bff2f6771351cfabab2"
     },
     {
       "path": "packages/sdk-ts/src/generated/validators.d.cts",
-      "size": 124491,
-      "sha256": "0ce782f7826c7d95ae6c3ed96e452d3f087c9d0d7d8a92e0ff7529f3401b02e9"
+      "size": 128126,
+      "sha256": "800bc88dc95b5350c984f5ba8cebddbe590aa4f3644f48262c73a92e461b7a36"
     },
     {
       "path": "packages/sdk-ts/src/index.ts",
@@ -420,14 +420,14 @@
       "sha256": "ea4a5a5c92eac7ca7280b96d5817f82be6a42ba0e9762e92b775c1fc9be35215"
     },
     {
-      "path": "assets/index-DAfL35d8.js",
-      "size": 17079952,
-      "sha256": "328d37427a3c567b50f44302983cd25feb1ecef92ae4e01035a880cf17bac565"
+      "path": "assets/index-C4-i1AS1.js",
+      "size": 17571594,
+      "sha256": "4449485964e70f4012da54bfa72cd05f1c5a6efddb7303eae3a5d0bdc5d95c2e"
     },
     {
       "path": "index.html",
       "size": 413,
-      "sha256": "959fe310c132b1dfcc365847b27f83584967ce7caa3c5d5e94751e1de55da021"
+      "sha256": "3de003408571713dc756496be0e1a542f012bec54b57650cd121c9b7f3ff606e"
     }
   ]
 }

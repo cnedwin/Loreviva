@@ -192,6 +192,7 @@ func (s *Service) CheckPublish(ctx context.Context, scope domain.ProductScope, i
 	}
 	return out, e
 }
+
 // A passed report is not sufficient to publish: the new transaction rechecks the draft, dependency rights and route snapshot before inserting the immutable release.
 func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id string, expected uint64, reportID string, labels []string, key string) (generated.Release, error) {
 	var out generated.Release
@@ -206,6 +207,7 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 	releaseID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "publish", key)
 	locks := append(dependencyLocks(scope, snapshot.Input), Key(scope, "content_draft", id), Key(scope, "content_release", releaseID), Key(scope, "content_check", reportID))
 	locks = append(locks, store.RoutePolicyLocks(scope)...)
+	locks = append(locks, importLineageLocks(scope, id, snapshot.Input)...)
 	raw, e := Command(ctx, s.Store, scope, "publishContentDraft", key, id, "Release", struct {
 		Revision uint64
 		Report   string
@@ -214,6 +216,26 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 		d, e := current(ctx, tx, scope, id, expected)
 		if e != nil {
 			return nil, e
+		}
+		origins, e := importOrigins(ctx, tx, scope, "DRAFT", id)
+		if e != nil {
+			return nil, e
+		}
+		if len(origins) > 0 {
+			return nil, ErrBlocked
+		}
+		for _, raw := range d.Input.Objects {
+			var object struct {
+				ID string `json:"object_id"`
+			}
+			json.Unmarshal(raw, &object)
+			found, e := importOrigins(ctx, tx, scope, "OBJECT", object.ID)
+			if e != nil {
+				return nil, e
+			}
+			if len(found) > 0 {
+				return nil, ErrBlocked
+			}
 		}
 		if d.State != "DRAFT" {
 			return nil, ErrBlocked

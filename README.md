@@ -8,8 +8,8 @@ connect through their own applications.
 
 > **Status: development snapshot, not a release.** Tasks 1–8 have local acceptance
 > within their declared scopes; Tasks 9–12 and whole R0 remain incomplete. Only the
-> synthetic Mock model and Mock billing are enabled. Working contract **1.6.0
-> (67 operations / 181 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
+> synthetic Mock model and Mock billing are enabled. Working contract **1.8.0
+> (70 operations / 192 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
 > operation declared in the contract is not evidence that a handler is mounted,
 > and publishing source is not publishing a product.
 >
@@ -28,10 +28,11 @@ connect through their own applications.
 | Implemented | Native Vue Studio, limited admin client, local settings, member and self-consent entry points |
 | Implemented | `.wepkg` preflight, complete portable bodies, qualified references and pure non-executable mapping plans |
 | Locally accepted within Task8 scope | TypeScript integration SDK, thin backend, Vue reference client and personal-memory governance |
-| Planned | Package import (isolated draft), rehearsal, local publish, export |
+| Implemented within Task9 P2/P3 | Local package matching, creator preview, atomic isolated import and original-receipt recovery |
+| Planned | Isolation promotion, local publish, export and second-installation round trip |
 | Planned | Metering, complete backup/restore, real model and hosted billing validation |
 
-Current package work adds complete body admission and deterministic candidate mapping, verified with 59 unit targets (313 with subtests), 13 generator tests, 16 Go/AJV comparisons, four actual HTTP targets and actual Studio/Settings flows. Plans grant no import authority. See the [portable-definition progress note](docs/progress/2026-10-28-portable-definitions.en.md) for retained failures and scope.
+Current package work supports local matching and persistent isolated import. Copy, restore and known imported-object reuse retain isolation. See the [current package progress note](docs/progress/2026-10-29-p3.en.md) for actual verification and remaining scope.
 
 ## Repository layout
 
@@ -82,8 +83,8 @@ retry and require review; it is not a clean gate. Retry failures, missing result
 and skipped retries cannot erase an initial failure. Shared server load and timing
 still affect parallel runs; no fixed speedup is promised.
 
-See [current progress and R0 gaps](docs/progress/2026-10-23.en.md).
-The next implementation stage is Task9 content packages. Product design is 3.1.0; published long-form
+See [current progress and R0 gaps](docs/progress/2026-10-29-p3.en.md).
+Task9 remains in progress after the local preview and isolated-import slices. Product design is 3.1.0; published long-form
 design reading views still retain 3.0.2, with R0 execution baseline 3.0.1.
 
 ## Contributing

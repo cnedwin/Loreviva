@@ -26,3 +26,6 @@ var StudioSettings string
 
 //go:embed 0008_delivery_identity.sql
 var DeliveryIdentity string
+
+//go:embed 0009_package_import.sql
+var PackageImport string

@@ -13592,7 +13592,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.7.0"
+            "const": "1.8.0"
           },
           "source_hash": {
             "type": "string",
@@ -14191,6 +14191,22 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "importContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPackageImportResult": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -14261,7 +14277,9 @@
               "getOriginalTurnIntakeReceipt",
               "preflightContentPackage",
               "getContentPackageCapabilities",
-              "previewContentPackage"
+              "previewContentPackage",
+              "importContentPackage",
+              "getPackageImportResult"
             ],
             "additionalProperties": false
           },
@@ -14292,7 +14310,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.7.0",
+            "contract_version": "1.8.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -14423,7 +14441,9 @@
               "getOriginalTurnIntakeReceipt": "UNAVAILABLE",
               "preflightContentPackage": "AVAILABLE",
               "getContentPackageCapabilities": "AVAILABLE",
-              "previewContentPackage": "AVAILABLE"
+              "previewContentPackage": "AVAILABLE",
+              "importContentPackage": "AVAILABLE",
+              "getPackageImportResult": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -15371,6 +15391,196 @@
             "persisted": false,
             "findings": [],
             "id_mappings": []
+          }
+        ]
+      },
+      "PackageImportOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mapping": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackagePreviewOptions"
+              },
+              {
+                "properties": {
+                  "stage": {
+                    "const": "RESOLVE"
+                  }
+                }
+              }
+            ]
+          },
+          "expected_preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "copy_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          }
+        },
+        "required": [
+          "mapping",
+          "expected_preview_sha256"
+        ],
+        "examples": [
+          {
+            "mapping": {
+              "stage": "RESOLVE",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "dependency_mappings": [],
+              "additional_locks": [],
+              "model_mappings": [],
+              "local_capabilities": {},
+              "asset_mappings": [],
+              "rights": [
+                {
+                  "object_id": "note",
+                  "allowed_uses": [
+                    "EDIT",
+                    "COPY"
+                  ]
+                }
+              ],
+              "rights_attested": true
+            },
+            "expected_preview_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "PackageImportReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "import_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ProductScope"
+          },
+          "package_id": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entrypoint": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "draft_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "draft_state_at_import": {
+            "const": "ISOLATED_IMPORT"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "import_id",
+          "scope",
+          "package_id",
+          "package_version",
+          "content_sha256",
+          "archive_sha256",
+          "entrypoint",
+          "namespace",
+          "draft_id",
+          "draft_state_at_import",
+          "created_at"
+        ],
+        "examples": [
+          {
+            "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "scope": {
+              "tenant_id": "demo-local",
+              "product_id": "coffee"
+            },
+            "package_id": "sample.note",
+            "package_version": "1.0.0",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "entrypoint": "note",
+            "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_state_at_import": "ISOLATED_IMPORT",
+            "created_at": "2026-10-29T00:00:00Z"
+          }
+        ]
+      },
+      "PackageImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "request_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/PackageImportReceipt"
+          },
+          "persisted": {
+            "const": true
+          }
+        },
+        "required": [
+          "request_key",
+          "request_sha256",
+          "receipt",
+          "persisted"
+        ],
+        "examples": [
+          {
+            "request_key": "synthetic-import-0001",
+            "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "receipt": {
+              "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "scope": {
+                "tenant_id": "demo-local",
+                "product_id": "coffee"
+              },
+              "package_id": "sample.note",
+              "package_version": "1.0.0",
+              "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_state_at_import": "ISOLATED_IMPORT",
+              "created_at": "2026-10-29T00:00:00Z"
+            },
+            "persisted": true
           }
         ]
       }

@@ -1,8 +1,10 @@
 # Requirements and Implementation Status
 
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 now includes preview and persistent isolated import; isolation promotion, export/second-installation transfer and whole Task9/R0 remain incomplete. Working contract1.8.0:70 operations/192 schemas; migrations0001–0009. See [current package verification](../progress/2026-10-29-p3.en.md).
+
 Loreviva — The AI Platform for Living Worlds.
 
-This document presents the current product requirements as a public reading view, distinguishing the locally approved Tasks 1–7 implementation from workflows yet to be implemented. It adds no contracts or acceptance conclusions; fields are based on [OpenAPI](../../contracts/source/openapi.yaml) and the [content package Schema](../../contracts/source/wepkg.schema.json).
+This document presents the current product requirements as a public reading view, distinguishing the locally approved Tasks 1–8 implementation from workflows yet to be implemented. It adds no contracts or acceptance conclusions; fields are based on [OpenAPI](../../contracts/source/openapi.yaml) and the [content package Schema](../../contracts/source/wepkg.schema.json).
 
 ## Implemented in this batch
 
@@ -21,7 +23,7 @@ Each row describes that task’s own evidence scope; an earlier task’s limitat
 | --- | --- | --- |
 | Task7 Studio | Native Vue editing/scene view, optional Mock assistance, original-task queries, local settings, members, and self-consent entry points | Human outcomes, real models, complete customer SDK, billing, or deployment |
 
-Current configuration accepts only mock. Task1–7 retain their reviewed scope. Task8 SDK, thin backend, reference client and self-memory governance exist in the snapshot, but whole Task8 remains unaccepted. Task9 static preflight is implemented; import/export, complete metering, recovery and release are unfinished. Approved contract:1.4.0 (58/156); working contract:1.6.0 (67/181), migrations0001–0008. Reserved operations do not establish mounted handlers.
+Current configuration accepts only Mock. Tasks1–8 retain their scoped local acceptance. Task9 implements body admission, local matching/preview, atomic durable isolated import and original-receipt recovery. Isolation promotion, export/second-installation transfer, safe documents/Skills, Tasks10–12 and whole R0 remain incomplete. Historical approved contract:1.4.0 (58/156); working contract:1.8.0 (70/192), migrations0001–0009. Reserved operations do not establish mounted handlers.
 
 ## Authoring and related operations
 
@@ -67,7 +69,7 @@ Task7 implements the native editing GUI for the corresponding Mock path; real su
 
 ## Intended requirements for integration, recovery, and metering
 
-The Integration Kit has TypeScript transport, prepared-command ownership, BFF recovery, media and SSE components, plus a thin backend and Vue reference client. Customer identity remains the customer's responsibility. Whole Task8 acceptance is pending; see [current gaps](../progress/2026-10-23.en.md).
+The Integration Kit has TypeScript transport, prepared-command ownership, BFF recovery, media and SSE components, plus a thin backend and Vue reference client. Customer identity remains the customer's responsibility. Task8 has scoped local acceptance; see [current gaps](../progress/2026-10-23.en.md).
 
 Task results, service completion, supplier costs, and risk reservations need separate presentation. `UNKNOWN` means the original result awaits confirmation; it does not mean failure, zero cost, or permission to procure again automatically. Successful request acceptance also does not establish a world action. Within synthetic Mock scope, Task6 verifies recovery by querying the original attempt, necessary costs, late costs, and their separation from service results; UNKNOWN keeps querying the original identity without automatically purchasing again. Candidates are scoped to their original draft and source permissions; adoption still requires explicit saving. Rehearsal creates an isolated temporary world and retains FAIL/NOT_RUN and cleanup progress. Administrative metadata visibility does not grant private result body access. Task7 includes local settings interfaces; this engineering evidence does not establish completed metering management pages, customer player workflows, or real commercial billing.
 

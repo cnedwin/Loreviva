@@ -7,7 +7,7 @@ import addFormats from 'ajv-formats';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 import {resolveIntegrationProfiles} from './integration-profiles.mjs';
 
-export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.6.0',ajv:'8.18.0','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
+export const GENERATOR_VERSIONS=Object.freeze({loreviva:'1.6.1',ajv:'8.18.0','ajv-formats':'3.0.1','go-jsonschema':'6.0.2'});
 const repo=fileURLToPath(new URL('../',import.meta.url));
 export const canonicalSourceRoot=path.resolve(repo,'contracts/source');
 const methods=new Set(['get','put','post','delete','options','head','patch','trace']);
@@ -81,31 +81,31 @@ function discriminatedBranches(s) {
   return branch;
  });
 }
-function tsType(s) {
+function tsType(s, referencePrefix='') {
  if(s===true||s===undefined)return 'unknown'; if(s===false)return 'never';
  if(s.$ref){
   // JSON Schema siblings constrain the reference; preserve finite scalar consts.
-  const name=refName(s),literal=s.const;
+  const name=referencePrefix+refName(s),literal=s.const;
   return literal===null||['string','number','boolean'].includes(typeof literal)?'('+name+' & '+JSON.stringify(literal)+')':name;
  }
  if(s.const!==undefined)return JSON.stringify(s.const);
  if(s.enum)return s.enum.map(x=>JSON.stringify(x)).join(' | ');
- if(s.oneOf||s.anyOf)return '('+(s.oneOf??s.anyOf).map(tsType).join(' | ')+')';
+ if(s.oneOf||s.anyOf)return '('+(s.oneOf??s.anyOf).map(branch=>tsType(branch,referencePrefix)).join(' | ')+')';
  if(s.allOf){
-  const branches=discriminatedBranches(s);if(branches)return '('+branches.map(tsType).join(' | ')+')';
-  const {allOf,...base}=s;const parts=[tsType(base),...allOf.map(tsType)].filter(t=>t!=='unknown');return parts.length?'('+parts.join(' & ')+')':'unknown';
+  const branches=discriminatedBranches(s);if(branches)return '('+branches.map(branch=>tsType(branch,referencePrefix)).join(' | ')+')';
+  const {allOf,...base}=s;const parts=[tsType(base,referencePrefix),...allOf.map(branch=>tsType(branch,referencePrefix))].filter(t=>t!=='unknown');return parts.length?'('+parts.join(' & ')+')':'unknown';
  }
- if(Array.isArray(s.type))return s.type.map(type=>tsType({...s,type})).join(' | ');
+ if(Array.isArray(s.type))return s.type.map(type=>tsType({...s,type},referencePrefix)).join(' | ');
  if(s.type==='array'){
-  const item=tsType(s.items);const min=s.minItems??0,max=s.maxItems;
+  const item=tsType(s.items,referencePrefix);const min=s.minItems??0,max=s.maxItems;
   if(Number.isInteger(max)&&max<=16&&max>=min)return '('+Array.from({length:max-min+1},(_,i)=>'['+Array(min+i).fill(item).join(', ')+']').join(' | ')+')';
   if(min>0&&min<=16)return '['+Array(min).fill(item).join(', ')+', ...Array<'+item+'>]';
   return 'Array<'+item+'>';
  }
  if(s.type==='object'||s.properties){
   const required=new Set(s.required??[]);
-  const props=Object.entries(sorted(s.properties)).map(([k,v])=>JSON.stringify(k)+(required.has(k)?'':'?')+': '+tsType(v)+';');
-  if(s.additionalProperties!==false) props.push('[key: string]: '+(s.additionalProperties&&typeof s.additionalProperties==='object'?tsType(s.additionalProperties):'unknown')+';');
+  const props=Object.entries(sorted(s.properties)).map(([k,v])=>JSON.stringify(k)+(required.has(k)?'':'?')+': '+tsType(v,referencePrefix)+';');
+  if(s.additionalProperties!==false) props.push('[key: string]: '+(s.additionalProperties&&typeof s.additionalProperties==='object'?tsType(s.additionalProperties,referencePrefix):'unknown')+';');
   return '{ '+props.join(' ')+' }';
  }
  return {string:'string',integer:'number',number:'number',boolean:'boolean',null:'null'}[s.type]??'unknown';
@@ -220,7 +220,7 @@ function transportDescriptors(openapi,profiles,header){
  const multipart=operations(openapi).filter(op=>resolve(openapi,op.requestBody)?.content?.['multipart/form-data']);
  const overlay=multipart.map(op=>{
   const schema=resolve(openapi,op.requestBody).content['multipart/form-data'].schema;
-  const fields=Object.entries(schema.properties??{}).map(([k,v])=>JSON.stringify(k)+(schema.required?.includes(k)?'':'?')+': '+(v.type==='string'&&v.format==='binary'?'Blob':tsType(v))+';').join(' ');
+  const fields=Object.entries(schema.properties??{}).map(([k,v])=>JSON.stringify(k)+(schema.required?.includes(k)?'':'?')+': '+(v.type==='string'&&v.format==='binary'?'Blob':tsType(v,'Contracts.'))+';').join(' ');
   return JSON.stringify(op.operationId)+': { '+fields+' };';
  }).join('\n');
  return '// '+header+'\nimport type * as Contracts from "./contracts.ts";\n'+
@@ -229,7 +229,7 @@ function transportDescriptors(openapi,profiles,header){
  'export const responseProtocols = '+JSON.stringify(protocols,null,2)+' as const;\n'+
  'export type OperationRoles = { [O in keyof typeof operationRoles]: (typeof operationRoles)[O][number] };\n'+
  'export type ResponseProtocols = typeof responseProtocols;\n'+
- 'export interface MultipartBodies { '+overlay.replace(/(?<![\w.])AssetUploadMetadata/g,'Contracts.AssetUploadMetadata')+' }\n';
+ 'export interface MultipartBodies { '+overlay+' }\n';
 }
 // Validate the entire prepared output set before the first mkdir/write; never repair CR while hashing or writing.
 export function assertGeneratedLF(files){
