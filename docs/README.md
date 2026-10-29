@@ -45,3 +45,5 @@ never edited by hand.
 - Declarative Skill sharing: [English](progress/2026-10-30-skills.en.md) / [中文](progress/2026-10-30-skills.zh.md).
 
 - Document mapping foundation (unconnected): [English](progress/2026-10-30-document-mapping.en.md) / [中文](progress/2026-10-30-document-mapping.zh.md).
+
+- Complete migration-plan confirmation: [English](progress/2026-10-30-migration-plan.en.md) / [中文](progress/2026-10-30-migration-plan.zh.md).

@@ -1,7 +1,7 @@
 {
   "format": "loreviva.publication.v1",
   "repository": "https://github.com/cnedwin/Loreviva.git",
-  "base_public_commit": "887064e43598b38d9196f8db20a930380ba8faa8",
+  "base_public_commit": "8dd9464041b7ac58d96158ba1c7bd04ed21b581f",
   "completed_tasks": [
     1,
     2,
@@ -15,14 +15,16 @@
   "in_progress_tasks": [
     9
   ],
-  "scope": "Task9 internal deterministic document-mapping foundation only: one complete bounded source chunk, exact target/source basis, closed NOTE difference, source-use narrowing and fresh snapshot recheck. No API, GUI adoption, save, DB lineage or persistent extraction is connected.",
+  "scope": "Existing maintenance migration-plan identity now covers the complete ordered pinned collection including0010; old incomplete confirmation is refused, known missing marker table remains plannable and other status errors yield no ID. No new migration/table or automatic upgrade.",
   "working_contract": "1.11.0",
-  "review_status": "unconnected_mapping_kernel_independently_reviewed_not_a_release",
+  "review_status": "migration_identity_repair_independently_reviewed_not_a_release",
   "validation": {
-    "pure_kernel": "PASS actual parser output, closed differences, fresh recheck, source/rights/completeness/UTF8/Unicode/metadata/alias boundaries",
+    "actual_old_code_regression": "FAIL omission reproduced through real MySQL MigrationPlan",
+    "actual_repair": "PASS all ten original source hashes, old confirmation refused, current applied plan noop, known missing marker policy",
+    "pure_identity": "PASS full collection/database/order/append/remove/invalid/progress/error classification",
     "independent_public_candidate": {
       "status": "PASS_INDEPENDENT_PUBLIC_CANDIDATE",
-      "files": 746,
+      "files": 750,
       "commands": 10,
       "offline_install": {
         "reused": 165,
@@ -98,6 +100,7 @@
       "R0": "NOT_ACCEPTED"
     },
     "whole_Task9": "NOT_ACCEPTED",
+    "Task11_upgrade_restore": "NOT_ACCEPTED",
     "R0": "NOT_ACCEPTED",
     "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
   },
@@ -287,12 +290,12 @@
       "sha256": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00"
     },
     "README.md": {
-      "bytes": 6670,
-      "sha256": "219e314a496d5ddca68c67b3dbb9d4512230a611156cc9a20c01862a500ad0b4"
+      "bytes": 6920,
+      "sha256": "8c4f17eedd6a471abf991b4d0381c3d441f927f5014ec11afc889a805be7ca47"
     },
     "README.zh-CN.md": {
-      "bytes": 4894,
-      "sha256": "ca1426e297c50d844f135e45824f0ca2653f313c1d35ded9714ec8854b641696"
+      "bytes": 5099,
+      "sha256": "39a7d9ea7d138e9d6636ab2d804be79c6f3956d48503ed9f1dfa72f84260bb61"
     },
     "SECURITY.md": {
       "bytes": 1657,
@@ -651,8 +654,8 @@
       "sha256": "abde30cc40b47a72a1c3b49c817c187d77182de5f1da99b1cddd64391f3bc1ee"
     },
     "docs/README.md": {
-      "bytes": 2761,
-      "sha256": "543a072dc29948208cff891f6cd23690f324d34f2bccf12ce475c085bf1bc593"
+      "bytes": 2908,
+      "sha256": "5b763c1d26c3f0afbd2ab8bd744b239faf068a8f8bcedd77e723ada3b7cb98d9"
     },
     "docs/README.zh-CN.md": {
       "bytes": 708,
@@ -861,6 +864,14 @@
     "docs/progress/2026-10-30-documents.zh.md": {
       "bytes": 2443,
       "sha256": "3b94f6c67c765889bb3c012859ae11a3e12e776dc552e271ca8e7a67f4fe0e8f"
+    },
+    "docs/progress/2026-10-30-migration-plan.en.md": {
+      "bytes": 1801,
+      "sha256": "a57f92322771735285dd34deb09eb0d0c0693b4f7336ce1ec9b39c28bb294332"
+    },
+    "docs/progress/2026-10-30-migration-plan.zh.md": {
+      "bytes": 1455,
+      "sha256": "b5b37d587fb9d4cfee58bcaf8a84b69430a06ed50f86fe3597ebac570f358c64"
     },
     "docs/progress/2026-10-30-skills.en.md": {
       "bytes": 3314,
@@ -1587,8 +1598,12 @@
       "sha256": "a9c86d398932f272b7de65e8235f0ccd1c79661ed768d527f4cb154a86728b8d"
     },
     "internal/maintenance/migrate.go": {
-      "bytes": 3702,
-      "sha256": "eeaeeae31bc6db14700989510abb23f075bd81abc4610cfc249ac6ac0f313523"
+      "bytes": 4784,
+      "sha256": "08b99f1396496f6eca46f1c403e46f18721d462e28d24f0d009ff9e77dd922d3"
+    },
+    "internal/maintenance/migrate_identity_test.go": {
+      "bytes": 3384,
+      "sha256": "12b4e25ce30a46ab1d6e8e756c9fabbb660204b79a4c1b85a26b70bc67074602"
     },
     "internal/maintenance/mock_continuity.go": {
       "bytes": 4407,
@@ -2507,8 +2522,8 @@
       "sha256": "c7add50b23ffff10895b790b3a2385a879440823b47be38d0cff5790b35af978"
     },
     "scripts/source-byte-inventory.json": {
-      "bytes": 32432,
-      "sha256": "dd8eecc753420537e887fded41d44eafeecae93c81c617f2d83a341b7af4b448"
+      "bytes": 32648,
+      "sha256": "bbd22867a5b593695cd19a7130033611712587ac2aaa8f9438234c6286a1b962"
     },
     "scripts/source-byte-scope.test.mjs": {
       "bytes": 20163,
@@ -2813,6 +2828,10 @@
     "tests/integration/memory_governance_test.go": {
       "bytes": 63020,
       "sha256": "cde710af504c012f6304441789e91b43f417653770c4e10d8a085ed9a487bb0a"
+    },
+    "tests/integration/migration_plan_identity_test.go": {
+      "bytes": 3010,
+      "sha256": "901bcfe1702119fbbedf1cdac20f1e4614079fe42236400505a141c270cea9f9"
     },
     "tests/integration/nonfinal_cost_commit_test.go": {
       "bytes": 8413,

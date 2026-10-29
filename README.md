@@ -103,3 +103,5 @@ licence; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Declarative Skill sharing adds a reproducible [source-aware reply example](examples/skills/source-aware-reply/README.md), isolated creator review, export and a second installation. Contract1.11.0 retains77 operations/204 schemas; only the existing registered TEXT Skill signature becomes portable. [Scope and verification](docs/progress/2026-10-30-skills.en.md). Whole Task9/R0 remains incomplete.
 
 The [document mapping kernel](docs/progress/2026-10-30-document-mapping.en.md) prepares source-governed internal field differences and fresh snapshot rechecks. It is unconnected foundation code: creator adoption/save and protected durable lineage are still unavailable.
+
+Migration confirmation now hashes the [complete ordered migration plan](docs/progress/2026-10-30-migration-plan.en.md), including0010. Old incomplete confirmation IDs require a fresh explicit plan; this repair does not perform an automatic upgrade.

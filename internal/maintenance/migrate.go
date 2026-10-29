@@ -10,6 +10,8 @@ import (
 	driver "github.com/go-sql-driver/mysql"
 	store "loreviva.local/loreviva/internal/store/mysql"
 	"loreviva.local/loreviva/migrations"
+	"strings"
+	"unicode/utf8"
 )
 
 type Migration struct {
@@ -50,16 +52,16 @@ func MigrationPlan(ctx context.Context, s *store.Store) (Plan, error) {
 	}
 	var n int
 	e := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations WHERE version NOT IN (1,2,3,4,5,6,7,8,9,10)").Scan(&n)
+	if e != nil && !migrationTableMissing(e) {
+		return p, errors.New("schema status unavailable")
+	}
 	if e == nil && n != 0 {
 		return p, errors.New("schema newer than this application")
 	}
-	identity := struct {
-		Database string
-		Hashes   []string
-	}{p.Database, []string{p.Migrations[0].Hash, p.Migrations[1].Hash, p.Migrations[2].Hash, p.Migrations[3].Hash, p.Migrations[4].Hash, p.Migrations[5].Hash, p.Migrations[6].Hash, p.Migrations[7].Hash, p.Migrations[8].Hash}}
-	b, _ := json.Marshal(identity)
-	h := sha256.Sum256(b)
-	p.PlanID = hex.EncodeToString(h[:])
+	p.PlanID, e = migrationPlanIdentity(p.Database, p.Migrations)
+	if e != nil {
+		return p, e
+	}
 	return p, nil
 }
 func Up(ctx context.Context, s *store.Store, id string) error {
@@ -94,4 +96,38 @@ func GovernanceReady(ctx context.Context, s *store.Store) error {
 		return errors.New("initial governance watermark unavailable; restore requires independent governance gate")
 	}
 	return nil
+}
+
+// The existing confirmation representation binds the database and every pinned
+// hash in order. Versions must agree with that sequence; Applied is progress,
+// not new content. No caller may confirm only an old hardcoded prefix.
+func migrationPlanIdentity(database string, items []Migration) (string, error) {
+	if database == "" || !utf8.ValidString(database) || len(items) == 0 {
+		return "", errors.New("complete pinned migration plan required")
+	}
+	hashes := make([]string, len(items))
+	for i, m := range items {
+		b, e := hex.DecodeString(m.Hash)
+		if m.Version != i+1 || e != nil || len(b) != sha256.Size || m.Hash != strings.ToLower(m.Hash) {
+			return "", errors.New("ordered pinned migration identity invalid")
+		}
+		hashes[i] = m.Hash
+	}
+	identity := struct {
+		Database string
+		Hashes   []string
+	}{database, hashes}
+	raw, e := json.Marshal(identity)
+	if e != nil {
+		return "", e
+	}
+	h := sha256.Sum256(raw)
+	return hex.EncodeToString(h[:]), nil
+}
+
+// A known absent marker table is supported for planning an uninitialized
+// installation. Other status failures must not produce a confirmable plan ID.
+func migrationTableMissing(e error) bool {
+	var my *driver.MySQLError
+	return errors.As(e, &my) && my.Number == 1146
 }

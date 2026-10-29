@@ -56,3 +56,5 @@ R0当前支持已验证的Windows本地固定卷；Linux构建检查不等于Lin
 声明式 Skill 分享提供可复现的[来源感知回复示例](examples/skills/source-aware-reply/README.zh-CN.md)，经隔离审核后导出，并在第二套安装重走本地流程。契约1.11.0仍为77操作/204 Schema，仅补齐已有登记 TEXT Skill 签名的可移植表达。[范围与验证](docs/progress/2026-10-30-skills.zh.md)。Task9/R0 整体仍未完成。
 
 [文档映射内核](docs/progress/2026-10-30-document-mapping.zh.md)已提供受来源约束的内部字段差异和新鲜快照重验。此为尚未接通的基础代码，创作者采用保存与持久受保护谱系仍待实现。
+
+迁移确认已绑定[完整有序迁移计划](docs/progress/2026-10-30-migration-plan.zh.md)，包含0010。旧的不完整标识需要重新读取并明确确认；本次修复不自动执行升级。
