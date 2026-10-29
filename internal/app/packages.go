@@ -45,6 +45,15 @@ func (r *Runtime) packageRoutes(mux *http.ServeMux) {
 			report := wepkg.Check(archive, wepkg.DefaultLimits)
 			return 200, report, nil
 		}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/preview",
+		r.adminControl("", "content.check", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+			archive, options, err := packagePreviewBody(q)
+			if err != nil {
+				return 0, nil, err
+			}
+			report, err := r.Content.PreviewPackage(ctx, scope, archive, options)
+			return 200, report, err
+		}))
 }
 
 // preflightBody reads the multipart body with the archive ceiling applied. The
@@ -104,3 +113,56 @@ var (
 	errUnsupportedMedia = errors.New("unsupported media")
 	errArchiveTooLarge  = errors.New("archive too large")
 )
+
+// Separate from static preflight: exactly one archive and one closed options
+// object, with independent raw-byte bounds and no temporary filesystem writes.
+func packagePreviewBody(q *http.Request) ([]byte, []byte, error) {
+	media, params, err := mime.ParseMediaType(q.Header.Get("Content-Type"))
+	if err != nil || media != "multipart/form-data" {
+		return nil, nil, errUnsupportedMedia
+	}
+	if len(q.URL.Query()) != 1 || domain.ValidateIdempotencyKey(q.Header.Get("Idempotency-Key")) != nil {
+		return nil, nil, wire.ErrJSON
+	}
+	q.Body = http.MaxBytesReader(nil, q.Body, wepkg.DefaultLimits.ArchiveBytes+65536+(1<<20))
+	reader := multipart.NewReader(q.Body, params["boundary"])
+	var archive, options []byte
+	seen := map[string]bool{}
+	for {
+		part, err := reader.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, nil, wire.ErrJSON
+		}
+		name := part.FormName()
+		if seen[name] || (name != "archive" && name != "options") {
+			return nil, nil, wire.ErrJSON
+		}
+		seen[name] = true
+		limit := int64(65536)
+		if name == "archive" {
+			limit = wepkg.DefaultLimits.ArchiveBytes
+		}
+		raw, err := io.ReadAll(io.LimitReader(part, limit+1))
+		if err != nil {
+			return nil, nil, wire.ErrJSON
+		}
+		if int64(len(raw)) > limit {
+			if name == "archive" {
+				return nil, nil, errArchiveTooLarge
+			}
+			return nil, nil, wire.ErrJSON
+		}
+		if name == "archive" {
+			archive = raw
+		} else {
+			options = raw
+		}
+	}
+	if !seen["archive"] || !seen["options"] {
+		return nil, nil, wire.ErrJSON
+	}
+	return archive, options, nil
+}

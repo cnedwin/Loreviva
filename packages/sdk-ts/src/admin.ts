@@ -1,12 +1,12 @@
 import validators from './generated/validators.cjs';
 import {operationRoutes} from './generated/contracts.ts';
-import type {Operations,AssetUploadMetadata,FileRecord} from './generated/contracts.ts';
+import type {Operations,AssetUploadMetadata,FileRecord,PackagePreviewOptions,PackageImportPreview} from './generated/contracts.ts';
 
 function validate(name:string,value:unknown):void {if(!Object.hasOwn(validators,name))throw Error('未知契约');const validator=validators[name as keyof typeof validators];if(!validator(value))throw new AdminTransportError(422,{message:'字段格式不符合契约',field_errors:validator.errors?.map(e=>({pointer:e.instancePath,code:e.keyword,message:e.message??'字段无效'}))})}
 export function validateContract(name:string,value:unknown):void {validate('schema_'+name,value)}
 export class AdminTransportError extends Error {readonly status:number;readonly body:unknown;constructor(status:number,body:unknown){super((body as {message?:string})?.message??'请求失败');this.status=status;this.body=body;this.name='AdminTransportError'}}
 type Keys={ [K in keyof Operations]: (typeof operationRoutes)[K]['path'] extends `/world/v1/admin/${string}` ? K:never}[keyof Operations];
-export type AdminOperation=Exclude<Keys,'uploadContentAsset'>;
+export type AdminOperation=Exclude<Keys,'uploadContentAsset'|'previewContentPackage'>;
 export type AdminSuccess<K extends keyof Operations>=Operations[K]['responses'][Extract<keyof Operations[K]['responses'],`2${string}`>];
 interface Input {path?:Record<string,string>;query?:Record<string,unknown>;headers?:Record<string,string>;body?:unknown}
 const MAX_BYTES=16*1024*1024;
@@ -30,6 +30,12 @@ export function createAdminClient(options:{getOperatorBearer:()=>string|null;fet
  }
  async function readAsset(assetId:string,productId:string,size:string,signal?:AbortSignal):Promise<Uint8Array> {if(!/^\d+$/.test(size)||BigInt(size)>BigInt(MAX_BYTES))throw Error('资产大小不受支持');const url=operationRoutes.readAuthorizedAsset.path.replace('{asset_id}',encodeURIComponent(assetId));const response=await request(url+'?'+new URLSearchParams({product_id:productId}),{headers:headers(),credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});if(!response.ok){await decode(response);throw Error('读取失败')}const bytes=await bounded(response,Number(size));if(bytes.length!==Number(size))throw Error('资产大小不符');return bytes}
  async function upload(metadata:AssetUploadMetadata,file:Blob,key:string):Promise<FileRecord> {validateContract('AssetUploadMetadata',metadata);if(String(file.size)!==metadata.expected_size||file.size>MAX_BYTES)throw Error('上传大小不符');const form=new FormData();form.set('metadata',JSON.stringify(metadata));form.set('file',file,metadata.name);const response=await request(operationRoutes.uploadContentAsset.path,{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store'});const value=await decode(response);validateContract('FileRecord',value);return value as FileRecord}
- return {call,readAsset,upload};
+ // Preview is bounded multipart, not a JSON command or a persisted import.
+ async function previewPackage(productId:string,file:Blob,options:PackagePreviewOptions,key:string,signal?:AbortSignal):Promise<PackageImportPreview> {
+  validateContract('PackagePreviewOptions',options);if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(key)||file.size>64*1024*1024)throw Error('内容包或请求标识超出限制');
+  const encoded=JSON.stringify(options);if(new TextEncoder().encode(encoded).byteLength>65536)throw Error('映射选项超过大小限制');const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',encoded);
+  const url=operationRoutes.previewContentPackage.path+'?'+new URLSearchParams({product_id:productId});const response=await request(url,{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});const value=await decode(response);validateContract('PackageImportPreview',value);return value as PackageImportPreview;
+ }
+ return {call,readAsset,upload,previewPackage};
 }
 export type AdminClient=ReturnType<typeof createAdminClient>;

@@ -1,7 +1,7 @@
 {
   "format": "loreviva.publication.v1",
   "repository": "https://github.com/cnedwin/Loreviva.git",
-  "base_public_commit": "03648b64055dec7c2fdae64d89193323eb008200",
+  "base_public_commit": "082a35b2b39bb6e8cd8e18528ae01958f7ced275",
   "completed_tasks": [
     1,
     2,
@@ -15,59 +15,27 @@
   "in_progress_tasks": [
     9
   ],
-  "scope": "Source-derived portable definition body validation and a deterministic non-executable ID plan. Pure preflight grants no local rights or import authority. Whole Task9 and R0 remain incomplete.",
-  "working_contract": "1.6.0",
-  "review_status": "portable_definition_P1_independently_approved_not_a_release",
+  "scope": "Task9 P2: local package dependency matching and non-persistent creator preview. Persistent import/export and whole Task9/R0 remain incomplete.",
+  "working_contract": "1.7.0",
+  "review_status": "P2_preview_independently_reviewed_not_a_release",
   "validation": {
-    "unit_green": {
-      "top_level": 59,
-      "including_subtests": 313,
-      "fail": 0,
-      "skip": 0
-    },
-    "generator": {
-      "pass_count": 13,
-      "fail": 0,
-      "generated_drift": 0
-    },
-    "schema_AGREEMENT": {
-      "Go_Ajv_cases": 16
-    },
-    "actual_HTTP": {
-      "top_level": 4,
-      "fail": 0,
-      "skip": 0,
-      "business_write_check": "Inspected business-row counts unchanged.",
-      "initial_fixture_failure": "Preserved; fixture now decodes only DraftInput examples."
-    },
-    "actual_browser": {
-      "creator": "PASS after the exact Open completion barrier; prior async navigation failure retained.",
-      "settings": "Parent and three modes PASS; retained exact unaffected source evidence.",
-      "combined_clean_rerun": false,
-      "remaining_owned_resources": 0
-    },
-    "studio": {
-      "inputs": 81,
-      "served_artifacts": 3,
-      "actual_build": "PASS",
-      "embedded_routes_and_CSP": "PASS"
-    },
-    "plan_boundary": "The 8 MiB bound applies to the encoded hash preimage after excluding plan_sha256. Exact boundary and overflow tests pass.",
-    "import_authority": "NONE; execution_ready is always false; no local IDs, permissions, writes or persistent receipt are granted.",
-    "whole_Task8": "LOCALLY_ACCEPTED_WITH_DECLARED_BOUNDARIES",
-    "whole_Task9": "NOT_ACCEPTED",
-    "R0": "NOT_ACCEPTED",
+    "local_pure_targets": 12,
+    "local_pure_with_subtests": 17,
+    "actual_HTTP_targets": 6,
+    "actual_HTTP_with_subtests": 21,
+    "real_creator_browser": "PASS with dependency, Mock model, text presentation and cancel/late-response checks",
+    "route_disablement": "Independent positive then disabled negative fixtures; exact refusal code",
+    "execution_ready": false,
+    "persisted": false,
     "independent_public_candidate": {
-      "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
-      "source_files": 680,
-      "commands": 9,
+      "status": "PASS_INDEPENDENT_PUBLIC_CANDIDATE",
+      "files": 692,
+      "commands": 10,
       "offline_install": {
         "reused": 165,
-        "downloaded": 0,
-        "frozen_store": true,
-        "frozen_lockfile": true
+        "downloaded": 0
       },
-      "script_summaries": [
+      "node": [
         {
           "name": "workspace-tests",
           "tests": [
@@ -120,47 +88,34 @@
           ]
         }
       ],
-      "go_units": {
-        "requested_packages": 8,
-        "packages_with_tests_passed": 6,
+      "go_unit": {
+        "top_level": 78,
+        "including_subtests": 344,
+        "fail": 0,
+        "named_skip": 0,
+        "packages_with_tests": 6,
         "packages_without_tests": [
           "loreviva.local/loreviva/internal/auth",
           "loreviva.local/loreviva/internal/settings"
-        ],
-        "top_level": 77,
-        "including_subtests": 338,
-        "fail": 0,
-        "test_skip": 0
+        ]
       },
-      "builds": [
-        "Studio typecheck and build",
-        "Reference typecheck and build",
-        "Go all packages build",
-        "Go internal vet"
-      ],
-      "source_bytes_unchanged": true,
-      "database_retests": false
-    },
-    "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED",
-    "initial_candidate_contract_failure": "29pass/2fail; historical whole-manifest hash correctly caught the adopted portable descriptor. Old baseline hash is retained; only that descriptor is excluded when verifying exact legacy canonical bytes. That earlier candidate was blocked; the current independent candidate result is recorded separately below.",
-    "integration_capability_fingerprint_recovery": {
-      "original_unit_failure": "Capability table source stamp differed from generated bundle; rejection guard retained.",
-      "app_units": {
-        "top_level": 6,
+      "preview_unit": {
+        "top_level": 11,
         "including_subtests": 11,
         "fail": 0,
-        "skip": 0
+        "named_skip": 0,
+        "packages_with_tests": 2,
+        "packages_without_tests": []
       },
-      "actual_owning_HTTP": {
-        "targets": 1,
-        "fail": 0,
-        "skip": 0,
-        "source_hash_and_67operations_and2profiles": true,
-        "invalid_bearer_missing_owner_and_closed_owner_checks": true,
-        "remaining_owned_schemas": 0
-      },
-      "implementation": "Only the reviewed manual hash literal advanced; no runtime equality, routes, profiles or authority checks removed."
-    }
+      "source_bytes_unchanged": true,
+      "database_and_browser_retests": false,
+      "prior_actual_business_evidence": "Unchanged behavior source and examples-only annotation bridge, reviewed independently.",
+      "whole_Task9": "NOT_ACCEPTED",
+      "R0": "NOT_ACCEPTED"
+    },
+    "whole_Task9": "NOT_ACCEPTED",
+    "R0": "NOT_ACCEPTED",
+    "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
   },
   "files": {
     ".editorconfig": {
@@ -200,8 +155,8 @@
       "sha256": "b6c5f28335813cd4801d10ce729f4f7ae66664ad15f5ff971fd277a2dacf05e8"
     },
     ".github/workflows/verify.yml": {
-      "bytes": 3086,
-      "sha256": "40c25b2450bdcb14affaada97b2a872d706b194a9156467438c3d009f6d92a4a"
+      "bytes": 3266,
+      "sha256": "31eb2e03809a26fe58f3feb9b05598bed10c9f1581108c311c9872a490edf4fd"
     },
     ".gitignore": {
       "bytes": 97,
@@ -459,6 +414,10 @@
       "bytes": 2544,
       "sha256": "b343655aef39e82cc317aca86697f6bf53febfd36e5922d4e2a4bc5590d1c398"
     },
+    "apps/studio/src/components/PackagePreview.vue": {
+      "bytes": 12895,
+      "sha256": "b5bf556838fb3af58a8f025ffebe6ee365aa77f427748a9b48fdea31054e2505"
+    },
     "apps/studio/src/components/PropertyPanel.vue": {
       "bytes": 602,
       "sha256": "c59fffb5f9b67d0f1a633e1530aa7f1ad7e81b3b946fc9b3f3c852ac3059bd8f"
@@ -540,8 +499,8 @@
       "sha256": "65ecba69687488babe6a6378ebea42eb39d9a2f3dde27ee075b1f9805d094f61"
     },
     "apps/studio/src/views/ResourcesView.vue": {
-      "bytes": 7023,
-      "sha256": "0e717af7a12ab300bcd7844ee271385395b16f11a5beb57c20c34e22168d552d"
+      "bytes": 7136,
+      "sha256": "af3d43e85b79fa730b1d37149e22ef2a52c862c3770f3d99d406ca8fd6c3534c"
     },
     "apps/studio/src/views/RuntimeView.vue": {
       "bytes": 7013,
@@ -644,20 +603,20 @@
       "sha256": "179b5058b35379d4ba3a3ca90921bfcafe900af6df37bf971847f6d8206c394f"
     },
     "contracts/generated/manifest.json": {
-      "bytes": 6593,
-      "sha256": "ed53d92260d30872e731ffcc44620b9091d486b1525d56fcc0f5c7595471356b"
+      "bytes": 6622,
+      "sha256": "bd04ebbbe77d65e74e06806a4517e9e43708381fed6ca14056f2da488476e6c0"
     },
     "contracts/generated/openapi.json": {
-      "bytes": 843068,
-      "sha256": "7a8414b87b4ad1241cb96ca5d37bf9dd5eb65b66b42269fd1b2c5fdf2b9a57d7"
+      "bytes": 865122,
+      "sha256": "8eccd3336cc84d60d88fdd01988fb8c7dcfbb24550fd03e4f2b1ce463af01538"
     },
     "contracts/generated/profiles/integration_r0_v1.openapi.json": {
-      "bytes": 847499,
-      "sha256": "af191848ce68c4f283d72a0a8c2e01550deef180cec1065d4708d3ab7cebc96f"
+      "bytes": 869553,
+      "sha256": "64fee7f5188e972f0ba5b78d2881828355acd847e7f762590f0746dc53f59509"
     },
     "contracts/generated/profiles/public_v1.openapi.json": {
-      "bytes": 848320,
-      "sha256": "338e8d86cda919f495170f3cdf0744ead0c7f1d6adc11a094174687539924479"
+      "bytes": 870374,
+      "sha256": "90a3443f8b95b2617989c0002b189a15c331556371509f682e442e2472f6bbba"
     },
     "contracts/generated/wepkg-portable.schema.json": {
       "bytes": 63004,
@@ -668,8 +627,8 @@
       "sha256": "e19c77a0b15168caa348ead591f2434083a56ac6a96c642e681d9be364e76be0"
     },
     "contracts/source/openapi.yaml": {
-      "bytes": 843067,
-      "sha256": "cbf0ca5b4813414c3ebc89e67bf5ce633de48f55961d54906e060e5e2bc0eaa0"
+      "bytes": 865122,
+      "sha256": "5da0e94bf165e430be41777c82c05da7df431ab026d6e82ef8425f19b2d21533"
     },
     "contracts/source/wepkg.schema.json": {
       "bytes": 32049,
@@ -863,6 +822,14 @@
       "bytes": 2272,
       "sha256": "7f2fc20c26c86ca481aa272513098d3a5b0c3b5bf929dd8343fa1b5e5b00c5a0"
     },
+    "docs/progress/2026-10-29.en.md": {
+      "bytes": 3008,
+      "sha256": "f86a2b42d548fee33f62da5b2814977e82b8073c8e9f8d10bfa1da701a2ee93c"
+    },
+    "docs/progress/2026-10-29.zh.md": {
+      "bytes": 2594,
+      "sha256": "b6490580822b3bb508407b16676a0d48a08e7bc49358887f69897e84f7843d2b"
+    },
     "examples/coffee/definitions.json": {
       "bytes": 10898,
       "sha256": "4c1332e963bc34d111d50917b6b44955e6335fae15fa6f857c1ce9761635e1a2"
@@ -932,8 +899,8 @@
       "sha256": "4e0be7adbff640a7e999ceee626eed67916b6ac4e8d2e668b084361a2003c22b"
     },
     "internal/app/integration_capabilities.go": {
-      "bytes": 12717,
-      "sha256": "f05cd402b50c94484d44d2924991eb6414ed91f84952184f13fa06777d0ab426"
+      "bytes": 12820,
+      "sha256": "f73a11a365a07de273aa380821f54706419f263343c6ccd54a34ca9ece65eb90"
     },
     "internal/app/integration_create.go": {
       "bytes": 1635,
@@ -963,9 +930,13 @@
       "bytes": 10685,
       "sha256": "5868ee338f952385acf97df20991622645e39386275c0be440f0b383bf79e69d"
     },
+    "internal/app/package_preview_test.go": {
+      "bytes": 1413,
+      "sha256": "cbb99cde0e47d273bcece6439230c4e99964195f893b34a8fe1af4ff17e0ea02"
+    },
     "internal/app/packages.go": {
-      "bytes": 3349,
-      "sha256": "ae029ecd1d922e37d56ff9ca70dbd11b4adeb95d838141832794f39317e16ead"
+      "bytes": 5308,
+      "sha256": "039bae1fff71d0b7316b1c77e4a35d896ae24bee7e3194d9400509d73b409813"
     },
     "internal/app/rehearsal_history.go": {
       "bytes": 805,
@@ -991,17 +962,17 @@
       "bytes": 7051,
       "sha256": "ea4a5a5c92eac7ca7280b96d5817f82be6a42ba0e9762e92b775c1fc9be35215"
     },
-    "internal/app/studio_dist/assets/index-Du030-Di.js": {
-      "bytes": 16780824,
-      "sha256": "46019151d68f2cef79c043f4fec06fdbf20453d77fbaf3dd7570d46e77911522"
+    "internal/app/studio_dist/assets/index-DAfL35d8.js": {
+      "bytes": 17079952,
+      "sha256": "328d37427a3c567b50f44302983cd25feb1ecef92ae4e01035a880cf17bac565"
     },
     "internal/app/studio_dist/index.html": {
       "bytes": 413,
-      "sha256": "01474f489e47ece0d95a96bafc62d1b8eaf87193e70a4f91c5a7c9b3a2e25fed"
+      "sha256": "959fe310c132b1dfcc365847b27f83584967ce7caa3c5d5e94751e1de55da021"
     },
     "internal/app/studio_dist/manifest.json": {
-      "bytes": 14376,
-      "sha256": "1e07004639db5590cd7a76cad947f29dde5ca82264f77656800338ea2b8fcaca"
+      "bytes": 14556,
+      "sha256": "5fc4636abf72575ca789f664fe2afb4871ca55c9c7b19c5412a6fe4404f10dc4"
     },
     "internal/app/tasks.go": {
       "bytes": 1777,
@@ -1044,8 +1015,8 @@
       "sha256": "e4cc435d294fbba884bb0b95fa560fcde3c2ebeb4fb02dbfd0ead42c914ee6bf"
     },
     "internal/content/commands.go": {
-      "bytes": 5365,
-      "sha256": "a1be54b9029fbeae39e7ab284aa69dc2c93ba61311174ef62c642f197d1c538e"
+      "bytes": 5419,
+      "sha256": "e10f0140e87005f8bcbbaf919005a733f136bc75d3ad6c085c1b60f84aaa6679"
     },
     "internal/content/content_test.go": {
       "bytes": 6805,
@@ -1090,6 +1061,18 @@
     "internal/content/owner_fix1_test.go": {
       "bytes": 3715,
       "sha256": "b5f8916665a41f1bcf6d5f975959784d3332dbdad301533ebaeaa27caae66321"
+    },
+    "internal/content/package_preview.go": {
+      "bytes": 17369,
+      "sha256": "03e649acb173f34a73375d21d0c11a83e778b0b6b77c4b083be1c8e039ce6378"
+    },
+    "internal/content/package_preview_test.go": {
+      "bytes": 9848,
+      "sha256": "16ffc8de15546c8e4386226d5b7198898ae86e27c207d892e8b89292b76f44bc"
+    },
+    "internal/content/package_projection.go": {
+      "bytes": 11857,
+      "sha256": "8c863843b95c989d157a06a2e2a5ab0bd386b548d5d212c7546cd0007515363e"
     },
     "internal/content/pagination.go": {
       "bytes": 4739,
@@ -1328,16 +1311,16 @@
       "sha256": "7e923e6a453c70fad0c7bdf526bca2f9f62976cae0475b2c9f42dac26edfd6eb"
     },
     "internal/generated/schemas.json": {
-      "bytes": 433884,
-      "sha256": "6c0650993e874f94e83b8cd9334793fff88350546d13ac7624365916f7dcbd4a"
+      "bytes": 452553,
+      "sha256": "faa6b074b104525fcfae1d2ed16a87555d3adb8750ebc558493aff8e10b5dbe6"
     },
     "internal/generated/types.go": {
-      "bytes": 56783,
-      "sha256": "fcaff2e16ff0040721dde9a330a805eeb63234cf9a65947a0aa6aecdb8ab7315"
+      "bytes": 58831,
+      "sha256": "c3c44784dedb36f17b39ab62b0bf18b3d446ce8daa1f148d1354d0f1b74eb0f1"
     },
     "internal/generated/validate.go": {
       "bytes": 1944,
-      "sha256": "ff64959cb0655cc8eed30e5ca96a68e5009e37932eb4a4dafae6953763be7485"
+      "sha256": "f67319350b3c2aad244b438a8dda584fd0f061745b6f86faee222704ceff230f"
     },
     "internal/generated/wepkg-portable.schema.json": {
       "bytes": 63004,
@@ -1349,11 +1332,11 @@
     },
     "internal/generated/wepkg_portable_validate.go": {
       "bytes": 3722,
-      "sha256": "2498795c0226dea2a1feadf4093ef6c1494d060f2a343e2e58b726bcc9300a48"
+      "sha256": "1c8af028fdc63a649bcde2be48915f299313e69c4aba560a15eef3942f488ad2"
     },
     "internal/generated/wepkg_validate.go": {
       "bytes": 2327,
-      "sha256": "c9b4b6e52c4a54a5a4acb43cba5bb44c895063fb00d731fa3349a6c528e1fe01"
+      "sha256": "d9e14dce84aebb26941d6c0b48e3ea51c3583b4f2570526bcec028af8c8f70e0"
     },
     "internal/harness/admin_jobs.go": {
       "bytes": 3979,
@@ -1708,8 +1691,8 @@
       "sha256": "1f1ac2aa8df78fb13315c8ac54c66d6995c8756deca933ef8c60bdc3c26c600b"
     },
     "internal/store/mysql/barrier.go": {
-      "bytes": 38049,
-      "sha256": "90c3219ee4bca0ce5103cf38d98000bbfa385c1572e2c617f10a6b749f38b424"
+      "bytes": 38724,
+      "sha256": "9b2421f1f2b4a3e56fd021615bc8e64e449abb99e124c29395706c957e4137ab"
     },
     "internal/store/mysql/bill_delivery.go": {
       "bytes": 9484,
@@ -1860,8 +1843,8 @@
       "sha256": "f928d7e13bc5070a343c5ee415036699aab99408384a9552e0d4588946e6f2fc"
     },
     "internal/store/mysql/locks.go": {
-      "bytes": 8480,
-      "sha256": "d055fb72f6e19c939a92029b778ddc0370c7927aaf4fd518bae2157bc9a84dc0"
+      "bytes": 8562,
+      "sha256": "d504591638677e4acdd798ef90154601df14dd9f97c0c1c9d64008d934f04d04"
     },
     "internal/store/mysql/memory.go": {
       "bytes": 16990,
@@ -1872,8 +1855,8 @@
       "sha256": "55e6eb1720b3568e3f1f0944c328b21f2458e736436a276ac31fae94f1d8995c"
     },
     "internal/store/mysql/operator_barrier.go": {
-      "bytes": 5577,
-      "sha256": "e945869e2213eddb8dbf3c52e665b36317e7ffdb52f4e74ea730e0938993979b"
+      "bytes": 5694,
+      "sha256": "1dd7f027a3bf73d7104fff07dae04f6b43e5e129830abaeffb5df9fbea36c27c"
     },
     "internal/store/mysql/operator_grants.go": {
       "bytes": 6080,
@@ -1894,6 +1877,14 @@
     "internal/store/mysql/original_query.go": {
       "bytes": 20239,
       "sha256": "1353f62aa3a9e97c8cb921101307c108ff6a155a8b12a602b1720ca8e95e7a57"
+    },
+    "internal/store/mysql/package_preview.go": {
+      "bytes": 3742,
+      "sha256": "e29249ecdba1b6f07cca927c119f3bf0184845a516a4b45fbc62749c5bfdf34b"
+    },
+    "internal/store/mysql/package_preview_test.go": {
+      "bytes": 702,
+      "sha256": "1be3a1efd4ec004f922fa5db8482bf1ebbc7f2cae4e82a30ca6e3eb829259529"
     },
     "internal/store/mysql/receipts.go": {
       "bytes": 3624,
@@ -1980,8 +1971,8 @@
       "sha256": "381af5ed49bd759246f66b3f34673f4373ee815d368ccae06c4c402db9d9b63a"
     },
     "internal/store/mysql/store.go": {
-      "bytes": 24017,
-      "sha256": "b4110c5a986de74744694271963110361f89f68861b8f127fbc582be5e49b4df"
+      "bytes": 24545,
+      "sha256": "242c5569c8a41927ec4a8b048e22ab03437abeb9ac29a3aa5fc8e44b4c90f37a"
     },
     "internal/store/mysql/studio_administration.go": {
       "bytes": 14680,
@@ -2107,6 +2098,10 @@
       "bytes": 17939,
       "sha256": "fc668aaa42bc287e9ae1bd212005724f4398957c977fb88687bfc21f3d9519ba"
     },
+    "internal/wepkg/portable_discovery.go": {
+      "bytes": 870,
+      "sha256": "0cf3e58185546ec56b9e26f8d5ad596bab18f9491939f7b17924f5c330cdeb20"
+    },
     "internal/wepkg/portable_plan.go": {
       "bytes": 7185,
       "sha256": "99b9da145a013680522585064ecfe03e62bc97191eb358f5aac5f1e5cc0b0771"
@@ -2184,8 +2179,8 @@
       "sha256": "8fdb7c0dcc9e1043ddfdef213c650b1591f9277d796a045b0f62ff06673c3d65"
     },
     "packages/sdk-ts/src/admin.ts": {
-      "bytes": 6125,
-      "sha256": "6ceefd794fda78c816459a62d6eefc08860d109a2726d8909ca8f5eecf50647e"
+      "bytes": 7256,
+      "sha256": "15dff9eb340016475dbfa8d631d41779dcb4e4a7bf01438d8f85eae673982ad5"
     },
     "packages/sdk-ts/src/cache.ts": {
       "bytes": 1946,
@@ -2196,20 +2191,20 @@
       "sha256": "92995ba36ff46360c959151f21d6c490ef518821ee22e0144c415d20e96db16e"
     },
     "packages/sdk-ts/src/generated/contracts.ts": {
-      "bytes": 152748,
-      "sha256": "d454ce52dbfaddc92380e8dfbd251b63f1b2c1e80e5d8909f6dae1b29a5b6b70"
+      "bytes": 158267,
+      "sha256": "b451e06f0cef2adfa7c2b17c7466d68a7cdb0ff5f109a1168541d2c58f9579bd"
     },
     "packages/sdk-ts/src/generated/transport.ts": {
-      "bytes": 423911,
-      "sha256": "d5823d2878d546b71857801c5bec1646ce3260de540e4e3e1897fc1ec09aa021"
+      "bytes": 428372,
+      "sha256": "dca3c8e47bb2d43bba7c92a73fe259c1182d45cb825cd117f76e3470d1a615f4"
     },
     "packages/sdk-ts/src/generated/validators.cjs": {
-      "bytes": 23233511,
-      "sha256": "b7e382d6a5bbfac345a7aeb953a1a9f684b20c259fb92e1465d77ed4d5c95616"
+      "bytes": 23631248,
+      "sha256": "476633e6bc3f9b15b5dca2cfd967e137b5370da75eda5ca2ab34a9b955bd784c"
     },
     "packages/sdk-ts/src/generated/validators.d.cts": {
-      "bytes": 122973,
-      "sha256": "ccd77f92885398486b9fe8180f086c8e5bf20da70a1a7e6d41acf2a6a2b3ad74"
+      "bytes": 124491,
+      "sha256": "0ce782f7826c7d95ae6c3ed96e452d3f087c9d0d7d8a92e0ff7529f3401b02e9"
     },
     "packages/sdk-ts/src/index.ts": {
       "bytes": 1903,
@@ -2269,7 +2264,7 @@
     },
     "scripts/contracts.test.mjs": {
       "bytes": 14756,
-      "sha256": "92dcd125a8fed67c2ff6df65d275967054342c014ee629481b73f39692e7595a"
+      "sha256": "843b5000708ffbf9874caf73f31e6eb3f7ecb517db6a1ef46f4161cd9d2ccbe5"
     },
     "scripts/fixtures/conditional-types.ts": {
       "bytes": 4136,
@@ -2292,8 +2287,8 @@
       "sha256": "256e52050fe3d0ea1f6f2ef77a1407ca9cd02bd3069a463a7f14798d811c8f68"
     },
     "scripts/integration-profiles.mjs": {
-      "bytes": 4915,
-      "sha256": "6ae09c38c8dcd45f69179719d481c7a7f084d7e92e47b8875e87cc983b52efec"
+      "bytes": 4933,
+      "sha256": "c15185e6c9b11f9dfa41c691bf128f04bd589edc5d1ad50ed33b5e475994ef66"
     },
     "scripts/integration-shards.test.mjs": {
       "bytes": 6052,
@@ -2301,7 +2296,11 @@
     },
     "scripts/memory-contract.test.mjs": {
       "bytes": 971,
-      "sha256": "5505ab4c0abf1daace09e2daec48191b1dfa7e44e30d3febb60c2345d59d04de"
+      "sha256": "eae7778e60857058de45c12e9d9f03cb6ae86f6a0dd2e05adf78ed0cd131909d"
+    },
+    "scripts/package-preview-browser.mjs": {
+      "bytes": 4907,
+      "sha256": "ad38350a666dbdc8d2b829ea92958bf0abde1d826c12ffd7e2a0123c56760347"
     },
     "scripts/reference-browser.mjs": {
       "bytes": 2078,
@@ -2328,8 +2327,8 @@
       "sha256": "b8be77b86c6d5a34ae089b7db500934ef01f3f86af6b1578b7031b85eba46273"
     },
     "scripts/source-byte-inventory.json": {
-      "bytes": 29380,
-      "sha256": "9aa5adc2b5d25514383ce84eecea8d5f85d02f97d5124503e5b7ff4b01796706"
+      "bytes": 29925,
+      "sha256": "2d3b4c4976b76470461ab88ba5ddac360b2dc21527b0cf3074db336ea0b5efc7"
     },
     "scripts/source-byte-scope.test.mjs": {
       "bytes": 20163,
@@ -2349,11 +2348,11 @@
     },
     "scripts/studio-contract.test.mjs": {
       "bytes": 8151,
-      "sha256": "5cb61bec24cbed80a509e37fa886bf59f0ab22f2d86a0ae4be17f7cf8b5a621a"
+      "sha256": "1e1d76cf49464a4d7959e17c7a33820579eb5d1ceeeb261ba8def67bece335e5"
     },
     "scripts/studio-csp.test.mjs": {
       "bytes": 2249,
-      "sha256": "fc67b3d3628735515beae6ffb39239bea753ea2bb11b99b78508a337e6272d2d"
+      "sha256": "4a4abec210e38c48be9070c2f3b27255fae7d453687cf81ae2280eb8fce7ffcb"
     },
     "scripts/studio-dependencies.mjs": {
       "bytes": 4520,
@@ -2368,8 +2367,8 @@
       "sha256": "ed9bb1567c8fc218763aba64ab73b81145788afe9fea892f6658ef90a76b28ac"
     },
     "tests/contracts/integration_profiles.test.mjs": {
-      "bytes": 17450,
-      "sha256": "092e659469b3f88cc9b55fa73440fea0eb72f71d231cb9c75090e2e46bbc9519"
+      "bytes": 17654,
+      "sha256": "1bd1e5f675e458084dd34c454653e5a0ac003c2493a125f209a1537b2ebfb04c"
     },
     "tests/contracts/studio_test.go": {
       "bytes": 947,
@@ -2635,6 +2634,10 @@
       "bytes": 8413,
       "sha256": "7a1c0971da2aaf8570dd23fb7f09b6a8695b4460129c536231dd5c81e694ad69"
     },
+    "tests/integration/package_preview_test.go": {
+      "bytes": 28943,
+      "sha256": "d0eeb056f2ecfe0bce9b9885eef6168f7fb6d62d1a1b231da2a099d327a9de1a"
+    },
     "tests/integration/reference_client_browser_test.go": {
       "bytes": 24899,
       "sha256": "2aefcb15b254d62fb2b52ec36e4b7444021c4b18dcd083a68d65eb0e17ac1f8e"
@@ -2878,465 +2881,6 @@
     "tests/sdk/tsconfig.json": {
       "bytes": 665,
       "sha256": "d536ee5928e10ddf4fe88d8f35438045eb6985d92eb9f3d0bfdff44b8aadcc38"
-    }
-  },
-  "documentation_corrections": [
-    {
-      "date": "2026-10-21",
-      "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
-      "note": "File hashes in this record were re-synchronised with the tree; the validation block still describes the 3c7f1cc snapshot measurements."
-    },
-    {
-      "date": "2026-10-21",
-      "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
-      "note": "File hashes in this record were re-synchronised with the tree; the validation block still describes the 3c7f1cc snapshot measurements."
-    },
-    {
-      "date": "2026-10-21",
-      "scope": "docs/design/00-status.md, docs/design/en/00-status.md, README.md, docs/en/README.md now describe the approved 1.4.0 baseline separately from the Task8 working contract 1.5.0 present in this tree",
-      "note": "File hashes in this record were re-synchronised with the tree; the validation block still describes the 3c7f1cc snapshot measurements."
-    }
-  ],
-  "historical_validation": {
-    "candidate": "3c7f1cc00050efafae1025dd08edc57194c464f5",
-    "date": "2026-10-21",
-    "applies_to_current_candidate": false,
-    "results": {
-      "sdk_strict": "PASS",
-      "reference_strict": "PASS",
-      "reference_build": "PASS",
-      "studio_build": "PASS",
-      "go_build": "PASS",
-      "contract_tests": {
-        "pass": 22,
-        "fail": 2
-      },
-      "reference_tests": {
-        "pass": 4,
-        "fail": 2,
-        "suite_load_fail": 1
-      },
-      "database_campaign": {
-        "pass": 327,
-        "skip": 3,
-        "fail": 1,
-        "not_run": 275,
-        "previous_done_separate": 6
-      },
-      "development_and_automation": "PAUSED"
-    }
-  },
-  "working_contract_counts": {
-    "operations": 67,
-    "schemas": 181
-  },
-  "prior_candidate_validation_20261023": {
-    "commit": "6b74bae69f167003574b2d0e6d0f6b30febec310",
-    "validation": {
-      "integration_runner": {
-        "pass": 25,
-        "fail": 0,
-        "kind": "synthetic child processes, no database"
-      },
-      "contract_sdk_config_csp": {
-        "pass": 27,
-        "fail": 0
-      },
-      "byte_policy_tests": {
-        "pass": 8,
-        "fail": 0
-      },
-      "generated_contracts": "zero diff",
-      "database_campaign": "NOT_RUN",
-      "reference_client_tests": "NOT_RUN; known cwd-dependent contract path remains",
-      "native_bff_tests": "NOT_RUN; controlled fixture prerequisites required",
-      "browser": "NOT_RUN",
-      "development_and_automation": "PAUSED",
-      "go_build": "PASS; go build ./... on Windows, not runtime acceptance"
-    }
-  },
-  "validation_history_before_studio_artifact_repair": {
-    "public_commit": "00b14f7e21a0356eaae3d2fef261ce35b611f22c",
-    "validation": {
-      "reference_ui_package_directory": {
-        "pass": 1,
-        "fail": 0,
-        "seconds": 47.48
-      },
-      "reference_ui_repository_directory": {
-        "pass": 1,
-        "fail": 0,
-        "seconds": 48.24
-      },
-      "reference_typecheck": "PASS",
-      "byte_policy_tests": {
-        "pass": 9,
-        "fail": 0
-      },
-      "source_inventory": "661 files; explicit discovery and independent source-scope check",
-      "unchanged_contract_and_go": "Prior fixed-main evidence retained; no Go or machine-contract changes in this candidate",
-      "pnpm_entry": "Environment dependency reinstall precondition failed; UI checks used the installed Vitest directly",
-      "native_bff_tests": {
-        "pass": 1,
-        "fail": 0,
-        "seconds": 104.21,
-        "scope": "Complete target with synthetic data; fresh host checks; owned restricted temporary directory",
-        "prior_attempt": "Default temporary directory correctly refused for broad inherited permissions; production checks unchanged"
-      },
-      "database_campaign": "NOT_RUN",
-      "browser": "NOT_RUN",
-      "development_and_automation": "ACTIVE_R0_FIRST",
-      "R0_acceptance": "NOT_ACCEPTED",
-      "sdk_initial": {
-        "pass": 4,
-        "fail": 1,
-        "failure": "Obsolete 65-operation assertion against current 67-operation source"
-      },
-      "sdk_affected_complete_target_after_fix": {
-        "pass": 1,
-        "fail": 0,
-        "seconds": 9.57,
-        "excluded_unchanged_target": 1
-      },
-      "sdk_typecheck": "PASS",
-      "sdk_scope": "Other four unchanged passing targets not rerun; no clean five-target rerun claimed"
-    }
-  },
-  "validation_history_before_preflight_wire_repair": {
-    "public_commit": "996b3e952ab91d81b1e1abbd44bbe72f94804cb8",
-    "validation": {
-      "artifact_regressions": {
-        "pass": 16,
-        "fail": 0,
-        "skip": 0
-      },
-      "csp_regressions": {
-        "pass": 2,
-        "fail": 0,
-        "skip": 0
-      },
-      "current_studio_build": "PASS: Vue typecheck and Vite build; 80 bound inputs and 3 output files",
-      "embedded_routes_integrity": "PASS: affected Go Studio tests and checked server build",
-      "actual_studio_browser": {
-        "pass": 2,
-        "fail": 0,
-        "settings_modes": 3,
-        "scope": "Synthetic local fixtures in actual browser and restricted MySQL; source byte bridge required"
-      },
-      "prior_attempt": "Strict dependency-layout verification rejected the first browser attempt before browser launch; preserved. Frozen offline dependency installation resolved the environment; supply-chain policy unchanged.",
-      "fresh_offline_install": {
-        "reused": 165,
-        "downloaded": 0,
-        "frozen_lockfile": true,
-        "frozen_store": true
-      },
-      "independent_public_candidate": {
-        "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
-        "source_files": 664,
-        "commands": 9,
-        "offline_install": {
-          "reused": 165,
-          "downloaded": 0,
-          "frozen_store": true,
-          "frozen_lockfile": true
-        },
-        "script_summaries": [
-          {
-            "name": "workspace-tests",
-            "tests": [
-              24,
-              3,
-              25,
-              16
-            ],
-            "passes": [
-              24,
-              3,
-              25,
-              16
-            ],
-            "failures": [
-              0,
-              0,
-              0,
-              0
-            ],
-            "skips": [
-              0,
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "name": "byte-regressions",
-            "tests": [
-              9
-            ],
-            "passes": [
-              9
-            ],
-            "failures": [
-              0
-            ],
-            "skips": [
-              0
-            ]
-          }
-        ],
-        "go_units": {
-          "requested_packages": 8,
-          "packages_with_tests_passed": 6,
-          "packages_without_tests": [
-            "loreviva.local/loreviva/internal/auth",
-            "loreviva.local/loreviva/internal/settings"
-          ],
-          "top_level": 36,
-          "including_subtests": 43,
-          "fail": 0,
-          "test_skip": 0
-        },
-        "builds": [
-          "Studio typecheck and build",
-          "Reference typecheck and build",
-          "Go all packages build",
-          "Go internal vet"
-        ],
-        "source_bytes_unchanged": true,
-        "database_retests": false
-      },
-      "full_go_inventory": {
-        "packages": 26,
-        "top_level_targets": 638,
-        "test_bodies_executed": 0,
-        "not_full_suite_pass": true
-      },
-      "performance": "Studio raw JavaScript size warning remains; not performance acceptance",
-      "whole_task8": "NOT_ACCEPTED",
-      "R0": "NOT_ACCEPTED",
-      "real_model_human_commercial_deployment": "NOT_ACCEPTED"
-    }
-  },
-  "validation_history_before_manifest_admission": {
-    "public_commit": "c6419bfce8c4e2ebf172fb7b2a7a23bd29bdeea7",
-    "validation": {
-      "unit_red": "Actual schema mismatch reproduced; original failing run retained.",
-      "unit_green": {
-        "top_level": 20,
-        "including_subtests": 31,
-        "fail": 0,
-        "skip": 0
-      },
-      "actual_HTTP": {
-        "top_level": 4,
-        "fail": 0,
-        "skip": 0,
-        "capture_seconds": 16.875,
-        "business_write_check": "Inspected business-row counts unchanged for PASS and representative REJECT."
-      },
-      "digest_compatibility": "Corrected nested serialization changes the report digest. Preflight reports are stateless; no stored receipt or migration is changed.",
-      "whole_Task8": "LOCALLY_ACCEPTED_WITH_DECLARED_BOUNDARIES",
-      "whole_Task9": "NOT_ACCEPTED",
-      "R0": "NOT_ACCEPTED",
-      "independent_public_candidate": {
-        "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
-        "source_files": 664,
-        "commands": 9,
-        "offline_install": {
-          "reused": 165,
-          "downloaded": 0,
-          "frozen_store": true,
-          "frozen_lockfile": true
-        },
-        "script_summaries": [
-          {
-            "name": "workspace-tests",
-            "tests": [
-              24,
-              3,
-              25,
-              16
-            ],
-            "passes": [
-              24,
-              3,
-              25,
-              16
-            ],
-            "failures": [
-              0,
-              0,
-              0,
-              0
-            ],
-            "skips": [
-              0,
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "name": "byte-regressions",
-            "tests": [
-              9
-            ],
-            "passes": [
-              9
-            ],
-            "failures": [
-              0
-            ],
-            "skips": [
-              0
-            ]
-          }
-        ],
-        "go_units": {
-          "requested_packages": 8,
-          "packages_with_tests_passed": 6,
-          "packages_without_tests": [
-            "loreviva.local/loreviva/internal/auth",
-            "loreviva.local/loreviva/internal/settings"
-          ],
-          "top_level": 37,
-          "including_subtests": 55,
-          "fail": 0,
-          "test_skip": 0
-        },
-        "builds": [
-          "Studio typecheck and build",
-          "Reference typecheck and build",
-          "Go all packages build",
-          "Go internal vet"
-        ],
-        "source_bytes_unchanged": true,
-        "database_retests": false
-      },
-      "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
-    }
-  },
-  "validation_history_before_portable_definitions": {
-    "public_commit": "03648b64055dec7c2fdae64d89193323eb008200",
-    "validation": {
-      "unit_red": "Actual schema, digest, report, integer and diagnostic failures retained.",
-      "unit_green": {
-        "top_level": 32,
-        "including_subtests": 139,
-        "fail": 0,
-        "skip": 0
-      },
-      "generator": {
-        "pass_count": 7,
-        "fail": 0,
-        "generated_drift": 0
-      },
-      "actual_HTTP": {
-        "top_level": 4,
-        "fail": 0,
-        "skip": 0,
-        "capture_seconds": 46.328,
-        "business_write_check": "Inspected business-row counts unchanged for valid and malformed packages.",
-        "owned_processes": 39,
-        "remaining_owned_processes": 0,
-        "owned_schemas": 4,
-        "remaining_owned_schemas": 0
-      },
-      "digest_compatibility": "Existing small canonical digest behavior is retained; legal large record inputs use an explicit bound. Invalid manifests stop before semantic traversal. No persistent receipt or migration is introduced.",
-      "whole_Task8": "LOCALLY_ACCEPTED_WITH_DECLARED_BOUNDARIES",
-      "whole_Task9": "NOT_ACCEPTED",
-      "R0": "NOT_ACCEPTED",
-      "independent_public_candidate": {
-        "status": "PASS_BOUNDED_CANDIDATE_CHECKS",
-        "source_files": 671,
-        "commands": 9,
-        "offline_install": {
-          "reused": 165,
-          "downloaded": 0,
-          "frozen_store": true,
-          "frozen_lockfile": true
-        },
-        "script_summaries": [
-          {
-            "name": "workspace-tests",
-            "tests": [
-              25,
-              3,
-              25,
-              16
-            ],
-            "pass": [
-              25,
-              3,
-              25,
-              16
-            ],
-            "fail": [
-              0,
-              0,
-              0,
-              0
-            ],
-            "skipped": [
-              0,
-              0,
-              0,
-              0
-            ],
-            "cancelled": [
-              0,
-              0,
-              0,
-              0
-            ]
-          },
-          {
-            "name": "byte-regressions",
-            "tests": [
-              9
-            ],
-            "pass": [
-              9
-            ],
-            "fail": [
-              0
-            ],
-            "skipped": [
-              0
-            ],
-            "cancelled": [
-              0
-            ]
-          }
-        ],
-        "go_units": {
-          "requested_packages": 8,
-          "packages_with_tests_passed": 6,
-          "packages_without_tests": [
-            "loreviva.local/loreviva/internal/auth",
-            "loreviva.local/loreviva/internal/settings"
-          ],
-          "top_level": 48,
-          "including_subtests": 162,
-          "fail": 0,
-          "test_skip": 0
-        },
-        "builds": [
-          "Studio typecheck and build",
-          "Reference typecheck and build",
-          "Go all packages build",
-          "Go internal vet"
-        ],
-        "source_bytes_unchanged": true,
-        "database_retests": false,
-        "post_validation_document_alignment": {
-          "paths": [
-            "THIRD_PARTY_NOTICES.md"
-          ],
-          "scope": "Ajv version labels and bilingual retained-filename explanation only; executable and upstream license bytes unchanged. Exact byte and Git gates remain separate."
-        }
-      },
-      "real_model_human_performance_commercial_deployment": "NOT_ACCEPTED"
     }
   }
 }

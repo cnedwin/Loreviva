@@ -63,6 +63,8 @@ func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) e
 		actions = []string{"content.assist"}
 	case "REHEARSAL_PREPARE", "REHEARSAL_INTAKE", "REHEARSAL_SOURCE_INSPECT", "REHEARSAL_INSPECT":
 		actions = []string{"content.rehearse"}
+	case "PACKAGE_LOCAL_PREVIEW":
+		actions = []string{"content.read", "content.check", "content.edit", "content.copy"}
 	case "DRAFT_GENERATION_RESOLUTION":
 		actions = []string{"content.read"}
 	}
