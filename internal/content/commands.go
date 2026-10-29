@@ -37,7 +37,11 @@ func WithOriginalPayload(ctx context.Context, raw []byte) context.Context {
 	return context.WithValue(ctx, originalPayloadKey{}, json.RawMessage(append([]byte(nil), raw...)))
 }
 
-func New(s *store.Store) *Service { return &Service{Store: s} }
+func New(s *store.Store) *Service {
+	service := &Service{Store: s}
+	s.PackagePreviewOwner = service
+	return service
+}
 func Scope(s domain.ProductScope) generated.ProductScope {
 	return generated.ProductScope{TenantID: s.TenantID, ProductID: s.ProductID}
 }

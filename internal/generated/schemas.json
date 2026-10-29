@@ -13592,8 +13592,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "type": "string",
-            "const": "1.6.0"
+            "const": "1.7.0"
           },
           "source_hash": {
             "type": "string",
@@ -14184,6 +14183,14 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "previewContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -14253,7 +14260,8 @@
               "readRuntimeMedia",
               "getOriginalTurnIntakeReceipt",
               "preflightContentPackage",
-              "getContentPackageCapabilities"
+              "getContentPackageCapabilities",
+              "previewContentPackage"
             ],
             "additionalProperties": false
           },
@@ -14284,7 +14292,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.6.0",
+            "contract_version": "1.7.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -14414,7 +14422,8 @@
               "readRuntimeMedia": "UNAVAILABLE",
               "getOriginalTurnIntakeReceipt": "UNAVAILABLE",
               "preflightContentPackage": "AVAILABLE",
-              "getContentPackageCapabilities": "AVAILABLE"
+              "getContentPackageCapabilities": "AVAILABLE",
+              "previewContentPackage": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -14672,6 +14681,696 @@
               "sign_custody",
               "text"
             ]
+          }
+        ]
+      },
+      "PackageDependencyMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "target": {
+            "$ref": "#/components/schemas/DependencyLock"
+          }
+        },
+        "required": [
+          "pointer",
+          "target"
+        ],
+        "examples": [
+          {
+            "pointer": "/module_agent_bindings/0/role_ref",
+            "target": {
+              "release_id": "local-release",
+              "object_id": "local-role",
+              "version": "1",
+              "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        ]
+      },
+      "PackageModelMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "capability_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GenerationSettings"
+          }
+        },
+        "required": [
+          "capability_id",
+          "settings"
+        ],
+        "examples": [
+          {
+            "capability_id": "text",
+            "settings": {
+              "mode": "OVERRIDE",
+              "connection_ref": "mock-local",
+              "model_id": "synthetic-text-v1",
+              "required_capabilities": [
+                "TEXT"
+              ],
+              "allowed_external_uses": [
+                "NONE"
+              ]
+            }
+          }
+        ]
+      },
+      "PackageAssetMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "asset_id": {
+            "$ref": "#/components/schemas/Identity"
+          }
+        },
+        "required": [
+          "file_path",
+          "asset_id"
+        ],
+        "examples": [
+          {
+            "file_path": "assets/note.txt",
+            "asset_id": "local-asset"
+          }
+        ]
+      },
+      "PackageRightsMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "allowed_uses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EDIT",
+                "COPY",
+                "PUBLISH",
+                "REDISTRIBUTE"
+              ]
+            },
+            "maxItems": 4,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "object_id",
+          "allowed_uses"
+        ],
+        "examples": [
+          {
+            "object_id": "note",
+            "allowed_uses": [
+              "EDIT",
+              "COPY"
+            ]
+          }
+        ]
+      },
+      "PackagePreviewOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "DISCOVER",
+              "RESOLVE"
+            ]
+          },
+          "entrypoint": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "dependency_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageDependencyMapping"
+            },
+            "maxItems": 100
+          },
+          "additional_locks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyLock"
+            },
+            "maxItems": 100
+          },
+          "model_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageModelMapping"
+            },
+            "maxItems": 100
+          },
+          "local_capabilities": {
+            "type": "object",
+            "maxProperties": 100,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "TEXT",
+                "SIGN_CUSTODY"
+              ]
+            }
+          },
+          "asset_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageAssetMapping"
+            },
+            "maxItems": 100
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageRightsMapping"
+            },
+            "maxItems": 200
+          },
+          "rights_attested": {
+            "const": true
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "stage": {
+                  "const": "RESOLVE"
+                }
+              },
+              "required": [
+                "stage"
+              ]
+            },
+            "then": {
+              "required": [
+                "entrypoint",
+                "namespace",
+                "dependency_mappings",
+                "additional_locks",
+                "model_mappings",
+                "local_capabilities",
+                "asset_mappings",
+                "rights",
+                "rights_attested"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "dependency_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "additional_locks"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "model_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "local_capabilities"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "asset_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "rights"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "rights_attested"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "stage": "DISCOVER"
+          }
+        ]
+      },
+      "PackagePreviewID": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": [
+              "OBJECT",
+              "SLOT",
+              "MODULE_BINDING",
+              "SKILL_BINDING"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "logical_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "local_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "domain",
+          "owner",
+          "logical_id",
+          "local_id"
+        ],
+        "examples": [
+          {
+            "domain": "OBJECT",
+            "owner": "",
+            "logical_id": "note",
+            "local_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "PackagePreviewRequirements": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "logical_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/RootContentKind"
+                }
+              },
+              "required": [
+                "logical_id",
+                "kind"
+              ]
+            },
+            "maxItems": 10000
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "object_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "kind": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "license": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "source_reference": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "source_version": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "object_id",
+                "kind",
+                "license",
+                "source_reference",
+                "source_version"
+              ]
+            },
+            "maxItems": 200
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "pointer": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "PACKAGE_ENTRY",
+                    "DEPENDENCY_EXPORT"
+                  ]
+                },
+                "logical_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "package_id": {
+                  "type": "string",
+                  "maxLength": 96
+                },
+                "package_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "content_sha256": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "expected_kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "maxItems": 10
+                }
+              },
+              "required": [
+                "pointer",
+                "kind",
+                "logical_id",
+                "package_id",
+                "package_version",
+                "content_sha256",
+                "expected_kinds"
+              ]
+            },
+            "maxItems": 100
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "file_path": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "size_bytes": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                },
+                "media_type": {
+                  "type": "string",
+                  "maxLength": 150
+                }
+              },
+              "required": [
+                "file_path",
+                "sha256",
+                "size_bytes",
+                "media_type"
+              ]
+            },
+            "maxItems": 100
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "capability_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "family": {
+                  "type": "string",
+                  "enum": [
+                    "MODEL",
+                    "TOOL",
+                    "PRESENTATION"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "usages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "GENERATION",
+                      "SKILL",
+                      "REQUIRED_DECLARATION"
+                    ]
+                  },
+                  "maxItems": 3,
+                  "uniqueItems": true
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "temperature": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2
+                    },
+                    "max_output_tokens": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 8192
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "capability_id",
+                "family",
+                "required",
+                "usages"
+              ]
+            },
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "entries",
+          "objects",
+          "references",
+          "files",
+          "capabilities"
+        ],
+        "examples": [
+          {
+            "entries": [
+              {
+                "logical_id": "note-entry",
+                "kind": "KNOWLEDGE"
+              }
+            ],
+            "objects": [
+              {
+                "object_id": "note",
+                "kind": "KNOWLEDGE",
+                "license": "CC0-1.0",
+                "source_reference": "synthetic:preview-example",
+                "source_version": "1"
+              }
+            ],
+            "references": [],
+            "files": [],
+            "capabilities": []
+          }
+        ]
+      },
+      "PackageImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEEDS_MAPPING",
+              "RESOLVED",
+              "BLOCKED"
+            ]
+          },
+          "execution_ready": {
+            "const": false
+          },
+          "persisted": {
+            "const": false
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "plan_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entrypoint": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "maxItems": 32
+          },
+          "id_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackagePreviewID"
+            },
+            "maxItems": 600
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/PackagePreviewRequirements"
+          },
+          "input": {
+            "$ref": "#/components/schemas/DraftInput"
+          }
+        },
+        "required": [
+          "status",
+          "execution_ready",
+          "persisted",
+          "findings",
+          "id_mappings"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "RESOLVED"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "archive_sha256",
+                "plan_sha256",
+                "preview_sha256",
+                "route_snapshot_hash",
+                "namespace",
+                "entrypoint",
+                "input"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "input"
+                ]
+              },
+              "properties": {
+                "id_mappings": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "NEEDS_MAPPING"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "requirements",
+                "plan_sha256",
+                "namespace",
+                "entrypoint",
+                "archive_sha256"
+              ]
+            }
+          }
+        ],
+        "examples": [
+          {
+            "status": "BLOCKED",
+            "execution_ready": false,
+            "persisted": false,
+            "findings": [],
+            "id_mappings": []
           }
         ]
       }

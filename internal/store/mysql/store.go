@@ -29,7 +29,8 @@ var ErrReplan = errors.New("lock absent from frozen plan; rollback and replan wh
 // conservative UNKNOWN. It may not perform provider/network work. BeforeCommit
 // is an optional local pre-commit validation seam and always rolls back on error.
 type Store struct {
-	integrationGovernanceOwner *IntegrationGovernanceOwnerBinding
+	PackagePreviewOwner          PackagePreviewOwner
+	integrationGovernanceOwner   *IntegrationGovernanceOwnerBinding
 	integrationMediaOwner        RuntimeMediaFileOwner
 	integrationSnapshotOwner     DeliverySnapshotOwner
 	integrationDeliveryReader    DeliveryReaderOwner
@@ -144,8 +145,8 @@ const (
 )
 
 type BarrierRequest struct {
- integrationMemoryBirth *integrationMemoryBirthPlan
-	integrationGovernance *IntegrationMemoryGovernancePlan
+	integrationMemoryBirth                                             *integrationMemoryBirthPlan
+	integrationGovernance                                              *IntegrationMemoryGovernancePlan
 	integrationDelivery                                                *integrationDeliveryPlan
 	contentWithdrawal                                                  *contentWithdrawalPlan
 	integrationControl                                                 *integrationControlPlan
@@ -156,6 +157,7 @@ type BarrierRequest struct {
 	contentAction                                                      string
 	rehearsalPurgeACK                                                  *rehearsalPurgeACK
 	draftResolution                                                    bool
+	packagePreview                                                     bool
 	rehearsalNegative                                                  *rehearsalNegativeGuard
 	rehearsalReportRead                                                bool
 	rehearsalReport                                                    *rehearsalReportInspection
@@ -391,16 +393,21 @@ func (s *Store) Readiness(ctx context.Context, prerequisites ...func(context.Con
 	}
 	return nil
 }
+
 // Before commit, recheck the applicable operator, owning-proof and lease conditions. Any commit transport error becomes UNKNOWN and must be resolved through the original receipt, not assumed to be rollback.
-func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning ...*unit) error {
+func (s *Store) checkFinish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning ...*unit) error {
 	if s.BeforeCommit != nil {
 		if e := s.BeforeCommit(ctx, tx); e != nil {
 			return e
 		}
 	}
 	if r.integrationGovernance != nil {
-		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx { return ErrDenied }
-		if e := s.checkIntegrationGovernance(ctx, owning[0], r, true); e != nil { return e }
+		if len(owning) != 1 || owning[0] == nil || owning[0].tx != tx {
+			return ErrDenied
+		}
+		if e := s.checkIntegrationGovernance(ctx, owning[0], r, true); e != nil {
+			return e
+		}
 	}
 	if e := s.checkOperatorBarrier(ctx, tx, r); e != nil {
 		return e
@@ -585,7 +592,23 @@ func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning
 			return fmt.Errorf("delivery final: %w", e)
 		}
 	}
- if r.integrationMemoryBirth!=nil { if len(owning)!=1{return ErrDenied};if e:=s.checkIntegrationMemoryBirthFinal(ctx,owning[0],r);e!=nil{return e} }
+	if r.integrationMemoryBirth != nil {
+		if len(owning) != 1 {
+			return ErrDenied
+		}
+		if e := s.checkIntegrationMemoryBirthFinal(ctx, owning[0], r); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+// Commit is deliberately separate from final checks so preview can roll back.
+func (s *Store) finish(ctx context.Context, tx *sql.Tx, r BarrierRequest, owning ...*unit) error {
+	if e := s.checkFinish(ctx, tx, r, owning...); e != nil {
+		return e
+	}
+
 	commit := s.Commit
 	if commit == nil {
 		commit = func(_ context.Context, t *sql.Tx) error { return t.Commit() }

@@ -90,9 +90,9 @@ test('original18 operations permit only explicit memory protocol deltas; origina
 });
 test('1.5 retains approved 1.4 content/runtime/memory and fixed Operator reads with seven settings operations',async()=>{
  const {openapi}=await loadSources(sourceRoot);
- assert.equal(openapi.info.version,'1.6.0');
+ assert.equal(openapi.info.version,'1.7.0');
  const ids=Object.values(openapi.paths).flatMap(x=>Object.values(x).filter(v=>v.operationId).map(v=>v.operationId));
- assert.equal(ids.length,67);
+ assert.equal(ids.length,68);
  for(const id of ['createContentDraft','saveContentDraft','publishContentDraft','readAuthorizedAsset','previewInstanceMigration','executeInstanceMigration','createAdminInstance','listAdminInstances','getAdminInstance','controlAdminInstance','listAdminActorInstances'])assert.ok(ids.includes(id),id);
  for(const name of ['DraftInput','ContentDraft','Release','PublishCheckReport','AdminTaskReceipt','MigrationPlan','CharacterDefinition','InitialActorSetup'])assert.ok(openapi.components.schemas[name],name);
  assert.deepEqual(openapi.components.schemas.TaskReceipt.properties.task_kind.enum,['TURN','CONTROL','MEMORY_GOVERNANCE','MEDIA','MEMORY_MAINTENANCE']);

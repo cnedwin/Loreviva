@@ -1,6 +1,6 @@
 {
   "format": "loreviva.studio-build.v1",
-  "source_hash": "849006ddc6414a05aa710aef45bfaa8b3bb0f8fa868c852d8bc7eb66e09caf1e",
+  "source_hash": "087cd6beabe30bfc177d36006a75a1fa7a60998f12fd5cf99d8d04e6766d9d3d",
   "inputs": [
     {
       "path": "apps/studio/index.html",
@@ -61,6 +61,11 @@
       "path": "apps/studio/src/components/MemoryPanel.vue",
       "size": 2544,
       "sha256": "b343655aef39e82cc317aca86697f6bf53febfd36e5922d4e2a4bc5590d1c398"
+    },
+    {
+      "path": "apps/studio/src/components/PackagePreview.vue",
+      "size": 12895,
+      "sha256": "b5bf556838fb3af58a8f025ffebe6ee365aa77f427748a9b48fdea31054e2505"
     },
     {
       "path": "apps/studio/src/components/PropertyPanel.vue",
@@ -164,8 +169,8 @@
     },
     {
       "path": "apps/studio/src/views/ResourcesView.vue",
-      "size": 7023,
-      "sha256": "0e717af7a12ab300bcd7844ee271385395b16f11a5beb57c20c34e22168d552d"
+      "size": 7136,
+      "sha256": "af3d43e85b79fa730b1d37149e22ef2a52c862c3770f3d99d406ca8fd6c3534c"
     },
     {
       "path": "apps/studio/src/views/RuntimeView.vue",
@@ -279,23 +284,23 @@
     },
     {
       "path": "contracts/generated/manifest.json",
-      "size": 6593,
-      "sha256": "ed53d92260d30872e731ffcc44620b9091d486b1525d56fcc0f5c7595471356b"
+      "size": 6622,
+      "sha256": "bd04ebbbe77d65e74e06806a4517e9e43708381fed6ca14056f2da488476e6c0"
     },
     {
       "path": "contracts/generated/openapi.json",
-      "size": 843068,
-      "sha256": "7a8414b87b4ad1241cb96ca5d37bf9dd5eb65b66b42269fd1b2c5fdf2b9a57d7"
+      "size": 865122,
+      "sha256": "8eccd3336cc84d60d88fdd01988fb8c7dcfbb24550fd03e4f2b1ce463af01538"
     },
     {
       "path": "contracts/generated/profiles/integration_r0_v1.openapi.json",
-      "size": 847499,
-      "sha256": "af191848ce68c4f283d72a0a8c2e01550deef180cec1065d4708d3ab7cebc96f"
+      "size": 869553,
+      "sha256": "64fee7f5188e972f0ba5b78d2881828355acd847e7f762590f0746dc53f59509"
     },
     {
       "path": "contracts/generated/profiles/public_v1.openapi.json",
-      "size": 848320,
-      "sha256": "338e8d86cda919f495170f3cdf0744ead0c7f1d6adc11a094174687539924479"
+      "size": 870374,
+      "sha256": "90a3443f8b95b2617989c0002b189a15c331556371509f682e442e2472f6bbba"
     },
     {
       "path": "contracts/generated/wepkg-portable.schema.json",
@@ -309,8 +314,8 @@
     },
     {
       "path": "contracts/source/openapi.yaml",
-      "size": 843067,
-      "sha256": "cbf0ca5b4813414c3ebc89e67bf5ce633de48f55961d54906e060e5e2bc0eaa0"
+      "size": 865122,
+      "sha256": "5da0e94bf165e430be41777c82c05da7df431ab026d6e82ef8425f19b2d21533"
     },
     {
       "path": "contracts/source/wepkg.schema.json",
@@ -329,8 +334,8 @@
     },
     {
       "path": "packages/sdk-ts/src/admin.ts",
-      "size": 6125,
-      "sha256": "6ceefd794fda78c816459a62d6eefc08860d109a2726d8909ca8f5eecf50647e"
+      "size": 7256,
+      "sha256": "15dff9eb340016475dbfa8d631d41779dcb4e4a7bf01438d8f85eae673982ad5"
     },
     {
       "path": "packages/sdk-ts/src/cache.ts",
@@ -344,23 +349,23 @@
     },
     {
       "path": "packages/sdk-ts/src/generated/contracts.ts",
-      "size": 152748,
-      "sha256": "d454ce52dbfaddc92380e8dfbd251b63f1b2c1e80e5d8909f6dae1b29a5b6b70"
+      "size": 158267,
+      "sha256": "b451e06f0cef2adfa7c2b17c7466d68a7cdb0ff5f109a1168541d2c58f9579bd"
     },
     {
       "path": "packages/sdk-ts/src/generated/transport.ts",
-      "size": 423911,
-      "sha256": "d5823d2878d546b71857801c5bec1646ce3260de540e4e3e1897fc1ec09aa021"
+      "size": 428372,
+      "sha256": "dca3c8e47bb2d43bba7c92a73fe259c1182d45cb825cd117f76e3470d1a615f4"
     },
     {
       "path": "packages/sdk-ts/src/generated/validators.cjs",
-      "size": 23233511,
-      "sha256": "b7e382d6a5bbfac345a7aeb953a1a9f684b20c259fb92e1465d77ed4d5c95616"
+      "size": 23631248,
+      "sha256": "476633e6bc3f9b15b5dca2cfd967e137b5370da75eda5ca2ab34a9b955bd784c"
     },
     {
       "path": "packages/sdk-ts/src/generated/validators.d.cts",
-      "size": 122973,
-      "sha256": "ccd77f92885398486b9fe8180f086c8e5bf20da70a1a7e6d41acf2a6a2b3ad74"
+      "size": 124491,
+      "sha256": "0ce782f7826c7d95ae6c3ed96e452d3f087c9d0d7d8a92e0ff7529f3401b02e9"
     },
     {
       "path": "packages/sdk-ts/src/index.ts",
@@ -415,14 +420,14 @@
       "sha256": "ea4a5a5c92eac7ca7280b96d5817f82be6a42ba0e9762e92b775c1fc9be35215"
     },
     {
-      "path": "assets/index-Du030-Di.js",
-      "size": 16780824,
-      "sha256": "46019151d68f2cef79c043f4fec06fdbf20453d77fbaf3dd7570d46e77911522"
+      "path": "assets/index-DAfL35d8.js",
+      "size": 17079952,
+      "sha256": "328d37427a3c567b50f44302983cd25feb1ecef92ae4e01035a880cf17bac565"
     },
     {
       "path": "index.html",
       "size": 413,
-      "sha256": "01474f489e47ece0d95a96bafc62d1b8eaf87193e70a4f91c5a7c9b3a2e25fed"
+      "sha256": "959fe310c132b1dfcc365847b27f83584967ce7caa3c5d5e94751e1de55da021"
     }
   ]
 }
