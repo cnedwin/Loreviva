@@ -13592,7 +13592,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.10.0"
+            "const": "1.11.0"
           },
           "source_hash": {
             "type": "string",
@@ -14373,7 +14373,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.10.0",
+            "contract_version": "1.11.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [

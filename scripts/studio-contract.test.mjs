@@ -10,7 +10,7 @@ const ids=['getAdminSettings','commandAdminSettings','listAdminMembers','command
 test('studio_contract_exact_delta',async()=>{
  const old=JSON.parse(await readFile(new URL('./fixtures/contract13-approved-baseline.json',import.meta.url),'utf8'));
  const approved=JSON.parse(await readFile(new URL('../tests/contracts/fixtures/contract14-approved-baseline.json',import.meta.url),'utf8'));
- const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.10.0');
+ const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.11.0');
  for(const [p,v]of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v]of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);
  assert.deepEqual(Object.keys(o.components.schemas).filter(n=>approved.components.schemas[n]&&!old.components.schemas[n]).sort(),names);

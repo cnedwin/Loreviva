@@ -9,6 +9,19 @@ import (
 	"testing"
 )
 
+func TestSkillPairCompatibilityFollowsFullExportClosure(t *testing.T) {
+	old := []exportNode{{context: "root", object: map[string]any{"kind": "WORLD"}}, {context: "dependency", object: map[string]any{"kind": "SKILL", "input_schema_id": "DraftInput", "output_schema_id": "PublishCheckReport"}}}
+	if minimumPackageRuntime(old) != "1.9.0" {
+		t.Fatal("unaffected old package minimum changed")
+	}
+	for _, pair := range [][2]string{{"GenerationMaterial", "DispatchAuthorization"}, {"GenerationMaterial", "PublishCheckReport"}, {"DraftInput", "DispatchAuthorization"}} {
+		closure := append(append([]exportNode{}, old...), exportNode{context: "pinned-dependency", object: map[string]any{"kind": "SKILL", "input_schema_id": pair[0], "output_schema_id": pair[1]}})
+		if minimumPackageRuntime(closure) != "1.11.0" {
+			t.Fatalf("new portable Skill endpoint omitted from required version: %v", pair)
+		}
+	}
+}
+
 func exportExample(t *testing.T) generated.Release {
 	t.Helper()
 	raw, e := os.ReadFile("../../contracts/source/openapi.yaml")
@@ -173,5 +186,49 @@ func TestPackageExportExactPinnedAudienceClosure(t *testing.T) {
 	catalog["root-release"] = root
 	if _, e = projectPackageExport(root, catalog, nil, "creator"); e == nil {
 		t.Fatal("other creator private definition exported")
+	}
+}
+
+func TestSkillMinimumContractUsesActualPinnedExportClosure(t *testing.T) {
+	base := []byte(`{"object_id":"program-skill","kind":"SKILL","name":"Synthetic static program","description":"","tags":[],"rights":{"origin_kind":"SYNTHETIC","source_label":"fixture:program","license":"CC0-1.0","allowed_uses":["EDIT","COPY","PUBLISH","REDISTRIBUTE"]},"audience_policy":"PRODUCT_READERS","version":"1","source_refs":[],"dependency_refs":[],"builtin_original":false,"implementation_kind":"PROGRAM","input_schema_id":"DraftInput","output_schema_id":"PublishCheckReport","registered_capability_ids":["TEXT","SIGN_CUSTODY"],"tool_ids":[],"conflicting_refs":[],"failure_policy":"BLOCK","max_depth":1,"max_duration_ms":"100","max_cost_units":"0","synthetic_examples":[],"generation":{"mode":"NONE","required_capabilities":[],"allowed_external_uses":["NONE"]}}`)
+	makeSkill := func(id, inputID string) map[string]any {
+		var v map[string]any
+		if json.Unmarshal(base, &v) != nil {
+			t.Fatal("fixture")
+		}
+		v["object_id"] = id
+		v["input_schema_id"] = inputID
+		return v
+	}
+	shared := makeSkill("shared-skill", "GenerationMaterial")
+	hash, _ := Hash(shared)
+	ref := map[string]any{"kind": "PINNED_DEFINITION", "release_id": "dependency-release", "object_id": "shared-skill", "version": "1", "content_hash": hash}
+	local := makeSkill("root-skill", "DraftInput")
+	local["dependency_refs"] = []any{ref}
+	input := func(v map[string]any) generated.DraftInput {
+		return generated.DraftInput{Name: "Static Skill closure", Description: "Synthetic", Tags: []string{}, RootObjectID: generated.Identity(v["object_id"].(string)), Objects: []generated.ContentObject{mustMarshal(v)}, DependencyLocks: []generated.DependencyLock{}, ModuleAgentBindings: []generated.ModuleAgentBinding{}, SkillBindings: []generated.SkillBinding{}}
+	}
+	root := generated.Release{ReleaseID: "root-release", Input: input(local), PublishedBySubjectID: "creator"}
+	dep := generated.Release{ReleaseID: "dependency-release", Input: input(shared), PublishedBySubjectID: "other"}
+	catalog := map[string]generated.Release{"root-release": root, "dependency-release": dep}
+	out, e := projectPackageExport(root, catalog, nil, "creator")
+	if e != nil || out.MinimumRuntimeContract != "1.11.0" {
+		t.Fatal("resolved dependency compatibility omitted", out.MinimumRuntimeContract, e)
+	}
+	var body struct {
+		Objects []any `json:"objects"`
+	}
+	if json.Unmarshal(out.Body, &body) != nil || len(body.Objects) != 2 {
+		t.Fatal("actual dependency closure absent")
+	}
+	local["dependency_refs"] = []any{}
+	root.Input = input(local)
+	catalog["root-release"] = root
+	out, e = projectPackageExport(root, catalog, nil, "creator")
+	if e != nil || out.MinimumRuntimeContract != "1.9.0" {
+		t.Fatal("unused catalog entry changed minimum", out.MinimumRuntimeContract, e)
+	}
+	if json.Unmarshal(out.Body, &body) != nil || len(body.Objects) != 1 {
+		t.Fatal("unused catalog entry exported")
 	}
 }

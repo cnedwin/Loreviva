@@ -41,3 +41,5 @@ never edited by hand.
 - State the supported range and the acceptance boundary, not an ambition.
 - Distinguish "declared in the contract" from "implemented and verified".
 - Reference files and operations rather than describing them in prose.
+
+- Declarative Skill sharing: [English](progress/2026-10-30-skills.en.md) / [中文](progress/2026-10-30-skills.zh.md).

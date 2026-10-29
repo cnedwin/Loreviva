@@ -52,3 +52,5 @@ R0当前支持已验证的Windows本地固定卷；Linux构建检查不等于Lin
 运行器核对进程退出、包级结果与每个计划目标终态，输出使用新目录，保存独立stdout/stderr日志和summary.json。退出**0**表示初跑具备完整通过/跳过证据，跳过项仍须检查；**1**表示失败或证据不完整；**2**表示初跑失败仅在串行重试后通过，需要复核，不能记成干净通过。重试失败、缺结果或跳过不会清除原失败。
 
 原创代码使用[Apache-2.0](LICENSE)，第三方材料保留原许可。贡献前请阅读[贡献说明](CONTRIBUTING.zh-CN.md)、[版本规则](VERSIONING.md)和[安全报告](SECURITY.zh-CN.md)。
+
+声明式 Skill 分享提供可复现的[来源感知回复示例](examples/skills/source-aware-reply/README.zh-CN.md)，经隔离审核后导出，并在第二套安装重走本地流程。契约1.11.0仍为77操作/204 Schema，仅补齐已有登记 TEXT Skill 签名的可移植表达。[范围与验证](docs/progress/2026-10-30-skills.zh.md)。Task9/R0 整体仍未完成。

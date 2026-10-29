@@ -15,12 +15,25 @@ import (
 )
 
 type packageProjection struct {
-	Body         []byte
-	Files        map[string]string // portable path -> governed asset ID
-	FileRecords  []wepkg.FileRecord
-	Requirements wepkg.Requirements
-	License      string
+	Body                   []byte
+	Files                  map[string]string // portable path -> governed asset ID
+	FileRecords            []wepkg.FileRecord
+	Requirements           wepkg.Requirements
+	License                string
+	MinimumRuntimeContract string
 }
+
+// The complete resolved export closure determines compatibility. Unrelated
+// roots do not hide a folded pinned dependency using the registered TEXT pair.
+func minimumPackageRuntime(nodes []exportNode) string {
+	for _, node := range nodes {
+		if node.object["kind"] == "SKILL" && (node.object["input_schema_id"] == "GenerationMaterial" || node.object["output_schema_id"] == "DispatchAuthorization") {
+			return "1.11.0"
+		}
+	}
+	return "1.9.0"
+}
+
 type exportNode struct {
 	context, id string
 	object      map[string]any
@@ -439,6 +452,7 @@ func projectPackageExportWithAssets(root generated.Release, catalog map[string]g
 			out.Requirements.Model = append(out.Requirements.Model, wepkg.Capability{CapabilityID: id, Required: true})
 		}
 	}
+	out.MinimumRuntimeContract = minimumPackageRuntime(nodes)
 	document := map[string]any{"body_version": "1.0", "name": root.Input.Name, "description": root.Input.Description, "tags": root.Input.Tags, "root_object_id": ids[nodeKey(rootContext, string(root.Input.RootObjectID))], "objects": objectsOut, "module_agent_bindings": modules, "skill_bindings": skills}
 	out.Body = mustMarshal(document)
 	if generated.ValidatePortableBody(packageRootKind(root), out.Body) != nil {

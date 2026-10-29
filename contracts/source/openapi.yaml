@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Loreviva public design contract",
-    "version": "1.10.0",
+    "version": "1.11.0",
     "description": "Development specification3.0.1; additive administrative contract1.1.0. Canonical source: contracts/source/openapi.yaml in independent Loreviva engineering checkout. Existing18 public operations retain their original wire shapes. Machine contract is not evidence of future task handlers, real models, billing or acceptance. All fixtures are synthetic."
   },
   "servers": [
@@ -26505,7 +26505,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.10.0"
+            "const": "1.11.0"
           },
           "source_hash": {
             "type": "string",
@@ -27286,7 +27286,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.10.0",
+            "contract_version": "1.11.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [

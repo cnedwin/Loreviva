@@ -19,7 +19,7 @@ function validator(o){const a=new Ajv2020({strict:false,allErrors:true});addForm
 test('integration additions preserve every approved baseline object',async()=>{
  const old=JSON.parse(await readFile(new URL('./fixtures/contract14-approved-baseline.json',import.meta.url),'utf8'));
  const {openapi:o,source_hashes}=await generator.loadSources();
- assert.equal(o.info.version,'1.10.0');
+ assert.equal(o.info.version,'1.11.0');
  for(const [p,v]of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v]of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);
  assert.deepEqual(Object.keys(o.components.schemas).filter(n=>!old.components.schemas[n]).sort(),names);

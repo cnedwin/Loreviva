@@ -99,3 +99,5 @@ Security reports follow [SECURITY.md](SECURITY.md).
 
 Original code is [Apache-2.0](LICENSE). Third-party material keeps its own
 licence; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Declarative Skill sharing adds a reproducible [source-aware reply example](examples/skills/source-aware-reply/README.md), isolated creator review, export and a second installation. Contract1.11.0 retains77 operations/204 schemas; only the existing registered TEXT Skill signature becomes portable. [Scope and verification](docs/progress/2026-10-30-skills.en.md). Whole Task9/R0 remains incomplete.
