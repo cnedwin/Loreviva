@@ -1,5 +1,7 @@
 # Setup and Integration Guide
 
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 now includes preview and persistent isolated import; isolation promotion, export/second-installation transfer and whole Task9/R0 remain incomplete. Working contract1.8.0:70 operations/192 schemas; migrations0001–0009. See [current package verification](../progress/2026-10-29-p3.en.md).
+
 Loreviva — The AI Platform for Living Worlds.
 
 This guide applies to the locally approved Tasks 1–7 synthetic Mock baseline and introduces the CLI, native Studio, and administrative APIs. It is not installation acceptance for an actual public copy or a tutorial for complete customer player integration, real AI, or production hosting. Public documents are curated distribution views of the current specifications.
@@ -98,7 +100,7 @@ Memory metadata, private bodies, governance, and use policies have separate elig
 
 ## Next steps for customer integration
 
-The [TypeScript package](../../packages/sdk-ts/src/index.ts) exports administrative/integration clients, prepared commands, BFF recovery, media and SSE types. The [thin backend](../../examples/thin-backend/) and [reference client](../../apps/reference-client/) provide reference integration. See [Quickstart](../integration/Quickstart.en.md) for prerequisites. Never send Operator credentials to players. Whole Task8/R0 remain unaccepted.
+The [TypeScript package](../../packages/sdk-ts/src/index.ts) exports administrative/integration clients, prepared commands, BFF recovery, media and SSE types. The [thin backend](../../examples/thin-backend/) and [reference client](../../apps/reference-client/) provide reference integration. See [Quickstart](../integration/Quickstart.en.md) for prerequisites. Never send Operator credentials to players. Task8 has scoped local acceptance; whole R0 remains unaccepted.
 
 The planned Integration Kit will provide restricted sessions, interaction, snapshot/event recovery, media updates, a reference client, and thin backend adapters. Customer backends remain responsible for player identities, business eligibility, industry rules, wallets/orders/payments/refunds, and receipts from original business services; clients do not hold Operator or model secrets.
 
@@ -113,7 +115,7 @@ pnpm test
 go test ./...
 ```
 
-Contract sources are maintained in `contracts/source/`; the working contract is 1.6.0 / 67 operations / 181 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
+Contract sources are maintained in `contracts/source/`; the working contract is 1.8.0 / 70 operations / 192 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0009; complete product installation/upgrade releases remain unaccepted.
 
 ```powershell
 pnpm --dir apps/studio test

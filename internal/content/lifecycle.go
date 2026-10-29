@@ -78,12 +78,42 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 	newID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "copy", key)
 	newProject := Identity(newID, "project")
 	locks := []store.LockKey{Key(scope, "content_draft", id), Key(scope, "content_check", reportID)}
-	if action == "REMOVE_BINDING" {
+	if action == "REMOVE_BINDING" || action == "COPY" || action == "RESTORE" || action == "ARCHIVE" || action == "DELETE" {
 		snapshot, e := s.snapshotDraft(ctx, scope, id)
 		if e != nil {
 			return nil, e
 		}
 		locks = append(locks, dependencyLocks(scope, snapshot.Input)...)
+		locks = append(locks, importLineageLocks(scope, id, snapshot.Input)...)
+		if action == "COPY" {
+			locks = append(locks, importLineageLocks(scope, newID, snapshot.Input)...)
+			var imported int
+			if e = s.Store.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM content_package_import_lineage WHERE tenant_id=? AND product_id=? AND resource_kind='DRAFT' AND resource_id=?", scope.TenantID, scope.ProductID, id).Scan(&imported); e != nil {
+				return nil, e
+			}
+			if imported > 0 {
+				keys, e := s.candidateSourceLocks(ctx, scope, snapshot.Input)
+				if e != nil {
+					return nil, e
+				}
+				locks = append(locks, keys...)
+				locks = append(locks, store.RoutePolicyLocks(scope)...)
+			}
+		}
+		if action == "RESTORE" && restoreRevision != "" && restoreRevision != "0" {
+			if _, e = Revision(restoreRevision); e != nil {
+				return nil, ErrBlocked
+			}
+			var raw []byte
+			if e = s.Store.DB.QueryRowContext(ctx, "SELECT r.document FROM content_revisions r JOIN content_drafts d USING(tenant_id,product_id,draft_id) WHERE r.tenant_id=? AND r.product_id=? AND r.draft_id=? AND r.revision=? AND d.owner_subject_id=?", scope.TenantID, scope.ProductID, id, restoreRevision, scope.SubjectID).Scan(&raw); e != nil {
+				return nil, ErrNotFound
+			}
+			var history generated.ContentDraft
+			if generated.Decode("ContentDraft", raw, &history) != nil {
+				return nil, ErrBlocked
+			}
+			locks = append(locks, importLineageLocks(scope, id, history.Input)...)
+		}
 	}
 	if action == "COPY" {
 		locks = append(locks, Key(scope, "content_draft", newID))
@@ -132,6 +162,18 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 				project = newProject
 			}
 			copy := makeDraft(scope, newID, project, kind, in)
+			origins, e := importOrigins(ctx, tx, scope, "DRAFT", id)
+			if e != nil {
+				return nil, e
+			}
+			if len(origins) > 0 {
+				if e = s.Store.ArmPackageImportInspection(ctx, tx, scope, in, kind, nil, false); e != nil {
+					return nil, e
+				}
+			}
+			if e = s.applyImportLineage(ctx, tx, scope, &copy, origins); e != nil {
+				return nil, e
+			}
 			if e = createRows(ctx, tx, scope, copy, project != ""); e != nil {
 				return nil, e
 			}
@@ -213,6 +255,9 @@ func (s *Service) Command(ctx context.Context, scope domain.ProductScope, id str
 			return generated.DraftCommandReceipt{DraftID: d.DraftID, Action: generated.DraftAction(action), DraftRevision: d.DraftRevision, State: "DELETED"}, nil
 		default:
 			return nil, ErrBlocked
+		}
+		if e = s.applyImportLineage(ctx, tx, scope, &d, nil); e != nil {
+			return nil, e
 		}
 		d.DraftRevision = generated.ExactUnsigned(strconv.FormatUint(expected+1, 10))
 		d.ModifiedAt = now()

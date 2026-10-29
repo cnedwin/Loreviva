@@ -1,12 +1,12 @@
 import validators from './generated/validators.cjs';
 import {operationRoutes} from './generated/contracts.ts';
-import type {Operations,AssetUploadMetadata,FileRecord,PackagePreviewOptions,PackageImportPreview} from './generated/contracts.ts';
+import type {Operations,AssetUploadMetadata,FileRecord,PackagePreviewOptions,PackageImportPreview,PackageImportOptions,PackageImportResult} from './generated/contracts.ts';
 
 function validate(name:string,value:unknown):void {if(!Object.hasOwn(validators,name))throw Error('未知契约');const validator=validators[name as keyof typeof validators];if(!validator(value))throw new AdminTransportError(422,{message:'字段格式不符合契约',field_errors:validator.errors?.map(e=>({pointer:e.instancePath,code:e.keyword,message:e.message??'字段无效'}))})}
 export function validateContract(name:string,value:unknown):void {validate('schema_'+name,value)}
 export class AdminTransportError extends Error {readonly status:number;readonly body:unknown;constructor(status:number,body:unknown){super((body as {message?:string})?.message??'请求失败');this.status=status;this.body=body;this.name='AdminTransportError'}}
 type Keys={ [K in keyof Operations]: (typeof operationRoutes)[K]['path'] extends `/world/v1/admin/${string}` ? K:never}[keyof Operations];
-export type AdminOperation=Exclude<Keys,'uploadContentAsset'|'previewContentPackage'>;
+export type AdminOperation=Exclude<Keys,'uploadContentAsset'|'previewContentPackage'|'importContentPackage'>;
 export type AdminSuccess<K extends keyof Operations>=Operations[K]['responses'][Extract<keyof Operations[K]['responses'],`2${string}`>];
 interface Input {path?:Record<string,string>;query?:Record<string,unknown>;headers?:Record<string,string>;body?:unknown}
 const MAX_BYTES=16*1024*1024;
@@ -36,6 +36,18 @@ export function createAdminClient(options:{getOperatorBearer:()=>string|null;fet
   const encoded=JSON.stringify(options);if(new TextEncoder().encode(encoded).byteLength>65536)throw Error('映射选项超过大小限制');const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',encoded);
   const url=operationRoutes.previewContentPackage.path+'?'+new URLSearchParams({product_id:productId});const response=await request(url,{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});const value=await decode(response);validateContract('PackageImportPreview',value);return value as PackageImportPreview;
  }
- return {call,readAsset,upload,previewPackage};
+ // The caller captures this key and original options before sending. An abort
+ // or transport failure is not rollback proof; recover the original result.
+ async function importPackage(productId:string,file:Blob,options:PackageImportOptions,key:string,signal?:AbortSignal):Promise<PackageImportResult>{
+  validateContract('PackageImportOptions',options);if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(key)||file.size>64*1024*1024)throw Error('内容包或请求标识超出限制');const raw=JSON.stringify(options);if(new TextEncoder().encode(raw).byteLength>65536)throw Error('导入选项超过大小限制');
+  const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',raw);const response=await request(operationRoutes.importContentPackage.path+'?'+new URLSearchParams({product_id:productId}),{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});
+  // An unreadable success or unverified error cannot prove that COMMIT failed.
+  // Retain the original request so callers query its receipt instead of buying
+  // another effect with a fresh key.
+  try{const result=await decode(response);validateContract('PackageImportResult',result);return result as PackageImportResult}
+  catch(error){if(!response.ok&&response.status>=400&&response.status<500&&error instanceof AdminTransportError){let verified=false;try{validateContract('AdminError',error.body);verified=true}catch{/* An unverified refusal still has an unknown outcome. */}if(verified)throw error}
+   throw new AdminTransportError(0,{code:'EXTERNAL_UNKNOWN',message:'导入结果尚未确认，请查询原请求回执'})}
+ }
+ return {call,readAsset,upload,previewPackage,importPackage};
 }
 export type AdminClient=ReturnType<typeof createAdminClient>;

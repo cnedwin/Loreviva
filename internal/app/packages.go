@@ -14,11 +14,25 @@ import (
 	"loreviva.local/loreviva/internal/wire"
 )
 
-// packageRoutes serves the content-package preflight and the limits it applies.
-// Both are control-plane reads: they require the operator action, but they do
-// not need every worker adapter to be ready, because a degraded runtime still
-// has to tell an author what it will accept.
+// Package preflight, preview, capabilities and receipt recovery are control-plane
+// reads. The persistent import uses ordinary write admission and the owning
+// transaction; degraded-read access never grants an import capability.
 func (r *Runtime) packageRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /world/v1/admin/content-packages/imports", r.admin("", "content.edit", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		archive, options, err := packagePreviewBody(q)
+		if err != nil {
+			return 0, nil, err
+		}
+		result, err := r.Content.ImportPackage(ctx, scope, archive, options, q.Header.Get("Idempotency-Key"))
+		return 201, result, err
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/imports/{request_key}", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		result, err := r.Content.GetPackageImportResult(ctx, scope, q.PathValue("request_key"))
+		return 200, result, err
+	}))
 	mux.HandleFunc("GET /world/v1/admin/content-packages/capabilities",
 		r.adminControl("", "content.read", func(_ context.Context, _ domain.ProductScope, _ *http.Request, _ []byte) (int, any, error) {
 			ids := make([]string, 0, len(wepkg.RegisteredCapabilities))

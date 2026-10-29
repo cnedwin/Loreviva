@@ -1,5 +1,7 @@
 # 搭建和接入指南
 
+当前范围（2026-10-29）：Task1–8保留声明范围内采用；Task9已接通预览和持久隔离导入，隔离转出、导出/第二安装及Task9/R0整体尚未完成。工作契约1.8.0：70操作/192 Schema，迁移0001–0009。见[当前内容包验证](progress/2026-10-29-p3.zh.md)。
+
 Loreviva — The AI Platform for Living Worlds。
 
 本指南适用于本地已批准 Tasks 1–7 的合成 Mock 基线，介绍 CLI、原生 Studio 与行政 API。它不是实际公开副本的安装验收，也不是完整客户玩家接入、真实 AI 或生产托管教程。公开文档是现行规范的整理分发视图。
@@ -113,7 +115,7 @@ pnpm test
 go test ./...
 ```
 
-契约源维护在 `contracts/source/`，本批工作契约为 1.6.0 / 67 operations / 181 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0008，完整产品安装/升级发行仍未验收。
+契约源维护在 `contracts/source/`，本批工作契约为 1.8.0 / 70 operations / 192 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0009，完整产品安装/升级发行仍未验收。
 
 ```powershell
 pnpm --dir apps/studio test

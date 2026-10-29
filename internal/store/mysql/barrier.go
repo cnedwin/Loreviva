@@ -293,6 +293,7 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	u.integrationControl = r.integrationControl
 	u.integrationTurn = r.integrationTurn
 	u.operation = r.Operation
+	u.contentAction = r.contentAction
 	u.runtime = r.Runtime
 	u.rehearsalInitialization = r.rehearsalInitialization
 	u.rehearsalChildStart = r.rehearsalChildStart

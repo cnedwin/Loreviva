@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Loreviva public design contract",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "description": "Development specification3.0.1; additive administrative contract1.1.0. Canonical source: contracts/source/openapi.yaml in independent Loreviva engineering checkout. Existing18 public operations retain their original wire shapes. Machine contract is not evidence of future task handlers, real models, billing or acceptance. All fixtures are synthetic."
   },
   "servers": [
@@ -12074,6 +12074,254 @@
         },
         "x-implementation-status": "implemented",
         "description": "Discover caller-supplied portable declarations or inspect an explicitly mapped local editing candidate. Never imports, publishes, purchases or grants authority. Each resolve checks current local source rights and route admission."
+      }
+    },
+    "/world/v1/admin/content-packages/imports": {
+      "post": {
+        "operationId": "importContentPackage",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "options": {
+                    "$ref": "#/components/schemas/PackageImportOptions"
+                  },
+                  "archive": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "archive",
+                  "options"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Original durable isolated-import result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Synchronously persist a validated package as an isolated draft. The import, protected origin lineage, original request result and commit receipt are atomic. Query the original request key when the commit outcome is unknown. This operation never publishes or removes isolation.",
+        "summary": "Persist an explicitly mapped content package as an isolated draft"
+      }
+    },
+    "/world/v1/admin/content-packages/imports/{request_key}": {
+      "get": {
+        "operationId": "getPackageImportResult",
+        "summary": "Read the original committed package-import result",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original committed result metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Read the owning operator original committed import receipt without rereading an archive or mutable dependency configuration. A missing receipt does not prove that an in-flight request rolled back."
       }
     }
   },
@@ -25669,7 +25917,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.7.0"
+            "const": "1.8.0"
           },
           "source_hash": {
             "type": "string",
@@ -26268,6 +26516,22 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "importContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPackageImportResult": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -26338,7 +26602,9 @@
               "getOriginalTurnIntakeReceipt",
               "preflightContentPackage",
               "getContentPackageCapabilities",
-              "previewContentPackage"
+              "previewContentPackage",
+              "importContentPackage",
+              "getPackageImportResult"
             ],
             "additionalProperties": false
           },
@@ -26369,7 +26635,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.7.0",
+            "contract_version": "1.8.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -26500,7 +26766,9 @@
               "getOriginalTurnIntakeReceipt": "UNAVAILABLE",
               "preflightContentPackage": "AVAILABLE",
               "getContentPackageCapabilities": "AVAILABLE",
-              "previewContentPackage": "AVAILABLE"
+              "previewContentPackage": "AVAILABLE",
+              "importContentPackage": "AVAILABLE",
+              "getPackageImportResult": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -27448,6 +27716,196 @@
             "persisted": false,
             "findings": [],
             "id_mappings": []
+          }
+        ]
+      },
+      "PackageImportOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mapping": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackagePreviewOptions"
+              },
+              {
+                "properties": {
+                  "stage": {
+                    "const": "RESOLVE"
+                  }
+                }
+              }
+            ]
+          },
+          "expected_preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "copy_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          }
+        },
+        "required": [
+          "mapping",
+          "expected_preview_sha256"
+        ],
+        "examples": [
+          {
+            "mapping": {
+              "stage": "RESOLVE",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "dependency_mappings": [],
+              "additional_locks": [],
+              "model_mappings": [],
+              "local_capabilities": {},
+              "asset_mappings": [],
+              "rights": [
+                {
+                  "object_id": "note",
+                  "allowed_uses": [
+                    "EDIT",
+                    "COPY"
+                  ]
+                }
+              ],
+              "rights_attested": true
+            },
+            "expected_preview_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "PackageImportReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "import_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ProductScope"
+          },
+          "package_id": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entrypoint": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "draft_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "draft_state_at_import": {
+            "const": "ISOLATED_IMPORT"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "import_id",
+          "scope",
+          "package_id",
+          "package_version",
+          "content_sha256",
+          "archive_sha256",
+          "entrypoint",
+          "namespace",
+          "draft_id",
+          "draft_state_at_import",
+          "created_at"
+        ],
+        "examples": [
+          {
+            "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "scope": {
+              "tenant_id": "demo-local",
+              "product_id": "coffee"
+            },
+            "package_id": "sample.note",
+            "package_version": "1.0.0",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "entrypoint": "note",
+            "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_state_at_import": "ISOLATED_IMPORT",
+            "created_at": "2026-10-29T00:00:00Z"
+          }
+        ]
+      },
+      "PackageImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "request_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/PackageImportReceipt"
+          },
+          "persisted": {
+            "const": true
+          }
+        },
+        "required": [
+          "request_key",
+          "request_sha256",
+          "receipt",
+          "persisted"
+        ],
+        "examples": [
+          {
+            "request_key": "synthetic-import-0001",
+            "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "receipt": {
+              "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "scope": {
+                "tenant_id": "demo-local",
+                "product_id": "coffee"
+              },
+              "package_id": "sample.note",
+              "package_version": "1.0.0",
+              "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_state_at_import": "ISOLATED_IMPORT",
+              "created_at": "2026-10-29T00:00:00Z"
+            },
+            "persisted": true
           }
         ]
       }

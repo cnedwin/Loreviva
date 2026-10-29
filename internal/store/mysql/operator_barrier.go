@@ -34,6 +34,8 @@ func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) e
 		actions = []string{"content.archive"}
 	case "createContentDraft", "saveContentDraft":
 		actions = []string{"content.edit"}
+	case "importContentPackage":
+		actions = []string{"content.read", "content.check", "content.edit", "content.copy"}
 	case "checkDraftImpact", "checkDraftForPublish":
 		actions = []string{"content.check"}
 	case "publishContentDraft":
