@@ -8,7 +8,7 @@ connect through their own applications.
 
 > **Status: development snapshot, not a release.** Tasks 1–8 have local acceptance
 > within their declared scopes; Tasks 9–12 and whole R0 remain incomplete. Only the
-> synthetic Mock model and Mock billing are enabled. Working contract **1.10.0
+> synthetic Mock model and Mock billing are enabled. Working contract **1.11.0
 > (77 operations / 204 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
 > operation declared in the contract is not evidence that a handler is mounted,
 > and publishing source is not publishing a product.
@@ -101,3 +101,5 @@ Original code is [Apache-2.0](LICENSE). Third-party material keeps its own
 licence; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Declarative Skill sharing adds a reproducible [source-aware reply example](examples/skills/source-aware-reply/README.md), isolated creator review, export and a second installation. Contract1.11.0 retains77 operations/204 schemas; only the existing registered TEXT Skill signature becomes portable. [Scope and verification](docs/progress/2026-10-30-skills.en.md). Whole Task9/R0 remains incomplete.
+
+The [document mapping kernel](docs/progress/2026-10-30-document-mapping.en.md) prepares source-governed internal field differences and fresh snapshot rechecks. It is unconnected foundation code: creator adoption/save and protected durable lineage are still unavailable.
