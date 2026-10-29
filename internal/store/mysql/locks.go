@@ -95,6 +95,9 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 
 type unit struct {
 	packageImportInspection *packageImportInspection
+	packageApprovalCheck    *packageApprovalCheck
+	packageExportInspection *packageExportInspection
+	packageTransferRead     bool
 	contentAction           string
 	packagePreviewRead      bool
 	integrationMemoryBirth  *integrationMemoryBirthPlan
@@ -141,7 +144,7 @@ type unit struct {
 }
 
 func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
-	if u.packagePreviewRead || u.rehearsalReportRead || u.rehearsalHistory != nil {
+	if u.packageTransferRead || u.packagePreviewRead || u.rehearsalReportRead || u.rehearsalHistory != nil {
 		u.err = ErrDenied
 		return nil, u.err
 	}
@@ -187,7 +190,7 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 		rank, kind = 90, "content_release"
 	case "assets", "file_staging", "memory_asset_lineage":
 		rank, kind = 90, "asset"
-	case "content_checks", "admin_results", "seed_receipts", "content_package_imports", "content_package_import_lineage":
+	case "content_checks", "admin_results", "seed_receipts", "content_package_imports", "content_package_import_lineage", "content_package_adoptions", "content_package_exports":
 		rank, kind = 90, "content_check"
 	case "inbox":
 		rank = 100

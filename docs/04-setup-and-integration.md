@@ -1,6 +1,8 @@
+> 当前内容包审核、导出与第二安装进展见 [内容包安装迁移](progress/2026-10-29-transfer.zh.md)；Task9/R0仍未整体验收。
+
 # 搭建和接入指南
 
-当前范围（2026-10-29）：Task1–8保留声明范围内采用；Task9已接通预览和持久隔离导入，隔离转出、导出/第二安装及Task9/R0整体尚未完成。工作契约1.8.0：70操作/192 Schema，迁移0001–0009。见[当前内容包验证](progress/2026-10-29-p3.zh.md)。
+当前范围（2026-10-29）：Task1–8保留声明范围内采用；Task9已接通持久隔离导入、按修订审核、静态导出下载及第二安装发布。安全文档、完整Skill共享及Task9/R0整体仍未完成。工作契约1.9.0：75操作/197 Schema，迁移0001–0010。见[当前内容包验证](progress/2026-10-29-transfer.zh.md)。
 
 Loreviva — The AI Platform for Living Worlds。
 
@@ -115,7 +117,7 @@ pnpm test
 go test ./...
 ```
 
-契约源维护在 `contracts/source/`，本批工作契约为 1.8.0 / 70 operations / 192 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0009，完整产品安装/升级发行仍未验收。
+契约源维护在 `contracts/source/`，本批工作契约为 1.9.0 / 75 operations / 197 schemas（已批准基线仍为 1.4.0 / 58 / 156）；生成文件不可手工改成第二源。`tests/fixtures/` 中原 18 操作/43 DTO及source1.2 的 49 操作/123 Schema保留各自历史比较语义，source1.3 为 51/131。根 `pnpm test` 覆盖契约/SDK脚本并包含 Studio contract 与 CSP 检查；Studio 单测、Vue 类型检查与生产构建使用下面的独立命令，不用旧检查总数代替实际结果。嵌入迁移为 0001–0010，完整产品安装/升级发行仍未验收。
 
 ```powershell
 pnpm --dir apps/studio test

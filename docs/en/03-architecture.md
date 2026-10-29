@@ -1,6 +1,8 @@
+> Current package approval, export and second-installation status: [installation transfer](../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
+
 # Technical Architecture and Implementation Boundaries
 
-Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 now includes preview and persistent isolated import; isolation promotion, export/second-installation transfer and whole Task9/R0 remain incomplete. Working contract1.8.0:70 operations/192 schemas; migrations0001–0009. See [current package verification](../progress/2026-10-29-p3.en.md).
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 includes persistent isolated import, revision approval, static export/download and second-installation publication. Safe documents, complete Skill sharing and whole Task9/R0 remain incomplete. Working contract1.9.0:75 operations/197 schemas; migrations0001–0010. See [current package verification](../progress/2026-10-29-transfer.en.md).
 
 Loreviva — The AI Platform for Living Worlds.
 
@@ -11,7 +13,7 @@ This page describes the locally approved Tasks 1–8 implementation and subseque
 | Item | Status in this batch |
 | --- | --- |
 | Backend | Go 1.27.2, Kratos 3.0.0, modular single application; see [go.mod](../../go.mod) |
-| Database | MySQL Community LTS / InnoDB, `database/sql`; embedded migrations 0001–0009 |
+| Database | MySQL Community LTS / InnoDB, `database/sql`; embedded migrations 0001–0010 |
 | Toolchain | Node.js 24, pnpm 11.25.0, TypeScript; exact dependencies in [package.json](../../package.json) and lockfile |
 | Files | Private local directory and application authentication proxy; the file root is not publicly mounted |
 | Frontend | Native Vue Studio; the Go application embeds and serves the actual build at `/studio/` |
@@ -89,7 +91,7 @@ The worker executes registered jobs. Mock interactions, world control and migrat
 
 ## Contracts and extensions
 
-The approved machine-contract baseline is 1.4.0 (58 operations / 156 schemas); the working contract is 1.8.0 (70 operations / 192 schemas). Source1.3 51/131, source1.2 49/123, and the original 18 operations/43 DTO retain their respective historical comparison meanings. Source1.3 added `resolveDraftGeneration` and `listAdminTasks`; source1.4 adds the seven Settings operations below. [OpenAPI](../../contracts/source/openapi.yaml) and [wepkg Schema](../../contracts/source/wepkg.schema.json) are the maintained sources; Go/TypeScript types and validation artifacts are derived by the generator. The [TypeScript SDK entry](../../packages/sdk-ts/src/index.ts) exports integration transport, prepared commands, BFF recovery, media and SSE types, while the [administrative client](../../packages/sdk-ts/src/admin.ts) adds limited administrative HTTP calls, authenticated asset reads, and uploads; the thin backend and reference client are present, with scoped Task8 local acceptance.
+The approved machine-contract baseline is 1.4.0 (58 operations / 156 schemas); the working contract is 1.9.0 (75 operations / 197 schemas). Source1.3 51/131, source1.2 49/123, and the original 18 operations/43 DTO retain their respective historical comparison meanings. Source1.3 added `resolveDraftGeneration` and `listAdminTasks`; source1.4 adds the seven Settings operations below. [OpenAPI](../../contracts/source/openapi.yaml) and [wepkg Schema](../../contracts/source/wepkg.schema.json) are the maintained sources; Go/TypeScript types and validation artifacts are derived by the generator. The [TypeScript SDK entry](../../packages/sdk-ts/src/index.ts) exports integration transport, prepared commands, BFF recovery, media and SSE types, while the [administrative client](../../packages/sdk-ts/src/admin.ts) adds limited administrative HTTP calls, authenticated asset reads, and uploads; the thin backend and reference client are present, with scoped Task8 local acceptance.
 
 | Operation ID | Method | Path |
 | --- | --- | --- |
@@ -103,6 +105,6 @@ The approved machine-contract baseline is 1.4.0 (58 operations / 156 schemas); t
 
 Local settings persist by exact tenant/product scope and independent revision. Ordinary settings depend on local persistence and governance, not model-provider readiness. Member actions do not replace subject, source, or private-memory rights; self-consent grants no other-subject or administrator action. Notification preferences send no external messages.
 
-Task7 provides native Vue Studio; Task8 integration has scoped local acceptance. Task9 provides preflight, local matching, preview and atomic isolated import. Isolation promotion, export/second-installation transfer, complete metering, full recovery and release remain pending. Adapters cannot bypass facts, privacy or customer authority. LC, real models, human experience, billing and deployment are unaccepted.
+Task7 provides native Vue Studio; Task8 integration has scoped local acceptance. Task9 provides preflight, local matching, preview and atomic isolated import. Revision approval, static export/download and second-installation publication are implemented; safe documents, complete Skill sharing, complete metering, full recovery and release remain pending. Adapters cannot bypass facts, privacy or customer authority. LC, real models, human experience, billing and deployment are unaccepted.
 
-Return to [home](README.md) · View [setup and integration](04-setup-and-integration.md)
+Return to [home](../../README.md) · View [setup and integration](04-setup-and-integration.md)

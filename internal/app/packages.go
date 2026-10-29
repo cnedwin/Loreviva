@@ -2,12 +2,16 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
+	"loreviva.local/loreviva/internal/generated"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/wepkg"
@@ -18,6 +22,58 @@ import (
 // reads. The persistent import uses ordinary write admission and the owning
 // transaction; degraded-read access never grants an import capability.
 func (r *Runtime) packageRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /world/v1/admin/content-drafts/{draft_id}/isolation-approvals", r.admin("PackageApprovalRequest", "content.publish", func(ctx context.Context, scope domain.ProductScope, q *http.Request, raw []byte) (int, any, error) {
+		request := decode[generated.PackageApprovalRequest](raw)
+		out, e := r.Content.ApprovePackageDraft(ctx, scope, q.PathValue("draft_id"), request, q.Header.Get("Idempotency-Key"))
+		return 201, out, e
+	}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/exports", r.admin("PackageExportRequest", "content.copy", func(ctx context.Context, scope domain.ProductScope, q *http.Request, raw []byte) (int, any, error) {
+		request := decode[generated.PackageExportRequest](raw)
+		out, e := r.Content.ExportPackage(ctx, scope, request, q.Header.Get("Idempotency-Key"))
+		return 201, out, e
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/exports/{export_id}", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		out, e := r.Content.GetPackageExport(ctx, scope, q.PathValue("export_id"))
+		return 200, out, e
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/exports/{export_id}/archive", r.adminControl("", "content.copy", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		receipt, body, e := r.Store.ReadPackageExport(ctx, scope, q.PathValue("export_id"))
+		if e != nil {
+			return 0, nil, e
+		}
+		if receipt.SizeBytes != strconv.Itoa(len(body)) {
+			return 0, nil, wire.ErrJSON
+		}
+		return 200, packageBinary{body: body, media: "application/octet-stream", name: receipt.PackageID + "-" + receipt.PackageVersion + ".wepkg"}, nil
+	}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/file-bytes", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		archive, raw, e := packagePreviewBody(q)
+		if e != nil {
+			return 0, nil, e
+		}
+		var options generated.PackageFileOptions
+		if generated.Decode("PackageFileOptions", raw, &options) != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		body, file, e := wepkg.ExtractDeclaredFile(archive, options.FilePath)
+		if e != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		location := file.Rights.SourceReference
+		info := generated.PackageFileInfo{FilePath: file.Path, Sha256: file.SHA256, SizeBytes: generated.ExactUnsigned(strconv.FormatInt(file.SizeBytes, 10)), MediaType: file.MediaType, SourceRights: generated.SourceRights{OriginKind: "LICENSED", SourceLabel: "Content package file", License: file.Rights.License, AllowedUses: []string{}, SourceLocation: &location}}
+		rawInfo, e := json.Marshal(info)
+		if e != nil || generated.Validate("PackageFileInfo", rawInfo) != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		return 200, packageBinary{body: body, media: "application/octet-stream", name: "package-file", metadata: base64.StdEncoding.EncodeToString(rawInfo)}, nil
+	}))
+
 	mux.HandleFunc("POST /world/v1/admin/content-packages/imports", r.admin("", "content.edit", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
 		archive, options, err := packagePreviewBody(q)
 		if err != nil {
@@ -179,4 +235,11 @@ func packagePreviewBody(q *http.Request) ([]byte, []byte, error) {
 		return nil, nil, wire.ErrJSON
 	}
 	return archive, options, nil
+}
+
+// A private binary result is emitted only after its owning operation succeeds.
+type packageBinary struct {
+	body        []byte
+	media, name string
+	metadata    string
 }

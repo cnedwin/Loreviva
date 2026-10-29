@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Loreviva public design contract",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "description": "Development specification3.0.1; additive administrative contract1.1.0. Canonical source: contracts/source/openapi.yaml in independent Loreviva engineering checkout. Existing18 public operations retain their original wire shapes. Machine contract is not evidence of future task handlers, real models, billing or acceptance. All fixtures are synthetic."
   },
   "servers": [
@@ -12322,6 +12322,613 @@
         },
         "x-implementation-status": "implemented",
         "description": "Read the owning operator original committed import receipt without rereading an archive or mutable dependency configuration. A missing receipt does not prove that an in-flight request rolled back."
+      }
+    },
+    "/world/v1/admin/content-drafts/{draft_id}/isolation-approvals": {
+      "post": {
+        "operationId": "approvePackageDraft",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageApprovalRequest"
+              }
+            }
+          }
+        },
+        "summary": "Explicit revision-bound isolation approval with current source and original applicable Mock evidence",
+        "description": "Explicit revision-bound isolation approval with current source and original applicable Mock evidence",
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/world/v1/admin/content-packages/exports": {
+      "post": {
+        "operationId": "exportContentPackage",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageExportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageExportRequest"
+              }
+            }
+          }
+        },
+        "summary": "Persist an authorized static package and original request receipt atomically",
+        "description": "Persist an authorized static package and original request receipt atomically",
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/world/v1/admin/content-packages/exports/{export_id}": {
+      "get": {
+        "operationId": "getPackageExport",
+        "summary": "Read the current authorized original package export",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageExportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Revalidate current rights and scope; an old receipt never grants delivery after revocation."
+      }
+    },
+    "/world/v1/admin/content-packages/exports/{export_id}/archive": {
+      "get": {
+        "operationId": "downloadPackageExport",
+        "summary": "Read the current authorized original package export",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Revalidate current rights and scope; an old receipt never grants delivery after revocation."
+      }
+    },
+    "/world/v1/admin/content-packages/file-bytes": {
+      "post": {
+        "operationId": "readContentPackageFile",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "options": {
+                    "$ref": "#/components/schemas/PackageFileOptions"
+                  },
+                  "archive": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "archive",
+                  "options"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Loreviva-Package-File": {
+                "description": "Base64 UTF-8 JSON validated as PackageFileInfo. Carries source declarations, not local grants.",
+                "schema": {
+                  "type": "string",
+                  "maxLength": 16000
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Read-only bounded extraction. Does not create assets or grant local import rights.",
+        "summary": "Read one exact declared file from the original validated archive"
       }
     }
   },
@@ -25917,7 +26524,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "const": "1.8.0"
+            "const": "1.9.0"
           },
           "source_hash": {
             "type": "string",
@@ -26532,6 +27139,46 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "approvePackageDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "exportContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPackageExport": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "downloadPackageExport": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "readContentPackageFile": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -26604,7 +27251,12 @@
               "getContentPackageCapabilities",
               "previewContentPackage",
               "importContentPackage",
-              "getPackageImportResult"
+              "getPackageImportResult",
+              "approvePackageDraft",
+              "exportContentPackage",
+              "getPackageExport",
+              "downloadPackageExport",
+              "readContentPackageFile"
             ],
             "additionalProperties": false
           },
@@ -26635,7 +27287,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.8.0",
+            "contract_version": "1.9.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -26768,7 +27420,12 @@
               "getContentPackageCapabilities": "AVAILABLE",
               "previewContentPackage": "AVAILABLE",
               "importContentPackage": "AVAILABLE",
-              "getPackageImportResult": "AVAILABLE"
+              "getPackageImportResult": "AVAILABLE",
+              "approvePackageDraft": "AVAILABLE",
+              "exportContentPackage": "AVAILABLE",
+              "getPackageExport": "AVAILABLE",
+              "downloadPackageExport": "AVAILABLE",
+              "readContentPackageFile": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -27906,6 +28563,243 @@
               "created_at": "2026-10-29T00:00:00Z"
             },
             "persisted": true
+          }
+        ]
+      },
+      "PackageApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "expected_draft_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "check_report_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "rights_attested": {
+            "const": true
+          },
+          "rehearsal_task_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "approval_note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "product_id",
+          "expected_draft_revision",
+          "check_report_id",
+          "rights_attested",
+          "approval_note"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "expected_draft_revision": "1",
+            "check_report_id": "review-check",
+            "rights_attested": true,
+            "approval_note": "Synthetic source review"
+          }
+        ]
+      },
+      "PackageExportRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "release_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "package_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$",
+            "maxLength": 100
+          },
+          "author_display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "rights_attested": {
+            "const": true
+          }
+        },
+        "required": [
+          "product_id",
+          "release_id",
+          "package_id",
+          "package_version",
+          "author_display_name",
+          "rights_attested"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "release_id": "release-source",
+            "package_id": "coffee.world",
+            "package_version": "1.0.0",
+            "author_display_name": "Synthetic creator",
+            "rights_attested": true
+          }
+        ]
+      },
+      "PackageExportReceipt": {
+        "type": "object",
+        "properties": {
+          "export_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ProductScope"
+          },
+          "release_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "release_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "request_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "maxLength": 128
+          },
+          "package_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$",
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "export_id",
+          "scope",
+          "release_id",
+          "release_hash",
+          "request_key",
+          "package_id",
+          "package_version",
+          "content_sha256",
+          "archive_sha256",
+          "size_bytes",
+          "created_at"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "export_id": "export-synthetic",
+            "scope": {
+              "tenant_id": "demo-local",
+              "product_id": "coffee"
+            },
+            "release_id": "release-source",
+            "release_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "request_key": "export-original",
+            "package_id": "coffee.world",
+            "package_version": "1.0.0",
+            "content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "archive_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "size_bytes": "512",
+            "created_at": "2026-10-29T00:00:00Z"
+          }
+        ]
+      },
+      "PackageFileOptions": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "file_path": "files/note.txt"
+          }
+        ]
+      },
+      "PackageFileInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "media_type": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "source_rights": {
+            "$ref": "#/components/schemas/SourceRights"
+          }
+        },
+        "required": [
+          "file_path",
+          "sha256",
+          "size_bytes",
+          "media_type",
+          "source_rights"
+        ],
+        "examples": [
+          {
+            "file_path": "files/note.txt",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": "4",
+            "media_type": "text/plain",
+            "source_rights": {
+              "origin_kind": "LICENSED",
+              "source_label": "Content package file",
+              "license": "CC0-1.0",
+              "allowed_uses": [],
+              "source_location": "fixture:static-note"
+            }
           }
         ]
       }

@@ -288,6 +288,9 @@ func projectPortable(plan wepkg.PortablePlan, options packagePreviewOptions) (ge
 	for family, list := range [][]wepkg.Capability{plan.Requirements.Model, plan.Requirements.Presentation} {
 		for _, c := range list {
 			if c.Required {
+				if family == 0 && c.CapabilityID == "sign_custody" && usedCaps[c.CapabilityID] && options.LocalCapabilities[c.CapabilityID] == "SIGN_CUSTODY" {
+					continue
+				}
 				if c.CapabilityID != "text" {
 					return fail("CAPABILITY_MAPPING_REQUIRED")
 				}

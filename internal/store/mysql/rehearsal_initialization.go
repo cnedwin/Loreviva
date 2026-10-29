@@ -12,6 +12,7 @@ import (
 )
 
 type RehearsalInitializer interface {
+	PackageRehearsalRequiresSignTx(context.Context, Tx, domain.Scope) (bool, error)
 	PlanRehearsalHistoryRuntimeLocks(context.Context, domain.ProductScope, string) ([]LockKey, error)
 	EvaluateRehearsalAssertionsTx(context.Context, Tx, domain.Scope) ([]domain.RehearsalAssertion, error)
 	RehearsalRouteHashTx(context.Context, Tx, domain.Scope, string) (string, error)

@@ -24,6 +24,15 @@ func receiptPhase(r BarrierRequest) string {
 	return r.phase
 }
 func validateBarrier(r BarrierRequest) error {
+	if r.packageTransferRead != (r.Operation == "PACKAGE_EXPORT_READ") {
+		return ErrDenied
+	}
+	if r.packageTransferRead && (!r.commandOnly || r.Runtime != nil || r.WorldScope != nil || r.TaskID != "" || r.Purpose != ExecutionPurpose) {
+		return ErrDenied
+	}
+	if r.packageApproval != nil && (r.Operation != "approvePackageDraft" || !r.commandOnly || r.WorldScope != nil || r.TaskID != "" || r.packageApproval.scope != r.ProductScope || r.OwnerSubjectID != r.ProductScope.SubjectID) {
+		return ErrDenied
+	}
 	if r.packagePreview != (r.Operation == "PACKAGE_LOCAL_PREVIEW") {
 		return ErrDenied
 	}
@@ -119,6 +128,7 @@ func validateBarrier(r BarrierRequest) error {
 	return nil
 }
 func baseLocks(r BarrierRequest) []LockKey {
+	r = packageHistoryLockView(r)
 	t, p, sub := r.ProductScope.TenantID, r.ProductScope.ProductID, r.ProductScope.SubjectID
 	kind, _, w := scopeOf(r)
 	keys := []LockKey{{Rank: 10, IDs: []string{t}}, {Rank: 20, IDs: []string{t, p}}, {Rank: 30, IDs: []string{t, p, sub}}, {Rank: 45, IDs: []string{t, p, sub, r.Operation, kind, w, r.CommandKey}}, {Rank: 110, Kind: "commit_receipts", IDs: []string{r.CommitKey}}}
@@ -299,6 +309,7 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	u.rehearsalChildStart = r.rehearsalChildStart
 	u.rehearsalExecution = r.rehearsalExecution
 	u.rehearsalReportRead = r.rehearsalReportRead
+	u.packageTransferRead = r.packageTransferRead
 	u.packagePreviewRead = r.packagePreview
 	u.rehearsalReport = r.rehearsalReport
 	u.rehearsalHistory = r.rehearsalHistory
@@ -472,6 +483,7 @@ func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error 
 
 // Planned keys do not replace current row checks: base gates and task locks validate their owned identities, while specialized branches retain their own validators.
 func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
+	r = packageHistoryLockView(r)
 	if handled, e := s.acquireIntegrationMemoryBirth(ctx, tx, r, k); handled {
 		return e
 	}
@@ -595,7 +607,11 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 		if k.IDs[2] == sub {
 			switch r.Purpose {
 			case ExecutionPurpose:
-				if r.packagePreview {
+				if r.packageTransferRead {
+					if e := operatorActionTx(ctx, tx, s, r.ProductScope, "content.copy"); e != nil {
+						return e
+					}
+				} else if r.packagePreview {
 					if e := operatorActionTx(ctx, tx, s, r.ProductScope, "content.check"); e != nil {
 						return e
 					}

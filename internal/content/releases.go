@@ -208,6 +208,7 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 	locks := append(dependencyLocks(scope, snapshot.Input), Key(scope, "content_draft", id), Key(scope, "content_release", releaseID), Key(scope, "content_check", reportID))
 	locks = append(locks, store.RoutePolicyLocks(scope)...)
 	locks = append(locks, importLineageLocks(scope, id, snapshot.Input)...)
+	locks = append(locks, adoptionKey(scope, id))
 	raw, e := Command(ctx, s.Store, scope, "publishContentDraft", key, id, "Release", struct {
 		Revision uint64
 		Report   string
@@ -217,25 +218,8 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 		if e != nil {
 			return nil, e
 		}
-		origins, e := importOrigins(ctx, tx, scope, "DRAFT", id)
-		if e != nil {
+		if e := s.requirePackageAdoption(ctx, tx, scope, d); e != nil {
 			return nil, e
-		}
-		if len(origins) > 0 {
-			return nil, ErrBlocked
-		}
-		for _, raw := range d.Input.Objects {
-			var object struct {
-				ID string `json:"object_id"`
-			}
-			json.Unmarshal(raw, &object)
-			found, e := importOrigins(ctx, tx, scope, "OBJECT", object.ID)
-			if e != nil {
-				return nil, e
-			}
-			if len(found) > 0 {
-				return nil, ErrBlocked
-			}
 		}
 		if d.State != "DRAFT" {
 			return nil, ErrBlocked

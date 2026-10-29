@@ -108,7 +108,7 @@ func (s *Service) PreviewPackage(ctx context.Context, scope domain.ProductScope,
 	}
 	requiresModel := len(options.ModelMappings) > 0
 	for _, cap := range plan.Requirements.Model {
-		requiresModel = requiresModel || cap.Required
+		requiresModel = requiresModel || (cap.Required && cap.CapabilityID == "text")
 	}
 	inspection, err := s.Store.InspectPackagePreview(ctx, scope, input, plan.Kind, expectations, requiresModel)
 	if err != nil {

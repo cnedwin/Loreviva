@@ -30,6 +30,7 @@ var ErrReplan = errors.New("lock absent from frozen plan; rollback and replan wh
 // is an optional local pre-commit validation seam and always rolls back on error.
 type Store struct {
 	PackagePreviewOwner          PackagePreviewOwner
+	PackageExportOwner           PackageExportOwner
 	integrationGovernanceOwner   *IntegrationGovernanceOwnerBinding
 	integrationMediaOwner        RuntimeMediaFileOwner
 	integrationSnapshotOwner     DeliverySnapshotOwner
@@ -48,6 +49,7 @@ type Store struct {
 	RehearsalReportReader        RehearsalReportReader
 	RehearsalInputOwner          RehearsalInputOwner
 	DraftRehearsalOwner          DraftRehearsalOwner
+	PackageApprovalFiles         PackageApprovalFilesOwner
 	DraftRehearsalReader         DraftRehearsalSourceReader
 	RehearsalInitializer         RehearsalInitializer
 	DraftCandidateOwner          DraftCandidateOwner
@@ -145,6 +147,8 @@ const (
 )
 
 type BarrierRequest struct {
+	packageApproval                                                    *PackageApprovalProvision
+	packageTransferRead                                                bool
 	integrationMemoryBirth                                             *integrationMemoryBirthPlan
 	integrationGovernance                                              *IntegrationMemoryGovernancePlan
 	integrationDelivery                                                *integrationDeliveryPlan
@@ -205,6 +209,7 @@ type BarrierRequest struct {
 	r0TurnProvision                                                    bool
 }
 type CommandBarrierRequest struct {
+	packageApproval                                  *PackageApprovalProvision
 	contentWithdrawal                                *contentWithdrawalPlan
 	integrationTurn                                  *integrationTurnPlan
 	ContentAction                                    string
@@ -294,7 +299,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return errors.New("schema migration lock unavailable")
 	}
 	defer conn.ExecContext(context.WithoutCancel(ctx), "SELECT RELEASE_LOCK(?)", lock)
-	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity, migrations.PackageImport} {
+	for version, source := range []string{migrations.Core, migrations.Content, migrations.FileCleanup, migrations.Runtime, migrations.MemoryGovernance, migrations.TurnAttempt, migrations.StudioSettings, migrations.DeliveryIdentity, migrations.PackageImport, migrations.PackageTransfer} {
 		sum := sha256.Sum256([]byte(source))
 		var existing []byte
 		e = conn.QueryRowContext(ctx, "SELECT sha256 FROM schema_migrations WHERE version=?", version+1).Scan(&existing)
@@ -411,6 +416,23 @@ func (s *Store) checkFinish(ctx context.Context, tx *sql.Tx, r BarrierRequest, o
 	}
 	if e := s.checkOperatorBarrier(ctx, tx, r); e != nil {
 		return e
+	}
+	if len(owning) == 1 && owning[0] != nil {
+		if owning[0].packageApprovalCheck != nil {
+			if e := s.inspectPackageApprovalCheck(ctx, owning[0], owning[0].packageApprovalCheck); e != nil {
+				return e
+			}
+		}
+		if r.packageApproval != nil {
+			if e := s.inspectPackageApprovalFinish(ctx, owning[0], r.packageApproval); e != nil {
+				return e
+			}
+		}
+		if owning[0].packageExportInspection != nil {
+			if e := s.inspectPackageExportFinish(ctx, owning[0], owning[0].packageExportInspection); e != nil {
+				return e
+			}
+		}
 	}
 	if len(owning) == 1 && owning[0] != nil && owning[0].packageImportInspection != nil {
 		if owning[0].tx != tx {
