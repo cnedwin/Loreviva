@@ -21,6 +21,19 @@ import (
 )
 
 func response(w http.ResponseWriter, status int, value any) {
+	if binary, ok := value.(packageBinary); ok {
+		if binary.metadata != "" {
+			w.Header().Set("Loreviva-Package-File", binary.metadata)
+		}
+		w.Header().Set("Content-Type", binary.media)
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+binary.name+"\"")
+		w.Header().Set("Content-Length", strconv.Itoa(len(binary.body)))
+		w.WriteHeader(status)
+		_, _ = w.Write(binary.body)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")

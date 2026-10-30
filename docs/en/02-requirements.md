@@ -1,6 +1,8 @@
+> Current package approval, export and second-installation status: [installation transfer](../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
+
 # Requirements and Implementation Status
 
-Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 now includes preview and persistent isolated import; isolation promotion, export/second-installation transfer and whole Task9/R0 remain incomplete. Working contract1.8.0:70 operations/192 schemas; migrations0001–0009. See [current package verification](../progress/2026-10-29-p3.en.md).
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 includes persistent isolated import, revision approval, static export/download and second-installation publication. Safe documents, complete Skill sharing and whole Task9/R0 remain incomplete. Working contract1.9.0:75 operations/197 schemas; migrations0001–0010. See [current package verification](../progress/2026-10-29-transfer.en.md).
 
 Loreviva — The AI Platform for Living Worlds.
 
@@ -23,7 +25,7 @@ Each row describes that task’s own evidence scope; an earlier task’s limitat
 | --- | --- | --- |
 | Task7 Studio | Native Vue editing/scene view, optional Mock assistance, original-task queries, local settings, members, and self-consent entry points | Human outcomes, real models, complete customer SDK, billing, or deployment |
 
-Current configuration accepts only Mock. Tasks1–8 retain their scoped local acceptance. Task9 implements body admission, local matching/preview, atomic durable isolated import and original-receipt recovery. Isolation promotion, export/second-installation transfer, safe documents/Skills, Tasks10–12 and whole R0 remain incomplete. Historical approved contract:1.4.0 (58/156); working contract:1.8.0 (70/192), migrations0001–0009. Reserved operations do not establish mounted handlers.
+Current configuration accepts only Mock. Tasks1–8 retain their scoped local acceptance. Task9 implements body admission, local matching/preview, atomic durable isolated import and original-receipt recovery. Revision approval, static export/download and second-installation publication are implemented. Safe documents, complete Skill sharing, Tasks10–12 and whole R0 remain incomplete. Historical approved contract:1.4.0 (58/156); working contract:1.9.0 (75/197), migrations0001–0010. Reserved operations do not establish mounted handlers.
 
 ## Authoring and related operations
 

@@ -63,12 +63,14 @@ func (u *unit) SetTaskState(ctx context.Context, state string) error {
 
 func (s *Store) WithCommandBarrier(ctx context.Context, c CommandBarrierRequest, body func(Tx) error) (CommitReceipt, error) {
 	r := BarrierRequest{ProductScope: c.ProductScope, WorldScope: c.WorldScope, Versions: c.Versions, Purpose: c.Purpose, ExpectedWorldStatus: c.ExpectedWorldStatus, OwnerSubjectID: c.OwnerSubjectID, Operation: c.Operation, CommandKey: c.CommandKey, CommitKey: c.CommitKey, GateVersions: c.GateVersions, PayloadHash: c.PayloadHash, Locks: c.Locks, commandOnly: true}
+	r.packageApproval = c.packageApproval
 	r.Runtime = c.Runtime
 	r.contentAction = c.ContentAction
 	r.contentWithdrawal = c.contentWithdrawal
 	receipt, _, e := s.barrier(ctx, r, body)
 	return receipt, e
 }
+
 // CreateTask admits an ACCEPTED task under the command transaction and purpose-specific subject gate; it does not create an execution lease.
 func (u *unit) CreateTask(ctx context.Context, input domain.TaskIntake) error {
 	fail := func(e error) error { u.err = e; return e }

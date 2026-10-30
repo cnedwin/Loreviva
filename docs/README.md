@@ -15,6 +15,8 @@ English is the primary language; every English document has a Chinese companion.
 | Documentation style | [06-documentation-style](design/en/06-documentation-style.md) | [06-documentation-style](design/06-documentation-style.md) |
 | Concurrent worlds | [07-concurrent-worlds](design/en/07-concurrent-worlds.md) | [07-concurrent-worlds](design/07-concurrent-worlds.md) |
 
+Current package workflow: [English](progress/2026-10-29-transfer.en.md) · [中文](progress/2026-10-29-transfer.zh.md).
+
 ## Operations
 
 | Topic | English | 中文 |

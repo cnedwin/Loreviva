@@ -18,7 +18,7 @@ type packageImportInspection struct {
 // SQL, external owner or execution purpose can be supplied by an HTTP caller.
 func (s *Store) ArmPackageImportInspection(ctx context.Context, tx Tx, scope domain.ProductScope, input generated.DraftInput, kind string, expectations map[string][][]string, model bool) error {
 	u, ok := tx.(*unit)
-	if !ok || u.operatorStore != s || u.scope != scope || !u.commandOnly || u.packagePreviewRead || u.packageImportInspection != nil || (u.operation != "importContentPackage" && !(u.operation == "commandContentDraft" && u.contentAction == "COPY")) || s.PackagePreviewOwner == nil {
+	if !ok || u.operatorStore != s || u.scope != scope || !u.commandOnly || u.packagePreviewRead || u.packageImportInspection != nil || (u.operation != "importContentPackage" && u.operation != "approvePackageDraft" && u.operation != "publishContentDraft" && !(u.operation == "commandContentDraft" && u.contentAction == "COPY")) || s.PackagePreviewOwner == nil {
 		return ErrDenied
 	}
 	raw, err := json.Marshal(input)

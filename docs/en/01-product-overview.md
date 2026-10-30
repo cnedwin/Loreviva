@@ -1,6 +1,8 @@
+> Current package approval, export and second-installation status: [installation transfer](../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
+
 # Loreviva Product Overview
 
-Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 now includes preview and persistent isolated import; isolation promotion, export/second-installation transfer and whole Task9/R0 remain incomplete. Working contract1.8.0:70 operations/192 schemas; migrations0001–0009. See [current package verification](../progress/2026-10-29-p3.en.md).
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 includes persistent isolated import, revision approval, static export/download and second-installation publication. Safe documents, complete Skill sharing and whole Task9/R0 remain incomplete. Working contract1.9.0:75 operations/197 schemas; migrations0001–0010. See [current package verification](../progress/2026-10-29-transfer.en.md).
 
 **The AI Platform for Living Worlds — Create a world. Let it keep growing.**
 
@@ -51,7 +53,7 @@ The intended default for online generation is one primary responder's single mai
 
 Worlds, characters, directors/roles, Skills, knowledge, presentation resources, and multiple model configurations combine into different works. Model connections are mappable capability requirements; a content package cannot require another installation to send data to the original author's address.
 
-The planned `.wepkg` contains logical definitions, assets, licenses, dependencies, synthetic examples, and assertions, while excluding secrets, player data, and runtime state. Import first performs static preflight, then creates an isolated draft for rehearsal; the first phase focuses on sharing files and repository directories, with a commercial plugin marketplace deferred. A [format Schema](../../contracts/source/wepkg.schema.json) is available now; the complete import/export workflow is not yet implemented.
+The planned `.wepkg` contains logical definitions, assets, licenses, dependencies, synthetic examples, and assertions, while excluding secrets, player data, and runtime state. Import first performs static preflight, then creates an isolated draft for rehearsal; the first phase focuses on sharing files and repository directories, with a commercial plugin marketplace deferred. A [format Schema](../../contracts/source/wepkg.schema.json) is available now; revision review and static installation transfer are implemented; safe documents and complete Skill sharing remain later work.
 
 ## Industries and customer responsibilities
 
@@ -68,6 +70,6 @@ The engine aims to handle worlds, AI, memory, budgets, and recovery so customers
 
 The aim is for the self-hosted community core and hosted services to share a kernel. Self-hosting does not require platform top-ups or mandatory cloud services; hosted metering must distinguish raw supplier usage, platform service allowances, and customer player business balances.
 
-Results, necessary costs, and allowance records for original Mock requests have been verified separately; local settings and member interfaces are included in Task7. Real models, metering management pages, billing/payment workflows, complete recovery, and the first paid release gate remain to be implemented and verified. The current Mock environment provides neither production SaaS nor player billing capabilities. Task8 integration has scoped local acceptance. Task9 beyond local preview and isolated import, the complete Task10–12 scope, LC long-term effects, human validation and the full release remain pending.
+Results, necessary costs, and allowance records for original Mock requests have been verified separately; local settings and member interfaces are included in Task7. Real models, metering management pages, billing/payment workflows, complete recovery, and the first paid release gate remain to be implemented and verified. The current Mock environment provides neither production SaaS nor player billing capabilities. Task8 integration has scoped local acceptance. Safe document extraction and complete Skill sharing within Task9, the complete Task10–12 scope, LC long-term effects, human validation and the full release remain pending.
 
-Return to the [project home](README.md) · View [architecture](03-architecture.md)
+Return to the [project home](../../README.md) · View [architecture](03-architecture.md)

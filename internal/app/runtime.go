@@ -40,6 +40,7 @@ type Runtime struct {
 
 func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
 	s.RehearsalPurgeOwner = f
+	s.PackageApprovalFiles = f
 	s.DraftRehearsalOwner = content.New(s)
 	s.DraftRehearsalReader = f
 	s.RehearsalReportReader = f
@@ -64,7 +65,9 @@ func NewRuntime(s *store.Store, f *files.Store, a *auth.Operator) *Runtime {
 	s.RehearsalInitializer = w
 	worker := NewWorker(s, f)
 	worker.Memory = m
-	return &Runtime{creationStore: s, Turns: harness.NewTurnService(s), Store: s, Files: f, Auth: a, Content: content.New(s), World: w, Memory: m, Worker: worker}
+	author := content.New(s)
+	author.PackageFiles = f
+	return &Runtime{creationStore: s, Turns: harness.NewTurnService(s), Store: s, Files: f, Auth: a, Content: author, World: w, Memory: m, Worker: worker}
 }
 
 func (r *Runtime) BindLocal(local *Local) {

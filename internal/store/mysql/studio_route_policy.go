@@ -26,6 +26,7 @@ func NewRouteAdmissionLocks(scope domain.ProductScope) []LockKey {
 	}
 	return keys
 }
+
 // Use the unit's frozen policy or the rehearsal's original binding when present. Otherwise read tenant and product defaults only under their planned scope and section locks; a missing lock requires replanning.
 func ReadRoutePolicyTx(ctx context.Context, tx Tx, scope domain.ProductScope) (*domain.RoutePolicySnapshot, error) {
 	u, ok := tx.(*unit)
@@ -90,6 +91,7 @@ func CheckNewRouteAdmissionTx(ctx context.Context, tx Tx, scope domain.ProductSc
 	u.newRouteAdmission = true
 	return nil
 }
+
 // Only the installed Mock pair is admitted here. Absent metadata keeps the explicit legacy unmanaged branch; present metadata must pass its status, provider, model and enabled-descriptor checks.
 func checkNewRouteAdmission(ctx context.Context, q rowQuerier, scope domain.ProductScope, connection, model string) error {
 	if connection != domain.InstalledMockConnection || model != domain.InstalledMockModel {
@@ -119,6 +121,7 @@ func checkNewRouteAdmission(ctx context.Context, q rowQuerier, scope domain.Prod
 	}
 	return nil
 }
+
 // Seed only missing installed-Mock metadata. A conflicting provider descriptor is rejected, existing connection revisions are retained, and a new connection remains UNVERIFIED.
 func initializeMockMetadataTx(ctx context.Context, tx *sql.Tx, scope domain.ProductScope) error {
 	for _, sc := range routeScopes(scope) {
@@ -148,6 +151,7 @@ func initializeMockMetadataTx(ctx context.Context, tx *sql.Tx, scope domain.Prod
 	}
 	return nil
 }
+
 // A NONE entry needs no connection here, while INHERIT defers its connection choice. Explicit generation settings stay within the installed Mock pair, TEXT capabilities and NONE external use; this metadata check does not run a provider.
 func validateStudioDefaults(raw []byte) error {
 	var v struct {

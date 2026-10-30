@@ -223,7 +223,7 @@ func (s *Service) ImportPackage(ctx context.Context, scope domain.ProductScope, 
 		}
 		requiresModel = len(mapping.ModelMappings) > 0
 		for _, cap := range plan.Requirements.Model {
-			requiresModel = requiresModel || cap.Required
+			requiresModel = requiresModel || (cap.Required && cap.CapabilityID == "text")
 		}
 		locks = append(locks, Key(scope, "content_draft", draftID))
 		if plan.Kind == "WORLD" {
