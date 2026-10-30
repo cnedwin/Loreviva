@@ -1,0 +1,554 @@
+{
+  "name": "Source-aware reply workshop",
+  "description": "Original synthetic Skill-sharing demonstration. The words coffee-world and source-aware-reply remain narrative text, not runtime identifiers.",
+  "tags": [
+    "synthetic",
+    "skill-sharing"
+  ],
+  "root_object_id": "coffee-world",
+  "objects": [
+    {
+      "object_id": "coffee-world",
+      "kind": "WORLD",
+      "name": "Coffee",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "background": "A synthetic cafe",
+      "language": "en",
+      "mode": "PRIVATE",
+      "initial_scene_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "cafe-scene"
+      },
+      "initial_actor_setups": [
+        {
+          "slot_id": "alex",
+          "character_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "alex-character"
+          },
+          "scene_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "cafe-scene"
+          },
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "initial_goals": [
+            "Serve coffee"
+          ],
+          "knowledge_refs": []
+        },
+        {
+          "slot_id": "mia",
+          "character_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "mia-character"
+          },
+          "scene_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "cafe-scene"
+          },
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "initial_goals": [
+            "Manage the sign"
+          ],
+          "knowledge_refs": []
+        }
+      ],
+      "primary_actor_slot": "alex",
+      "participant_types": [
+        "CREATOR",
+        "CUSTOMER_VERIFIED_PLAYER"
+      ],
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      },
+      "budget_mode": "MOCK_ZERO",
+      "retention_days": 30,
+      "surprise_policy": "DISABLED",
+      "narrative_clock": "EVENT",
+      "client_capabilities": [
+        "TEXT"
+      ],
+      "duty_assignments": [
+        {
+          "duty_id": "FACT_VALIDATION",
+          "role_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "program-duties"
+          }
+        },
+        {
+          "duty_id": "RIGHTS_CHECK",
+          "role_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "program-duties"
+          }
+        },
+        {
+          "duty_id": "AUDIENCE_CHECK",
+          "role_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "program-duties"
+          }
+        },
+        {
+          "duty_id": "NARRATIVE",
+          "role_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "program-duties"
+          }
+        },
+        {
+          "duty_id": "STATE_COMMIT",
+          "role_ref": {
+            "kind": "BUNDLE_OBJECT",
+            "object_id": "program-duties"
+          }
+        }
+      ]
+    },
+    {
+      "object_id": "cafe-scene",
+      "kind": "SCENE",
+      "name": "Cafe",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "coordinate_system": "2D",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "child_refs": [
+        {
+          "kind": "BUNDLE_OBJECT",
+          "object_id": "wooden-sign"
+        }
+      ],
+      "adjacent_scene_refs": [],
+      "visibility": "PUBLIC"
+    },
+    {
+      "object_id": "alex-character",
+      "kind": "CHARACTER",
+      "name": "Alex",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "biography": "Synthetic cafe character",
+      "values": [
+        "care"
+      ],
+      "long_term_goals": [
+        "run the cafe"
+      ],
+      "interests": [
+        "coffee"
+      ],
+      "inner_conflicts": [
+        "duty versus curiosity"
+      ],
+      "expression_style": "warm and direct",
+      "example_lines": [
+        "Welcome to the cafe."
+      ],
+      "boundaries": [
+        "respect privacy"
+      ],
+      "initial_knowledge_refs": [],
+      "relationship_policy": "DIRECTIONAL",
+      "appearance_asset_refs": [],
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      },
+      "skill_refs": []
+    },
+    {
+      "object_id": "mia-character",
+      "kind": "CHARACTER",
+      "name": "Mia",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "biography": "Synthetic cafe character",
+      "values": [
+        "care"
+      ],
+      "long_term_goals": [
+        "run the cafe"
+      ],
+      "interests": [
+        "coffee"
+      ],
+      "inner_conflicts": [
+        "duty versus curiosity"
+      ],
+      "expression_style": "warm and direct",
+      "example_lines": [
+        "Welcome to the cafe."
+      ],
+      "boundaries": [
+        "respect privacy"
+      ],
+      "initial_knowledge_refs": [],
+      "relationship_policy": "DIRECTIONAL",
+      "appearance_asset_refs": [],
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      },
+      "skill_refs": []
+    },
+    {
+      "object_id": "wooden-sign",
+      "kind": "PROP",
+      "name": "Wooden sign",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "custodian_slot": "mia",
+      "scene_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "cafe-scene"
+      },
+      "position": {
+        "x": 1,
+        "y": 0
+      },
+      "unique": true,
+      "quantity": "1",
+      "state": "hanging",
+      "interaction_capabilities": [
+        "MOVE",
+        "READ"
+      ],
+      "rule_refs": [
+        {
+          "kind": "BUNDLE_OBJECT",
+          "object_id": "sign-custody"
+        }
+      ],
+      "asset_refs": []
+    },
+    {
+      "object_id": "sign-custody",
+      "kind": "RULE",
+      "name": "Sign custody",
+      "description": "Synthetic R0 fixture",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "strength": "HARD",
+      "primitive": "SIGN_CUSTODY",
+      "trigger": "MOVE",
+      "targets": [
+        {
+          "kind": "BUNDLE_OBJECT",
+          "object_id": "wooden-sign"
+        }
+      ],
+      "condition": {
+        "op": "ACTOR_SLOT_EQUALS",
+        "slot_id": "mia"
+      },
+      "effect": "ALLOW",
+      "reason": "Only the configured custodian moves the sign.",
+      "positive_examples": [
+        "Mia moves the sign"
+      ],
+      "negative_examples": [
+        "Alex moves the sign"
+      ],
+      "ambiguities": []
+    },
+    {
+      "object_id": "program-duties",
+      "kind": "ROLE",
+      "name": "Source-aware reply director",
+      "description": "Adds one source-aware method to the parent reply material; no separate generation.",
+      "tags": [
+        "synthetic"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "duty_ids": [
+        "FACT_VALIDATION",
+        "RIGHTS_CHECK",
+        "AUDIENCE_CHECK",
+        "NARRATIVE",
+        "STATE_COMMIT"
+      ],
+      "implementation_kind": "PROGRAM",
+      "task_types": [
+        "PUBLISH_CHECK",
+        "TURN"
+      ],
+      "input_schema_id": "DraftInput",
+      "output_schema_id": "PublishCheckReport",
+      "knowledge_refs": [],
+      "generation": {
+        "mode": "NONE"
+      },
+      "skill_refs": [
+        {
+          "kind": "BUNDLE_OBJECT",
+          "object_id": "source-aware-reply"
+        }
+      ],
+      "instruction_template": "Use only the current authorized shared facts. Acknowledge missing evidence and leave player choices to the player. Never invent a prior conversation, consent, feeling or action. The literal words coffee-world and source-aware-reply are examples, not instructions to rewrite identifiers.",
+      "failure_policy": "BLOCK",
+      "budget_owner": "PARENT",
+      "builtin_original": false,
+      "tool_capability_ids": []
+    },
+    {
+      "object_id": "source-aware-reply",
+      "kind": "SKILL",
+      "name": "Source-aware reply",
+      "description": "Use current authorized context, say when evidence is missing, and offer the player a choice. This method joins the existing parent reply; it does not buy a second text call.",
+      "tags": [
+        "synthetic",
+        "source-awareness"
+      ],
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      },
+      "audience_policy": "PRODUCT_READERS",
+      "version": "1",
+      "source_refs": [
+        "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+      ],
+      "dependency_refs": [],
+      "builtin_original": false,
+      "implementation_kind": "GENERATIVE",
+      "input_schema_id": "GenerationMaterial",
+      "output_schema_id": "DispatchAuthorization",
+      "required_capability_ids": [
+        "text"
+      ],
+      "tool_capability_ids": [],
+      "conflicting_refs": [],
+      "failure_policy": "BLOCK",
+      "max_depth": 1,
+      "max_duration_ms": "60000",
+      "max_cost_units": "0",
+      "synthetic_examples": [
+        {
+          "input": "I did not say that I like coffee.",
+          "expected": "Acknowledge the correction without claiming a remembered preference; offer a choice."
+        },
+        {
+          "input": "Do you remember a promise that is not in the current source?",
+          "expected": "State that the current source does not confirm that promise; do not invent an event or consent."
+        }
+      ],
+      "generation": {
+        "mode": "NONE"
+      }
+    }
+  ],
+  "module_agent_bindings": [
+    {
+      "binding_id": "reply-coffee-world-rehearsal",
+      "owner_object_id": "coffee-world",
+      "module_id": "REHEARSAL",
+      "role_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "program-duties"
+      },
+      "enabled": true,
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      }
+    },
+    {
+      "binding_id": "reply-coffee-world-interaction",
+      "owner_object_id": "coffee-world",
+      "module_id": "INTERACTION",
+      "role_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "program-duties"
+      },
+      "enabled": true,
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      }
+    },
+    {
+      "binding_id": "reply-alex-character-interaction",
+      "owner_object_id": "alex-character",
+      "module_id": "INTERACTION",
+      "role_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "program-duties"
+      },
+      "enabled": true,
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      }
+    },
+    {
+      "binding_id": "reply-mia-character-interaction",
+      "owner_object_id": "mia-character",
+      "module_id": "INTERACTION",
+      "role_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "program-duties"
+      },
+      "enabled": true,
+      "generation": {
+        "mode": "REQUIREMENT",
+        "capability_id": "text"
+      }
+    }
+  ],
+  "skill_bindings": [
+    {
+      "binding_id": "source-aware-binding",
+      "role_object_id": "program-duties",
+      "skill_ref": {
+        "kind": "BUNDLE_OBJECT",
+        "object_id": "source-aware-reply"
+      },
+      "enabled": true,
+      "order": 0,
+      "trigger": "TURN",
+      "budget_owner": "PARENT"
+    }
+  ],
+  "body_version": "1.0"
+}

@@ -1,0 +1,1217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.loreviva.invalid/wepkg/1.0/manifest.schema.json",
+  "title": "Loreviva .wepkg 1.0 logical content manifest",
+  "description": "Design schema, not importer implementation. Canonical source: contracts/source/wepkg.schema.json. content_sha256 = SHA-256 of UTF-8 compact sorted-key JSON array of file records {path,sha256,size_bytes} ordered by path; excludes manifest itself to avoid circular hashing. File and entry hashes are verified semantically. No runtime data, tenant IDs, URLs for connections, absolute paths, credentials, private identities, conversations, relationships, tasks, invoices or payment orders allowed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "package_id",
+    "kind",
+    "package_version",
+    "content_sha256",
+    "compatibility",
+    "entrypoints",
+    "entries",
+    "files",
+    "dependencies",
+    "requirements",
+    "provenance"
+  ],
+  "properties": {
+    "format_version": {
+      "const": "1.0"
+    },
+    "package_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "WORLD",
+        "CHARACTER",
+        "ROLE",
+        "SKILL",
+        "KNOWLEDGE",
+        "PRESENTATION_THEME"
+      ]
+    },
+    "package_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "public_api_major": {
+          "const": 1
+        },
+        "package_format_major": {
+          "const": 1
+        },
+        "minimum_runtime_contract": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+        },
+        "rule_primitive_set": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        }
+      },
+      "required": [
+        "public_api_major",
+        "package_format_major",
+        "minimum_runtime_contract",
+        "rule_primitive_set"
+      ],
+      "additionalProperties": false,
+      "description": "Runtime contract version is separate from application patch. Verify actual primitives and capabilities; semver alone is insufficient."
+    },
+    "entrypoints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/file"
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      },
+      "maxItems": 1000
+    },
+    "requirements": {
+      "type": "object",
+      "properties": {
+        "model_capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/capability"
+          },
+          "maxItems": 100
+        },
+        "tool_capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tool_requirement"
+          },
+          "maxItems": 100
+        },
+        "presentation_capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/capability"
+          },
+          "maxItems": 100
+        },
+        "tested_configurations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tested_configuration"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "model_capabilities",
+        "tool_capabilities",
+        "presentation_capabilities",
+        "tested_configurations"
+      ],
+      "additionalProperties": false,
+      "description": "Logical requirements only. Release import binds registered local connection/tool/resource IDs after rights/capability checks."
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "author_display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "minItems": 1
+        },
+        "synthetic_examples_only": {
+          "const": true
+        }
+      },
+      "required": [
+        "author_display_name",
+        "created_at",
+        "license",
+        "source_references",
+        "synthetic_examples_only"
+      ],
+      "additionalProperties": false,
+      "description": "Package test examples must be synthetic; production world definitions need not be artificial."
+    }
+  },
+  "$defs": {
+    "rights": {
+      "type": "object",
+      "properties": {
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "redistribution_allowed": {
+          "const": true
+        },
+        "allowed_uses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "WORLD_CONTENT",
+              "CHARACTER_CONTENT",
+              "SKILL_CONTENT",
+              "KNOWLEDGE",
+              "PRESENTATION",
+              "SYNTHETIC_TEST"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "license",
+        "source_reference",
+        "redistribution_allowed",
+        "allowed_uses"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit shareable rights are required. A readable source is not automatically redistributable."
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative POSIX path; no drive, absolute path, dot segment or backslash.",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\\\:])[A-Za-z0-9._/-]+$",
+          "maxLength": 240
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 104857600
+        },
+        "media_type": {
+          "type": "string",
+          "enum": [
+            "application/json",
+            "text/plain",
+            "text/markdown",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "audio/wav",
+            "audio/mpeg"
+          ]
+        },
+        "rights": {
+          "$ref": "#/$defs/rights"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "size_bytes",
+        "media_type",
+        "rights"
+      ],
+      "additionalProperties": false,
+      "description": "Semantic preflight verifies hash, bytes, archive total, MIME, no symlinks and no executable/secret/private payload."
+    },
+    "entry": {
+      "type": "object",
+      "properties": {
+        "logical_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "WORLD",
+            "CHARACTER",
+            "ROLE",
+            "SKILL",
+            "KNOWLEDGE",
+            "PRESENTATION_THEME",
+            "PRODUCT_PACK",
+            "RULES",
+            "SCHEMA",
+            "SYNTHETIC_TEST"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative POSIX path; no drive, absolute path, dot segment or backslash.",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\\\:])[A-Za-z0-9._/-]+$",
+          "maxLength": 240
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "logical_id",
+        "kind",
+        "path",
+        "version",
+        "sha256",
+        "references"
+      ],
+      "additionalProperties": false,
+      "description": "Local IDs are assigned by import mapping; references must resolve inside package or pinned dependency."
+    },
+    "dependency": {
+      "type": "object",
+      "properties": {
+        "package_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        },
+        "package_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "logical_exports": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "package_id",
+        "package_version",
+        "content_sha256",
+        "logical_exports"
+      ],
+      "additionalProperties": false,
+      "description": "Exact dependency, not floating latest. Graph and reference validation are semantic preflight."
+    },
+    "capability": {
+      "type": "object",
+      "properties": {
+        "capability_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "schema_path": {
+          "type": "string",
+          "description": "Relative POSIX path; no drive, absolute path, dot segment or backslash.",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\\\:])[A-Za-z0-9._/-]+$",
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "capability_id",
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "tool_requirement": {
+      "type": "object",
+      "properties": {
+        "tool_capability_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        },
+        "registered_contract_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tool_capability_id",
+        "registered_contract_version",
+        "required"
+      ],
+      "additionalProperties": false,
+      "description": "A logical capability is not permission to install or execute remote code."
+    },
+    "tested_configuration": {
+      "type": "object",
+      "properties": {
+        "configuration_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+        },
+        "model_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "uniqueItems": true
+        },
+        "presentation_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "uniqueItems": true
+        },
+        "evidence_path": {
+          "type": "string",
+          "description": "Relative POSIX path; no drive, absolute path, dot segment or backslash.",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\\\:])[A-Za-z0-9._/-]+$",
+          "maxLength": 240
+        },
+        "evidence_kind": {
+          "type": "string",
+          "enum": [
+            "SYNTHETIC_MOCK",
+            "REAL_MODEL_TEST"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "required": [
+        "configuration_id",
+        "model_capabilities",
+        "presentation_capabilities",
+        "evidence_path",
+        "evidence_kind",
+        "limitations"
+      ],
+      "additionalProperties": false,
+      "description": "Capability evidence only; no deployment connection URL, API credential or claim that an untested model is interchangeable."
+    }
+  },
+  "x-semantic-preflight": [
+    "Check full archive SHA256 and per-file hash/size/MIME",
+    "Reject symlinks, path traversal, archive bombs, secrets and private runtime payloads",
+    "Resolve entrypoints, entries, file paths and references",
+    "Resolve exact dependencies; detect cycles/conflicts",
+    "Verify rights and all current permitted uses",
+    "Do not call models, install tools, create runtime, purchase or publish during preflight",
+    "Same package_id/version/hash returns original import; same version different hash is 409",
+    "Map logical IDs to new local IDs in isolated draft; local release freezes actual connections/tools/assets"
+  ],
+  "examples": [
+    {
+      "format_version": "1.0",
+      "package_id": "coffee.demo",
+      "kind": "WORLD",
+      "package_version": "1.0.0",
+      "content_sha256": "c17bd376828c7b0da1959051e6acc5e5cec156d31cde7a5f4b42ff1f3bf2bc25",
+      "compatibility": {
+        "public_api_major": 1,
+        "package_format_major": 1,
+        "minimum_runtime_contract": "1.0.0",
+        "rule_primitive_set": "core.v1"
+      },
+      "entrypoints": [
+        "coffee_demo"
+      ],
+      "entries": [
+        {
+          "logical_id": "coffee_demo",
+          "kind": "WORLD",
+          "path": "definitions/coffee.json",
+          "version": "1.0.0",
+          "sha256": "d9067c6c77679d0d0523f400fd659630b797d0aa2e6e22e6761a3983b811a451",
+          "references": []
+        }
+      ],
+      "files": [
+        {
+          "path": "definitions/coffee.json",
+          "sha256": "d9067c6c77679d0d0523f400fd659630b797d0aa2e6e22e6761a3983b811a451",
+          "size_bytes": 83,
+          "media_type": "application/json",
+          "rights": {
+            "license": "CC0-1.0",
+            "source_reference": "Synthetic authored example for contract validation",
+            "redistribution_allowed": true,
+            "allowed_uses": [
+              "WORLD_CONTENT",
+              "SYNTHETIC_TEST"
+            ]
+          }
+        }
+      ],
+      "dependencies": [],
+      "requirements": {
+        "model_capabilities": [],
+        "tool_capabilities": [],
+        "presentation_capabilities": [
+          {
+            "capability_id": "text",
+            "required": true
+          }
+        ],
+        "tested_configurations": []
+      },
+      "provenance": {
+        "author_display_name": "Loreviva synthetic example",
+        "created_at": "2026-10-10T02:00:00Z",
+        "license": "CC0-1.0",
+        "source_references": [
+          "Synthetic example; no real player or credential"
+        ],
+        "synthetic_examples_only": true
+      }
+    }
+  ],
+  "x-loreviva-portable-body": {
+    "body_version": "1.0",
+    "body_bytes": 1048576,
+    "plan_bytes": 8388608,
+    "root_schema": "DraftInput",
+    "root_kinds": [
+      "WORLD",
+      "CHARACTER",
+      "ROLE",
+      "SKILL",
+      "KNOWLEDGE",
+      "PRESENTATION_THEME"
+    ],
+    "object_components": [
+      "WorldDefinition",
+      "SceneDefinition",
+      "PropDefinition",
+      "RuleDefinition",
+      "CharacterDefinition",
+      "RoleDefinition",
+      "SkillDefinition",
+      "KnowledgeDefinition",
+      "AssetDefinition",
+      "PresentationTheme"
+    ],
+    "operations": [
+      {
+        "op": "clone",
+        "name": "PortableLogicalID",
+        "source": "wepkg",
+        "pointer": "/$defs/entry/properties/logical_id"
+      },
+      {
+        "op": "clone",
+        "name": "PortableFilePath",
+        "source": "wepkg",
+        "pointer": "/$defs/file/properties/path"
+      },
+      {
+        "op": "clone",
+        "name": "PortablePackageID",
+        "source": "wepkg",
+        "pointer": "/properties/package_id"
+      },
+      {
+        "op": "clone",
+        "name": "PortableVersion",
+        "source": "wepkg",
+        "pointer": "/properties/package_version"
+      },
+      {
+        "op": "clone",
+        "name": "PortableHash",
+        "source": "wepkg",
+        "pointer": "/properties/content_sha256"
+      },
+      {
+        "op": "clone",
+        "name": "PortableParameters",
+        "source": "openapi",
+        "pointer": "/components/schemas/GenerationSettings/properties/parameters"
+      },
+      {
+        "op": "clone",
+        "name": "PortableRef",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "BUNDLE_OBJECT"
+                },
+                "object_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "object_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "PACKAGE_ENTRY"
+                },
+                "logical_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "logical_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "DEPENDENCY_EXPORT"
+                },
+                "package_id": {
+                  "$ref": "#/$defs/PortablePackageID"
+                },
+                "package_version": {
+                  "$ref": "#/$defs/PortableVersion"
+                },
+                "content_sha256": {
+                  "$ref": "#/$defs/PortableHash"
+                },
+                "logical_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                }
+              },
+              "required": [
+                "kind",
+                "package_id",
+                "package_version",
+                "content_sha256",
+                "logical_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "op": "clone",
+        "name": "PortableGeneration",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "NONE"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "INHERIT"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "const": "REQUIREMENT"
+                },
+                "capability_id": {
+                  "$ref": "#/$defs/PortableLogicalID"
+                },
+                "parameters": {
+                  "$ref": "#/$defs/PortableParameters"
+                }
+              },
+              "required": [
+                "mode",
+                "capability_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/DefinitionRef",
+        "schema": {
+          "$ref": "#/$defs/PortableRef"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/SourceRights",
+        "source": "wepkg",
+        "from_pointer": "/$defs/rights"
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/GenerationSettings",
+        "schema": {
+          "$ref": "#/$defs/PortableGeneration"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SceneDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PropDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RuleDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "CharacterDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "KnowledgeDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "AssetDefinition",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PresentationTheme",
+        "property": "object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "DraftInput",
+        "property": "root_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "ModuleAgentBinding",
+        "property": "binding_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "ModuleAgentBinding",
+        "property": "owner_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillBinding",
+        "property": "binding_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillBinding",
+        "property": "role_object_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "InitialActorSetup",
+        "property": "slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "primary_actor_slot",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "PropDefinition",
+        "property": "custodian_slot",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/RuleCondition/oneOf/0/properties/slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "replace-schema",
+        "pointer": "/$defs/RuleCondition/oneOf/1/properties/slot_id",
+        "schema": {
+          "$ref": "#/$defs/PortableLogicalID"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "DraftInput",
+        "property": "dependency_locks"
+      },
+      {
+        "op": "add-property",
+        "component": "DraftInput",
+        "property": "body_version",
+        "schema": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "builtin_original",
+        "schema": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "RoleDefinition",
+        "property": "tool_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "RoleDefinition",
+        "property": "tool_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "input_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "RoleDefinition",
+        "property": "output_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "builtin_original",
+        "schema": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "SkillDefinition",
+        "property": "tool_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "SkillDefinition",
+        "property": "tool_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "input_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket",
+                "GenerationMaterial"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "replace-property",
+        "component": "SkillDefinition",
+        "property": "output_schema_id",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Identity"
+            },
+            {
+              "enum": [
+                "DraftInput",
+                "PublishCheckReport",
+                "TurnRequest",
+                "ApprovedPacket",
+                "DispatchAuthorization"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "SkillDefinition",
+        "property": "registered_capability_ids"
+      },
+      {
+        "op": "add-property",
+        "component": "SkillDefinition",
+        "property": "required_capability_ids",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableLogicalID"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "required": true
+      },
+      {
+        "op": "remove-property",
+        "component": "AssetDefinition",
+        "property": "asset_id"
+      },
+      {
+        "op": "add-property",
+        "component": "AssetDefinition",
+        "property": "file_path",
+        "schema": {
+          "$ref": "#/$defs/PortableFilePath"
+        },
+        "required": true
+      },
+      {
+        "op": "replace-property",
+        "component": "KnowledgeDefinition",
+        "property": "knowledge_type",
+        "schema": {
+          "type": "string",
+          "const": "NOTE"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "source_asset_id"
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "source_asset_hash"
+      },
+      {
+        "op": "remove-property",
+        "component": "KnowledgeDefinition",
+        "property": "extraction_report_id"
+      },
+      {
+        "op": "replace-property",
+        "component": "WorldDefinition",
+        "property": "budget_mode",
+        "schema": {
+          "type": "string",
+          "const": "MOCK_ZERO"
+        }
+      },
+      {
+        "op": "remove-property",
+        "component": "WorldDefinition",
+        "property": "industry_package_ref"
+      },
+      {
+        "op": "clone",
+        "name": "PortableRulesBody",
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primitives"
+          ],
+          "properties": {
+            "primitives": {
+              "type": "array",
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/PortableLogicalID"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "reference_targets": {
+      "initial_scene_ref": [
+        "SCENE"
+      ],
+      "scene_ref": [
+        "SCENE"
+      ],
+      "adjacent_scene_refs": [
+        "SCENE"
+      ],
+      "role_ref": [
+        "ROLE"
+      ],
+      "character_ref": [
+        "CHARACTER"
+      ],
+      "knowledge_refs": [
+        "KNOWLEDGE"
+      ],
+      "initial_knowledge_refs": [
+        "KNOWLEDGE"
+      ],
+      "skill_ref": [
+        "SKILL"
+      ],
+      "skill_refs": [
+        "SKILL"
+      ],
+      "conflicting_refs": [
+        "SKILL"
+      ],
+      "asset_ref": [
+        "ASSET"
+      ],
+      "asset_refs": [
+        "ASSET"
+      ],
+      "background_asset_ref": [
+        "ASSET"
+      ],
+      "appearance_asset_refs": [
+        "ASSET"
+      ],
+      "rule_refs": [
+        "RULE"
+      ],
+      "prop_ref": [
+        "PROP"
+      ],
+      "targets": [
+        "PROP"
+      ],
+      "origin_ref": [],
+      "dependency_refs": [],
+      "binding_refs": [],
+      "child_refs": [
+        "SCENE",
+        "PROP"
+      ]
+    },
+    "assembly_edge_limit": 10000,
+    "assembly_vertex_limit": 64,
+    "diagnostic_limit": 32
+  }
+}

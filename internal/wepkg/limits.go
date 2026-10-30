@@ -2,21 +2,21 @@ package wepkg
 
 // Limits bounds one static preflight. They are a single value object rather
 // than scattered constants because the same numbers are published to authors
-// (CreatorCapabilities.package_preflight_limits) before they choose a file:
+// (GET /world/v1/admin/content-packages/capabilities) before they choose a file:
 // an author must be able to see the ceiling that will judge the upload.
 type Limits struct {
-	ArchiveBytes  int64 // compressed container
-	ManifestBytes int64 // manifest.json, parsed bounded
-	Entries       int   // every archive entry, directories included
-	FileBytes     int64 // one decompressed file
-	TotalBytes    int64 // all decompressed files together
-	Ratio         int64 // decompressed per compressed byte
-	PathLength    int   // characters in a declared path
-	PathDepth     int   // '/'-separated segments
+	ArchiveBytes  int64 `json:"archive_bytes"`  // compressed container
+	ManifestBytes int64 `json:"manifest_bytes"` // manifest.json, parsed bounded
+	Entries       int   `json:"entries"`        // every archive entry, directories included
+	FileBytes     int64 `json:"file_bytes"`     // one decompressed file
+	TotalBytes    int64 `json:"total_bytes"`    // all decompressed files together
+	Ratio         int64 `json:"ratio"`          // decompressed per compressed byte
+	PathLength    int   `json:"path_length"`    // characters in a declared path
+	PathDepth     int   `json:"path_depth"`     // '/'-separated segments
 }
 
-// DefaultLimits mirrors the runtime: FileBytes equals files.MaxFileBytes, so a
-// package the preflight accepts can actually be imported later.
+// DefaultLimits shares the ordinary upload byte ceiling (files.MaxFileBytes).
+// Passing static preflight does not grant import authority or imply import support.
 var DefaultLimits = Limits{
 	ArchiveBytes:  64 << 20,
 	ManifestBytes: 8 << 20,

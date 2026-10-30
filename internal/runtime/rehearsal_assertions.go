@@ -67,12 +67,7 @@ func rehearsalCustodyFinding(init Initialization) (string, error) {
 	sign := "NOT_RUN"
 	incomplete := false
 	for _, item := range init.Items {
-		applicable := false
-		for _, rule := range item.Rules {
-			if rule.Primitive == "SIGN_CUSTODY" && rule.Strength == "HARD" && rule.Trigger == "MOVE" {
-				applicable = true
-			}
-		}
+		applicable := rehearsalCustodyApplies(item)
 		if !applicable {
 			continue
 		}
@@ -110,4 +105,25 @@ func rehearsalCustodyFinding(init Initialization) (string, error) {
 		sign = "NOT_RUN"
 	}
 	return sign, nil
+}
+
+func rehearsalCustodyApplies(item ItemState) bool {
+	for _, rule := range item.Rules {
+		if rule.Primitive == "SIGN_CUSTODY" && rule.Strength == "HARD" && rule.Trigger == "MOVE" {
+			return true
+		}
+	}
+	return false
+}
+func (r *Runtime) PackageRehearsalRequiresSignTx(ctx context.Context, tx store.Tx, scope domain.Scope) (bool, error) {
+	init, e := InitializationEvidence(ctx, tx, scope)
+	if e != nil {
+		return false, e
+	}
+	for _, item := range init.Items {
+		if rehearsalCustodyApplies(item) {
+			return true, nil
+		}
+	}
+	return false, nil
 }

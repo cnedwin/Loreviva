@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 type Severity string
@@ -18,39 +19,51 @@ const (
 // Codes are stable identifiers: authors and tooling match on them, so they may
 // gain detail but must never change meaning.
 const (
-	CodeArchiveTooLarge        = "ARCHIVE_TOO_LARGE"
-	CodeArchiveCorrupt         = "ARCHIVE_CORRUPT"
-	CodeArchiveUnsupported     = "ARCHIVE_UNSUPPORTED"
-	CodeArchiveHeaderIssue     = "ARCHIVE_HEADER_MISMATCH"
-	CodeArchiveExpansion       = "ARCHIVE_EXPANSION_LIMIT"
-	CodeArchiveTooManyItems    = "ARCHIVE_TOO_MANY_ENTRIES"
-	CodePathInvalid            = "PATH_INVALID"
-	CodePathDuplicate          = "PATH_DUPLICATE"
-	CodePathCaseCollision      = "PATH_CASE_COLLISION"
-	CodePathPrefixCollision    = "PATH_PREFIX_COLLISION"
-	CodeFileTooLarge           = "FILE_TOO_LARGE"
-	CodeManifestMissing        = "MANIFEST_MISSING"
-	CodeManifestInvalid        = "MANIFEST_INVALID"
-	CodeManifestSchema         = "MANIFEST_SCHEMA"
-	CodeFileMissing            = "FILE_MISSING"
-	CodeFileUndeclared         = "FILE_UNDECLARED"
-	CodeFileSizeMismatch       = "FILE_SIZE_MISMATCH"
-	CodeFileHashMismatch       = "FILE_HASH_MISMATCH"
-	CodeContentHashMismatch    = "CONTENT_HASH_MISMATCH"
-	CodeEntryFileMissing       = "ENTRY_FILE_MISSING"
-	CodeEntryHashMismatch      = "ENTRY_HASH_MISMATCH"
-	CodeEntrypointUnknown      = "ENTRYPOINT_UNKNOWN"
-	CodeEntrypointShort        = "ENTRYPOINT_INCOMPLETE"
-	CodeDependencySelf         = "DEPENDENCY_SELF"
-	CodeDependencyDuplicate    = "DEPENDENCY_DUPLICATE"
-	CodeReferenceUnresolved    = "REFERENCE_UNRESOLVED"
-	CodeCapabilityUnknown      = "CAPABILITY_UNKNOWN"
-	CodePrimitiveForbidden     = "PRIMITIVE_FORBIDDEN"
-	CodeRightsIncoherent       = "RIGHTS_INCOHERENT"
-	CodeRightsNotDistributable = "RIGHTS_NOT_REDISTRIBUTABLE"
-	CodeUsesUnknown            = "USES_UNKNOWN"
-	CodeEntrypointKind         = "ENTRYPOINT_KIND"
-	CodeEntryBodyInvalid       = "ENTRY_BODY_INVALID"
+	CodeArchiveTooLarge           = "ARCHIVE_TOO_LARGE"
+	CodeArchiveCorrupt            = "ARCHIVE_CORRUPT"
+	CodeArchiveUnsupported        = "ARCHIVE_UNSUPPORTED"
+	CodeArchiveHeaderIssue        = "ARCHIVE_HEADER_MISMATCH"
+	CodeArchiveExpansion          = "ARCHIVE_EXPANSION_LIMIT"
+	CodeArchiveTooManyItems       = "ARCHIVE_TOO_MANY_ENTRIES"
+	CodePathInvalid               = "PATH_INVALID"
+	CodePathDuplicate             = "PATH_DUPLICATE"
+	CodePathCaseCollision         = "PATH_CASE_COLLISION"
+	CodePathPrefixCollision       = "PATH_PREFIX_COLLISION"
+	CodeFileTooLarge              = "FILE_TOO_LARGE"
+	CodeManifestMissing           = "MANIFEST_MISSING"
+	CodeManifestInvalid           = "MANIFEST_INVALID"
+	CodeManifestSchema            = "MANIFEST_SCHEMA"
+	CodeFileMissing               = "FILE_MISSING"
+	CodeFileUndeclared            = "FILE_UNDECLARED"
+	CodeFileSizeMismatch          = "FILE_SIZE_MISMATCH"
+	CodeFileHashMismatch          = "FILE_HASH_MISMATCH"
+	CodeContentHashMismatch       = "CONTENT_HASH_MISMATCH"
+	CodeEntryFileMissing          = "ENTRY_FILE_MISSING"
+	CodeEntryHashMismatch         = "ENTRY_HASH_MISMATCH"
+	CodeEntrypointUnknown         = "ENTRYPOINT_UNKNOWN"
+	CodeEntrypointShort           = "ENTRYPOINT_INCOMPLETE"
+	CodeDependencySelf            = "DEPENDENCY_SELF"
+	CodeDependencyDuplicate       = "DEPENDENCY_DUPLICATE"
+	CodeReferenceUnresolved       = "REFERENCE_UNRESOLVED"
+	CodeCapabilityUnknown         = "CAPABILITY_UNKNOWN"
+	CodePrimitiveForbidden        = "PRIMITIVE_FORBIDDEN"
+	CodeRightsIncoherent          = "RIGHTS_INCOHERENT"
+	CodeRightsNotDistributable    = "RIGHTS_NOT_REDISTRIBUTABLE"
+	CodeUsesUnknown               = "USES_UNKNOWN"
+	CodeEntrypointKind            = "ENTRYPOINT_KIND"
+	CodeEntryBodyInvalid          = "ENTRY_BODY_INVALID"
+	CodePortableBodyUnsupported   = "PORTABLE_BODY_UNSUPPORTED"
+	CodePortableBodySchema        = "PORTABLE_BODY_SCHEMA"
+	CodePortableBodyLimit         = "PORTABLE_BODY_LIMIT"
+	CodePortableIdentityDuplicate = "PORTABLE_IDENTITY_DUPLICATE"
+	CodePortableReferenceInvalid  = "PORTABLE_REFERENCE_INVALID"
+	CodePortableReferenceKind     = "PORTABLE_REFERENCE_KIND"
+	CodePortableReferenceMismatch = "PORTABLE_REFERENCE_MISMATCH"
+	CodePortableReferenceCycle    = "PORTABLE_REFERENCE_CYCLE"
+	CodePortableSlotInvalid       = "PORTABLE_SLOT_INVALID"
+	CodePortableFileInvalid       = "PORTABLE_FILE_INVALID"
+	CodePortablePlanInputInvalid  = "PORTABLE_PLAN_INPUT_INVALID"
+	CodePortablePlanLimit         = "PORTABLE_PLAN_LIMIT"
 )
 
 // Finding points at one package object. Detail is deterministic text: it may
@@ -84,6 +97,19 @@ type Report struct {
 // Order sorts findings so two runs over the same bytes produce identical JSON.
 // severity first (errors before warnings), then code, path, object, detail.
 func Order(findings []Finding) {
+	for i := range findings {
+		// Bound before ordering and hashing; an omitted location is preferable
+		// to slicing an untrusted payload into a serialized diagnostic.
+		if utf8.RuneCountInString(findings[i].Path) > 240 {
+			findings[i].Path = ""
+		}
+		if utf8.RuneCountInString(findings[i].Object) > 128 {
+			findings[i].Object = "manifest"
+		}
+		if utf8.RuneCountInString(findings[i].Detail) > 512 {
+			findings[i].Detail = "diagnostic omitted: exceeds safe display limit"
+		}
+	}
 	sort.SliceStable(findings, func(i, j int) bool {
 		a, b := findings[i], findings[j]
 		if (a.Severity == Error) != (b.Severity == Error) {

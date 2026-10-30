@@ -2,23 +2,93 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
+	"loreviva.local/loreviva/internal/generated"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"loreviva.local/loreviva/internal/domain"
 	"loreviva.local/loreviva/internal/wepkg"
 	"loreviva.local/loreviva/internal/wire"
 )
 
-// packageRoutes serves the content-package preflight and the limits it applies.
-// Both are control-plane reads: they require the operator action, but they do
-// not need every worker adapter to be ready, because a degraded runtime still
-// has to tell an author what it will accept.
+// Package preflight, preview, capabilities and receipt recovery are control-plane
+// reads. The persistent import uses ordinary write admission and the owning
+// transaction; degraded-read access never grants an import capability.
 func (r *Runtime) packageRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /world/v1/admin/content-drafts/{draft_id}/isolation-approvals", r.admin("PackageApprovalRequest", "content.publish", func(ctx context.Context, scope domain.ProductScope, q *http.Request, raw []byte) (int, any, error) {
+		request := decode[generated.PackageApprovalRequest](raw)
+		out, e := r.Content.ApprovePackageDraft(ctx, scope, q.PathValue("draft_id"), request, q.Header.Get("Idempotency-Key"))
+		return 201, out, e
+	}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/exports", r.admin("PackageExportRequest", "content.copy", func(ctx context.Context, scope domain.ProductScope, q *http.Request, raw []byte) (int, any, error) {
+		request := decode[generated.PackageExportRequest](raw)
+		out, e := r.Content.ExportPackage(ctx, scope, request, q.Header.Get("Idempotency-Key"))
+		return 201, out, e
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/exports/{export_id}", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		out, e := r.Content.GetPackageExport(ctx, scope, q.PathValue("export_id"))
+		return 200, out, e
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/exports/{export_id}/archive", r.adminControl("", "content.copy", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		receipt, body, e := r.Store.ReadPackageExport(ctx, scope, q.PathValue("export_id"))
+		if e != nil {
+			return 0, nil, e
+		}
+		if receipt.SizeBytes != strconv.Itoa(len(body)) {
+			return 0, nil, wire.ErrJSON
+		}
+		return 200, packageBinary{body: body, media: "application/octet-stream", name: receipt.PackageID + "-" + receipt.PackageVersion + ".wepkg"}, nil
+	}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/file-bytes", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		archive, raw, e := packagePreviewBody(q)
+		if e != nil {
+			return 0, nil, e
+		}
+		var options generated.PackageFileOptions
+		if generated.Decode("PackageFileOptions", raw, &options) != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		body, file, e := wepkg.ExtractDeclaredFile(archive, options.FilePath)
+		if e != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		location := file.Rights.SourceReference
+		info := generated.PackageFileInfo{FilePath: file.Path, Sha256: file.SHA256, SizeBytes: generated.ExactUnsigned(strconv.FormatInt(file.SizeBytes, 10)), MediaType: file.MediaType, SourceRights: generated.SourceRights{OriginKind: "LICENSED", SourceLabel: "Content package file", License: file.Rights.License, AllowedUses: []string{}, SourceLocation: &location}}
+		rawInfo, e := json.Marshal(info)
+		if e != nil || generated.Validate("PackageFileInfo", rawInfo) != nil {
+			return 0, nil, wire.ErrJSON
+		}
+		return 200, packageBinary{body: body, media: "application/octet-stream", name: "package-file", metadata: base64.StdEncoding.EncodeToString(rawInfo)}, nil
+	}))
+
+	mux.HandleFunc("POST /world/v1/admin/content-packages/imports", r.admin("", "content.edit", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		archive, options, err := packagePreviewBody(q)
+		if err != nil {
+			return 0, nil, err
+		}
+		result, err := r.Content.ImportPackage(ctx, scope, archive, options, q.Header.Get("Idempotency-Key"))
+		return 201, result, err
+	}))
+	mux.HandleFunc("GET /world/v1/admin/content-packages/imports/{request_key}", r.adminControl("", "content.read", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+		if len(q.URL.Query()) != 1 {
+			return 0, nil, wire.ErrJSON
+		}
+		result, err := r.Content.GetPackageImportResult(ctx, scope, q.PathValue("request_key"))
+		return 200, result, err
+	}))
 	mux.HandleFunc("GET /world/v1/admin/content-packages/capabilities",
 		r.adminControl("", "content.read", func(_ context.Context, _ domain.ProductScope, _ *http.Request, _ []byte) (int, any, error) {
 			ids := make([]string, 0, len(wepkg.RegisteredCapabilities))
@@ -44,6 +114,15 @@ func (r *Runtime) packageRoutes(mux *http.ServeMux) {
 			}
 			report := wepkg.Check(archive, wepkg.DefaultLimits)
 			return 200, report, nil
+		}))
+	mux.HandleFunc("POST /world/v1/admin/content-packages/preview",
+		r.adminControl("", "content.check", func(ctx context.Context, scope domain.ProductScope, q *http.Request, _ []byte) (int, any, error) {
+			archive, options, err := packagePreviewBody(q)
+			if err != nil {
+				return 0, nil, err
+			}
+			report, err := r.Content.PreviewPackage(ctx, scope, archive, options)
+			return 200, report, err
 		}))
 }
 
@@ -104,3 +183,63 @@ var (
 	errUnsupportedMedia = errors.New("unsupported media")
 	errArchiveTooLarge  = errors.New("archive too large")
 )
+
+// Separate from static preflight: exactly one archive and one closed options
+// object, with independent raw-byte bounds and no temporary filesystem writes.
+func packagePreviewBody(q *http.Request) ([]byte, []byte, error) {
+	media, params, err := mime.ParseMediaType(q.Header.Get("Content-Type"))
+	if err != nil || media != "multipart/form-data" {
+		return nil, nil, errUnsupportedMedia
+	}
+	if len(q.URL.Query()) != 1 || domain.ValidateIdempotencyKey(q.Header.Get("Idempotency-Key")) != nil {
+		return nil, nil, wire.ErrJSON
+	}
+	q.Body = http.MaxBytesReader(nil, q.Body, wepkg.DefaultLimits.ArchiveBytes+65536+(1<<20))
+	reader := multipart.NewReader(q.Body, params["boundary"])
+	var archive, options []byte
+	seen := map[string]bool{}
+	for {
+		part, err := reader.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, nil, wire.ErrJSON
+		}
+		name := part.FormName()
+		if seen[name] || (name != "archive" && name != "options") {
+			return nil, nil, wire.ErrJSON
+		}
+		seen[name] = true
+		limit := int64(65536)
+		if name == "archive" {
+			limit = wepkg.DefaultLimits.ArchiveBytes
+		}
+		raw, err := io.ReadAll(io.LimitReader(part, limit+1))
+		if err != nil {
+			return nil, nil, wire.ErrJSON
+		}
+		if int64(len(raw)) > limit {
+			if name == "archive" {
+				return nil, nil, errArchiveTooLarge
+			}
+			return nil, nil, wire.ErrJSON
+		}
+		if name == "archive" {
+			archive = raw
+		} else {
+			options = raw
+		}
+	}
+	if !seen["archive"] || !seen["options"] {
+		return nil, nil, wire.ErrJSON
+	}
+	return archive, options, nil
+}
+
+// A private binary result is emitted only after its owning operation succeeds.
+type packageBinary struct {
+	body        []byte
+	media, name string
+	metadata    string
+}

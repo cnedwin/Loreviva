@@ -10,14 +10,21 @@ const ids=['getAdminSettings','commandAdminSettings','listAdminMembers','command
 test('studio_contract_exact_delta',async()=>{
  const old=JSON.parse(await readFile(new URL('./fixtures/contract13-approved-baseline.json',import.meta.url),'utf8'));
  const approved=JSON.parse(await readFile(new URL('../tests/contracts/fixtures/contract14-approved-baseline.json',import.meta.url),'utf8'));
- const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.6.0');
+ const {openapi:o}=await loadSources(); assert.equal(o.info.version,'1.11.0');
  for(const [p,v]of Object.entries(old.paths))assert.deepEqual(o.paths[p],v,p);
  for(const [n,v]of Object.entries(old.components.schemas))assert.deepEqual(o.components.schemas[n],v,n);
  assert.deepEqual(Object.keys(o.components.schemas).filter(n=>approved.components.schemas[n]&&!old.components.schemas[n]).sort(),names);
- const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,67); assert.equal(Object.keys(o.components.schemas).length,181);
+ const ops=Object.values(o.paths).flatMap(p=>Object.values(p).filter(v=>v.operationId)); assert.equal(ops.length,77); assert.equal(Object.keys(o.components.schemas).length,204);
  const added=ops.filter(op=>ids.includes(op.operationId)); assert.deepEqual(added.map(o=>o.operationId).sort(),ids);
  for(const op of added)assert.deepEqual(op.security,[{OperatorBearer:[]}]);
- assert.equal(createHash('sha256').update(await readFile(new URL('../contracts/source/wepkg.schema.json',import.meta.url))).digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
+ // Only the adopted portable-body descriptor is additive. The remaining
+ // exact canonical bytes must still match the original approved baseline.
+ const packageRaw=await readFile(new URL('../contracts/source/wepkg.schema.json',import.meta.url));
+ const legacyPackage=JSON.parse(packageRaw.toString('utf8'));
+ assert.deepEqual(packageRaw,Buffer.from(JSON.stringify(legacyPackage,null,2)+'\n'));
+ assert.ok(Object.hasOwn(legacyPackage,'x-loreviva-portable-body'));
+ delete legacyPackage['x-loreviva-portable-body'];
+ assert.equal(createHash('sha256').update(JSON.stringify(legacyPackage,null,2)+'\n').digest('hex'),'d12efa2de15d1ad4ae5ca9dc1fc093343451a059713326ceccca38e31a075d03');
 });
 async function validator(){const {openapi:o}=await loadSources();const a=new Ajv2020({strict:false,allErrors:true});addFormats(a);a.addSchema({...o,$id:'https://schemas.loreviva.invalid/studio',$schema:o.jsonSchemaDialect});return (n,v)=>a.validate({$ref:'https://schemas.loreviva.invalid/studio#/components/schemas/'+n},v);}
 test('studio_contract_closed_branches',async()=>{

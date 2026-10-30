@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 
 const textExtensions=new Set('.go .mod .sum .json .yaml .yml .md .txt .js .mjs .cjs .ts .mts .cts .tsx .vue .css .html .sql .sh .ps1 .svg .xml .toml'.split(' '));
-const binaryExtensions=new Set('.png .jpg .jpeg .gif .webp .ico .woff .woff2 .ttf .otf .pdf .zip .wasm .exe .dll'.split(' '));
+const binaryExtensions=new Set('.png .jpg .jpeg .gif .webp .ico .woff .woff2 .ttf .otf .pdf .zip .wepkg .wasm .exe .dll'.split(' '));
 const textNames=new Set(['.env.example','.gitattributes','.gitignore','.editorconfig','LICENSE','NOTICE','CODEOWNERS']);
 const rawLicense={path:'LICENSES/typescript-5.9.3-LICENSE.txt',bytes:9197,sha256:'a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47'};
 const sha=b=>createHash('sha256').update(b).digest('hex');

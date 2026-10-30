@@ -3,6 +3,7 @@ module loreviva.local/loreviva
 go 1.27.2
 
 require (
+	github.com/dlclark/regexp2 v1.11.0
 	github.com/go-kratos/kratos/v3 v3.0.0
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2

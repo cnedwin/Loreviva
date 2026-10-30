@@ -19,6 +19,10 @@ type CommittedRehearsalReport struct {
 	Sources  []CandidateSourceAsset
 }
 type rehearsalHistoryPlan struct {
+	scope                domain.ProductScope
+	bindingRaw, inputRaw []byte
+	lockList             []LockKey
+	gates                GateVersions
 	init                 rehearsalInitialization
 	children             []BarrierRequest
 	keys                 map[string]bool
@@ -69,169 +73,18 @@ func (s *Store) InspectCommittedRehearsalReport(ctx context.Context, scope domai
 		return out, e
 	}
 	defer close()
-	p := &rehearsalHistoryPlan{keys: map[string]bool{}}
-	p.init.root = task
-	p.init.world = turnIdentity(task, "rehearsal-world")
-	p.init.release = turnIdentity(task, "rehearsal-version")
-	var binding, input []byte
-	e = s.DB.QueryRowContext(ctx, "SELECT a.binding,i.document,r.storage_key,r.body_hash,r.asset_id,r.evidence_hash FROM harness_admin_rehearsals a JOIN harness_rehearsal_input_sources i USING(tenant_id,product_id,task_id,draft_id) JOIN harness_rehearsal_reports r USING(tenant_id,product_id,task_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? AND a.owner_subject_id=? AND r.state='COMMITTED' AND r.delete_intent=0", scope.TenantID, scope.ProductID, task, scope.SubjectID).Scan(&binding, &input, &p.storage, &p.hash, &p.asset, &p.evidenceHash)
+	p, e := s.prepareRehearsalHistoryPlan(ctx, scope, task)
 	if e != nil {
 		return out, e
 	}
-	if json.Unmarshal(binding, &p.init.binding) != nil || generated.Decode("RehearsalRequest", input, &p.init.request) != nil || len(p.init.binding.Inputs) < 1 || len(p.init.binding.Inputs) > 20 || p.asset != turnIdentity(task, "report-asset") {
-		return out, ErrDenied
-	}
-	var gates GateVersions
-	var enabled bool
-	e = s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&gates.Tenant, &gates.Product, &gates.Subject, &gates.Privacy, &gates.View, &enabled)
-	if e != nil {
-		return out, e
-	}
-	if !enabled {
-		return out, ErrDenied
-	}
-	e = s.DB.QueryRowContext(ctx, "SELECT release_id,world_revision,control_version,privacy_epoch,view_epoch FROM world_controls WHERE tenant_id=? AND product_id=? AND world_instance_id=?", scope.TenantID, scope.ProductID, p.init.world).Scan(&p.versions.ReleaseID, &p.versions.WorldRevision, &p.versions.ControlVersion, &p.versions.PrivacyEpoch, &p.versions.ViewEpoch)
-	if e != nil {
-		return out, e
-	}
-	keys, e := s.DraftRehearsalOwner.PlanRehearsalHistoryLocks(ctx, scope, p.init.binding)
-	if e != nil {
-		return out, e
-	}
-	more, e := s.RehearsalInitializer.PlanRehearsalHistoryRuntimeLocks(ctx, scope, task)
-	if e != nil {
-		return out, e
-	}
-	keys = append(keys, more...)
-	for index := range p.init.binding.Inputs {
-		child := turnIdentity(task, "rehearsal-child", strconv.Itoa(index))
-		var actor, source, quote string
-		var actual int
-		e = s.DB.QueryRowContext(ctx, "SELECT c.actor_id,c.input_source_id,h.quote_id,c.input_index FROM harness_rehearsal_children c JOIN harness_turns h ON h.tenant_id=c.tenant_id AND h.product_id=c.product_id AND h.task_id=c.child_task_id WHERE c.tenant_id=? AND c.product_id=? AND c.root_task_id=? AND c.child_task_id=? AND c.world_instance_id=?", scope.TenantID, scope.ProductID, task, child, p.init.world).Scan(&actor, &source, &quote, &actual)
-		if e != nil {
-			return out, e
-		}
-		if actual != index {
-			return out, ErrDenied
-		}
-		exec := &rehearsalExecution{root: domain.TaskLease{ProductScope: scope, TaskID: task, OwnerSubjectID: scope.SubjectID}, initialization: p.init, child: rehearsalChildStart{child: child, quote: quote, actor: actor, source: source, index: index}}
-		world := domain.Scope{ProductScope: scope, WorldInstanceID: p.init.world}
-		r := BarrierRequest{ProductScope: scope, WorldScope: &world, Versions: &p.versions, OwnerSubjectID: scope.SubjectID, TaskID: child, rehearsalExecution: exec, commandOnly: true, rehearsalReportRead: true}
-		p.children = append(p.children, r)
-		rows, e := s.DB.QueryContext(ctx, "SELECT a.attempt_id,z.authorization_id FROM attempts a JOIN dispatch_authorizations z USING(tenant_id,product_id,task_id,attempt_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? ORDER BY a.slot LIMIT 3", scope.TenantID, scope.ProductID, child)
-		if e != nil {
-			return out, e
-		}
-		n := 0
-		for rows.Next() {
-			var a, z string
-			if e = rows.Scan(&a, &z); e != nil {
-				rows.Close()
-				return out, e
-			}
-			keys = append(keys, LockKey{Rank: 60, IDs: []string{scope.TenantID, scope.ProductID, child, a, z}})
-			n++
-		}
-		e = rows.Err()
-		rows.Close()
-		if e != nil {
-			return out, e
-		}
-		if n < 1 || n > 2 {
-			return out, ErrDenied
-		}
-	}
-	keys = append(keys, LockKey{Rank: 90, Kind: "asset", IDs: []string{scope.TenantID, scope.ProductID, p.asset}}, LockKey{Rank: 90, Kind: "asset", IDs: []string{scope.TenantID, scope.ProductID, "staging." + p.storage}})
-	for _, k := range keys {
-		p.keys[string(lockBytes(k))] = true
-	}
+	gates, keys := p.gates, p.lockList
 	key := turnIdentity(task, "report-history-read")
 	r := BarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, TaskID: task, Operation: "REHEARSAL_REPORT_HISTORY_READ", CommandKey: key, CommitKey: key, GateVersions: gates, Locks: keys, commandOnly: true, rehearsalHistory: p}
 	_, _, e = s.barrier(ctx, r, func(port Tx) error {
-		u := port.(*unit)
-		if e := s.checkRehearsalHistoryRootTx(ctx, u, r, binding, input); e != nil {
-			return e
-		}
-		if e := s.DraftRehearsalOwner.InspectRehearsalSourcesTx(ctx, u, scope, p.init.binding); e != nil {
-			return e
-		}
-		for _, child := range p.children {
-			view := *u
-			view.taskID = child.TaskID
-			view.world = p.init.world
-			view.rehearsalExecution = child.rehearsalExecution
-			view.rehearsalReportRead = true
-			if e := checkRehearsalChildIdentity(ctx, &view, child); e != nil {
-				return e
-			}
-			var valid bool
-			e := u.tx.QueryRowContext(ctx, "SELECT c.root_generation=e.narrative_generation AND c.input_index<a.next_input AND cr.operation='REHEARSAL_CHILD_START' AND cr.phase='COMMIT' AND cr.scope_kind='PRODUCT' AND cr.world_instance_id IS NULL AND cr.task_id=c.root_task_id AND cr.owner_subject_id=h.owner_subject_id AND cr.command_key=c.accepted_receipt AND cr.payload_hash=h.command_hash FROM harness_rehearsal_children c JOIN harness_envelopes e ON e.tenant_id=c.tenant_id AND e.product_id=c.product_id AND e.task_id=c.root_task_id JOIN harness_admin_rehearsals a ON a.tenant_id=c.tenant_id AND a.product_id=c.product_id AND a.task_id=c.root_task_id JOIN harness_turns h ON h.tenant_id=c.tenant_id AND h.product_id=c.product_id AND h.task_id=c.child_task_id JOIN commit_receipts cr ON cr.commit_key=c.accepted_receipt AND cr.tenant_id=c.tenant_id AND cr.product_id=c.product_id WHERE c.tenant_id=? AND c.product_id=? AND c.child_task_id=?", scope.TenantID, scope.ProductID, child.TaskID).Scan(&valid)
-			if e != nil {
-				return e
-			}
-			if !valid {
-				return ErrDenied
-			}
-			var n int
-			if e = u.tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM attempts WHERE tenant_id=? AND product_id=? AND task_id=?", scope.TenantID, scope.ProductID, child.TaskID).Scan(&n); e != nil {
-				return e
-			}
-			if n < 1 || n > 2 {
-				return ErrDenied
-			}
-			c, e := s.inspectRehearsalChildOutcomeTx(ctx, &view, child, n)
-			if e != nil {
-				return e
-			}
-			out.Children = append(out.Children, c)
-		}
-		_, h, e := harnessPayload(out.Children)
-		if e != nil {
-			return e
-		}
-		if !bytes.Equal(h[:], p.evidenceHash) {
-			return ErrDenied
-		}
-		business := BarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, TaskID: task, Operation: "REHEARSAL_REPORT_COMMIT", CommandKey: turnIdentity(task, "report-commit"), CommitKey: turnIdentity(task, "report-commit")}
-		_, business.PayloadHash, e = harnessPayload(struct {
-			Children      []domain.RehearsalChildOutcome
-			Storage, Hash string
-		}{out.Children, p.storage, p.hash})
-		if e != nil {
-			return e
-		}
-		receipt, e := queryReceipt(ctx, u.tx, business.CommitKey)
-		if e != nil {
-			return e
-		}
-		if !receipt.matches(business) {
-			return ErrDenied
-		}
-		costs := reportCosts(&rehearsalReportInspection{expected: out.Children})
-		if !allOriginalUsageKnown(costs) {
-			if e := checkOriginalServiceMeteringTx(ctx, u, scope, task, turnIdentity(task, "service"), business.CommitKey, costs); e != nil {
-				return e
-			}
-		}
-		var storedCommit, storedEvidence []byte
-		if e = u.tx.QueryRowContext(ctx, "SELECT commit_hash,evidence_hash FROM harness_rehearsal_reports WHERE tenant_id=? AND product_id=? AND task_id=?", scope.TenantID, scope.ProductID, task).Scan(&storedCommit, &storedEvidence); e != nil {
-			return e
-		}
-		if !bytes.Equal(storedCommit, business.PayloadHash[:]) || !bytes.Equal(storedEvidence, p.evidenceHash) {
-			return ErrDenied
-		}
-		var doc []byte
-		var state, storage, owner string
-		if e = u.tx.QueryRowContext(ctx, "SELECT state,storage_key,owner_subject_id,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, p.asset).Scan(&state, &storage, &owner, &doc); e != nil {
-			return e
-		}
-		if generated.Decode("FileRecord", doc, &out.Asset) != nil || state != "READY" || out.Asset.State != "READY" || storage != p.storage || owner != scope.SubjectID || string(out.Asset.OwnerSubjectID) != owner || out.Asset.Scope.TenantID != scope.TenantID || out.Asset.Scope.ProductID != scope.ProductID || string(out.Asset.AssetID) != p.asset || out.Asset.Sha256 != p.hash || out.Asset.AudiencePolicy != "PRODUCT_EDITORS" {
-			return ErrDenied
-		}
-		out.Storage = p.storage
-		out.Sources, e = candidateSourceAssetsTx(ctx, u, scope, domain.DraftCandidateMaterial{Sources: p.init.binding.Sources})
-		if e != nil {
-			return e
+		var inspectError error
+		out, inspectError = s.inspectRehearsalHistoryPlanTx(ctx, port.(*unit), p)
+		if inspectError != nil {
+			return inspectError
 		}
 		return errApprovedInspected
 	})
@@ -255,6 +108,189 @@ func (s *Store) InspectCommittedRehearsalReport(ctx context.Context, scope domai
 				return CommittedRehearsalReport{}, ErrDenied
 			}
 		}
+	}
+	return out, nil
+}
+
+func (s *Store) prepareRehearsalHistoryPlan(ctx context.Context, scope domain.ProductScope, task string) (*rehearsalHistoryPlan, error) {
+	var e error
+	p := &rehearsalHistoryPlan{keys: map[string]bool{}, scope: scope}
+	p.init.root = task
+	p.init.world = turnIdentity(task, "rehearsal-world")
+	p.init.release = turnIdentity(task, "rehearsal-version")
+	var binding, input []byte
+	e = s.DB.QueryRowContext(ctx, "SELECT a.binding,i.document,r.storage_key,r.body_hash,r.asset_id,r.evidence_hash FROM harness_admin_rehearsals a JOIN harness_rehearsal_input_sources i USING(tenant_id,product_id,task_id,draft_id) JOIN harness_rehearsal_reports r USING(tenant_id,product_id,task_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? AND a.owner_subject_id=? AND r.state='COMMITTED' AND r.delete_intent=0", scope.TenantID, scope.ProductID, task, scope.SubjectID).Scan(&binding, &input, &p.storage, &p.hash, &p.asset, &p.evidenceHash)
+	if e != nil {
+		return nil, e
+	}
+	if json.Unmarshal(binding, &p.init.binding) != nil || generated.Decode("RehearsalRequest", input, &p.init.request) != nil || len(p.init.binding.Inputs) < 1 || len(p.init.binding.Inputs) > 20 || p.asset != turnIdentity(task, "report-asset") {
+		return nil, ErrDenied
+	}
+	var gates GateVersions
+	var enabled bool
+	e = s.DB.QueryRowContext(ctx, "SELECT t.permission_version,p.permission_version,s.permission_version,s.privacy_epoch,s.view_epoch,t.enabled AND p.enabled AND s.enabled FROM subject_governance s JOIN tenant_gates t USING(tenant_id) JOIN product_gates p USING(tenant_id,product_id) WHERE s.tenant_id=? AND s.product_id=? AND s.subject_id=?", scope.TenantID, scope.ProductID, scope.SubjectID).Scan(&gates.Tenant, &gates.Product, &gates.Subject, &gates.Privacy, &gates.View, &enabled)
+	if e != nil {
+		return nil, e
+	}
+	if !enabled {
+		return nil, ErrDenied
+	}
+	e = s.DB.QueryRowContext(ctx, "SELECT release_id,world_revision,control_version,privacy_epoch,view_epoch FROM world_controls WHERE tenant_id=? AND product_id=? AND world_instance_id=?", scope.TenantID, scope.ProductID, p.init.world).Scan(&p.versions.ReleaseID, &p.versions.WorldRevision, &p.versions.ControlVersion, &p.versions.PrivacyEpoch, &p.versions.ViewEpoch)
+	if e != nil {
+		return nil, e
+	}
+	keys, e := s.DraftRehearsalOwner.PlanRehearsalHistoryLocks(ctx, scope, p.init.binding)
+	if e != nil {
+		return nil, e
+	}
+	more, e := s.RehearsalInitializer.PlanRehearsalHistoryRuntimeLocks(ctx, scope, task)
+	if e != nil {
+		return nil, e
+	}
+	keys = append(keys, more...)
+	for index := range p.init.binding.Inputs {
+		child := turnIdentity(task, "rehearsal-child", strconv.Itoa(index))
+		var actor, source, quote string
+		var actual int
+		e = s.DB.QueryRowContext(ctx, "SELECT c.actor_id,c.input_source_id,h.quote_id,c.input_index FROM harness_rehearsal_children c JOIN harness_turns h ON h.tenant_id=c.tenant_id AND h.product_id=c.product_id AND h.task_id=c.child_task_id WHERE c.tenant_id=? AND c.product_id=? AND c.root_task_id=? AND c.child_task_id=? AND c.world_instance_id=?", scope.TenantID, scope.ProductID, task, child, p.init.world).Scan(&actor, &source, &quote, &actual)
+		if e != nil {
+			return nil, e
+		}
+		if actual != index {
+			return nil, ErrDenied
+		}
+		exec := &rehearsalExecution{root: domain.TaskLease{ProductScope: scope, TaskID: task, OwnerSubjectID: scope.SubjectID}, initialization: p.init, child: rehearsalChildStart{child: child, quote: quote, actor: actor, source: source, index: index}}
+		world := domain.Scope{ProductScope: scope, WorldInstanceID: p.init.world}
+		r := BarrierRequest{ProductScope: scope, WorldScope: &world, Versions: &p.versions, OwnerSubjectID: scope.SubjectID, TaskID: child, rehearsalExecution: exec, commandOnly: true, rehearsalReportRead: true}
+		p.children = append(p.children, r)
+		rows, e := s.DB.QueryContext(ctx, "SELECT a.attempt_id,z.authorization_id FROM attempts a JOIN dispatch_authorizations z USING(tenant_id,product_id,task_id,attempt_id) WHERE a.tenant_id=? AND a.product_id=? AND a.task_id=? ORDER BY a.slot LIMIT 3", scope.TenantID, scope.ProductID, child)
+		if e != nil {
+			return nil, e
+		}
+		n := 0
+		for rows.Next() {
+			var a, z string
+			if e = rows.Scan(&a, &z); e != nil {
+				rows.Close()
+				return nil, e
+			}
+			keys = append(keys, LockKey{Rank: 60, IDs: []string{scope.TenantID, scope.ProductID, child, a, z}})
+			n++
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return nil, e
+		}
+		if n < 1 || n > 2 {
+			return nil, ErrDenied
+		}
+	}
+	keys = append(keys, LockKey{Rank: 90, Kind: "asset", IDs: []string{scope.TenantID, scope.ProductID, p.asset}}, LockKey{Rank: 90, Kind: "asset", IDs: []string{scope.TenantID, scope.ProductID, "staging." + p.storage}})
+	for _, k := range keys {
+		p.keys[string(lockBytes(k))] = true
+	}
+	p.bindingRaw = binding
+	p.inputRaw = input
+	p.lockList = keys
+	p.gates = gates
+	return p, nil
+}
+
+func (s *Store) inspectRehearsalHistoryPlanTx(ctx context.Context, original *unit, p *rehearsalHistoryPlan) (out CommittedRehearsalReport, err error) {
+	scope := p.scope
+	task := p.init.root
+	_ = task
+	var e error
+	r := BarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, TaskID: p.init.root, Operation: "REHEARSAL_REPORT_HISTORY_READ", GateVersions: p.gates, commandOnly: true, rehearsalHistory: p}
+	binding, input := p.bindingRaw, p.inputRaw
+	view := *original
+	view.rehearsalHistory = p
+	view.rehearsalReportRead = true
+	u := &view
+	if e := s.checkRehearsalHistoryRootTx(ctx, u, r, binding, input); e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	if e := s.DraftRehearsalOwner.InspectRehearsalSourcesTx(ctx, u, scope, p.init.binding); e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	for _, child := range p.children {
+		view := *u
+		view.taskID = child.TaskID
+		view.world = p.init.world
+		view.rehearsalExecution = child.rehearsalExecution
+		view.rehearsalReportRead = true
+		if e := checkRehearsalChildIdentity(ctx, &view, child); e != nil {
+			return CommittedRehearsalReport{}, e
+		}
+		var valid bool
+		e := u.tx.QueryRowContext(ctx, "SELECT c.root_generation=e.narrative_generation AND c.input_index<a.next_input AND cr.operation='REHEARSAL_CHILD_START' AND cr.phase='COMMIT' AND cr.scope_kind='PRODUCT' AND cr.world_instance_id IS NULL AND cr.task_id=c.root_task_id AND cr.owner_subject_id=h.owner_subject_id AND cr.command_key=c.accepted_receipt AND cr.payload_hash=h.command_hash FROM harness_rehearsal_children c JOIN harness_envelopes e ON e.tenant_id=c.tenant_id AND e.product_id=c.product_id AND e.task_id=c.root_task_id JOIN harness_admin_rehearsals a ON a.tenant_id=c.tenant_id AND a.product_id=c.product_id AND a.task_id=c.root_task_id JOIN harness_turns h ON h.tenant_id=c.tenant_id AND h.product_id=c.product_id AND h.task_id=c.child_task_id JOIN commit_receipts cr ON cr.commit_key=c.accepted_receipt AND cr.tenant_id=c.tenant_id AND cr.product_id=c.product_id WHERE c.tenant_id=? AND c.product_id=? AND c.child_task_id=?", scope.TenantID, scope.ProductID, child.TaskID).Scan(&valid)
+		if e != nil {
+			return CommittedRehearsalReport{}, e
+		}
+		if !valid {
+			return CommittedRehearsalReport{}, ErrDenied
+		}
+		var n int
+		if e = u.tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM attempts WHERE tenant_id=? AND product_id=? AND task_id=?", scope.TenantID, scope.ProductID, child.TaskID).Scan(&n); e != nil {
+			return CommittedRehearsalReport{}, e
+		}
+		if n < 1 || n > 2 {
+			return CommittedRehearsalReport{}, ErrDenied
+		}
+		c, e := s.inspectRehearsalChildOutcomeTx(ctx, &view, child, n)
+		if e != nil {
+			return CommittedRehearsalReport{}, e
+		}
+		out.Children = append(out.Children, c)
+	}
+	_, h, e := harnessPayload(out.Children)
+	if e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	if !bytes.Equal(h[:], p.evidenceHash) {
+		return CommittedRehearsalReport{}, ErrDenied
+	}
+	business := BarrierRequest{ProductScope: scope, OwnerSubjectID: scope.SubjectID, TaskID: task, Operation: "REHEARSAL_REPORT_COMMIT", CommandKey: turnIdentity(task, "report-commit"), CommitKey: turnIdentity(task, "report-commit")}
+	_, business.PayloadHash, e = harnessPayload(struct {
+		Children      []domain.RehearsalChildOutcome
+		Storage, Hash string
+	}{out.Children, p.storage, p.hash})
+	if e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	receipt, e := queryReceipt(ctx, u.tx, business.CommitKey)
+	if e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	if !receipt.matches(business) {
+		return CommittedRehearsalReport{}, ErrDenied
+	}
+	costs := reportCosts(&rehearsalReportInspection{expected: out.Children})
+	if !allOriginalUsageKnown(costs) {
+		if e := checkOriginalServiceMeteringTx(ctx, u, scope, task, turnIdentity(task, "service"), business.CommitKey, costs); e != nil {
+			return CommittedRehearsalReport{}, e
+		}
+	}
+	var storedCommit, storedEvidence []byte
+	if e = u.tx.QueryRowContext(ctx, "SELECT commit_hash,evidence_hash FROM harness_rehearsal_reports WHERE tenant_id=? AND product_id=? AND task_id=?", scope.TenantID, scope.ProductID, task).Scan(&storedCommit, &storedEvidence); e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	if !bytes.Equal(storedCommit, business.PayloadHash[:]) || !bytes.Equal(storedEvidence, p.evidenceHash) {
+		return CommittedRehearsalReport{}, ErrDenied
+	}
+	var doc []byte
+	var state, storage, owner string
+	if e = u.tx.QueryRowContext(ctx, "SELECT state,storage_key,owner_subject_id,document FROM assets WHERE tenant_id=? AND product_id=? AND asset_id=?", scope.TenantID, scope.ProductID, p.asset).Scan(&state, &storage, &owner, &doc); e != nil {
+		return CommittedRehearsalReport{}, e
+	}
+	if generated.Decode("FileRecord", doc, &out.Asset) != nil || state != "READY" || out.Asset.State != "READY" || storage != p.storage || owner != scope.SubjectID || string(out.Asset.OwnerSubjectID) != owner || out.Asset.Scope.TenantID != scope.TenantID || out.Asset.Scope.ProductID != scope.ProductID || string(out.Asset.AssetID) != p.asset || out.Asset.Sha256 != p.hash || out.Asset.AudiencePolicy != "PRODUCT_EDITORS" {
+		return CommittedRehearsalReport{}, ErrDenied
+	}
+	out.Storage = p.storage
+	out.Sources, e = candidateSourceAssetsTx(ctx, u, scope, domain.DraftCandidateMaterial{Sources: p.init.binding.Sources})
+	if e != nil {
+		return CommittedRehearsalReport{}, e
 	}
 	return out, nil
 }

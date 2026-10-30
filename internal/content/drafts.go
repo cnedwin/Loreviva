@@ -157,6 +157,7 @@ func (s *Service) Create(ctx context.Context, scope domain.ProductScope, kind, p
 	}
 	d := makeDraft(scope, id, project, kind, in)
 	locks := []store.LockKey{Key(scope, "content_draft", id)}
+	locks = append(locks, importLineageLocks(scope, id, in)...)
 	if project != "" {
 		locks = append(locks, Key(scope, "content_project", project))
 	}
@@ -164,6 +165,9 @@ func (s *Service) Create(ctx context.Context, scope domain.ProductScope, kind, p
 		Kind, Project string
 		Input         generated.DraftInput
 	}{kind, project, in}, locks, func(tx store.Tx) (any, error) {
+		if e := s.applyImportLineage(ctx, tx, scope, &d, nil); e != nil {
+			return nil, e
+		}
 		if e := createRows(ctx, tx, scope, d, newProject); e != nil {
 			return nil, e
 		}
@@ -174,6 +178,7 @@ func (s *Service) Create(ctx context.Context, scope domain.ProductScope, kind, p
 	}
 	return out, e
 }
+
 // Under the planned draft lock, a new save checks the expected revision before advancing the pointer and inserting the immutable revision; receipt replay returns the original result.
 func (s *Service) SaveDraft(ctx context.Context, scope domain.ProductScope, id string, in generated.DraftInput, expected uint64, key string) (generated.ContentDraft, error) {
 	var out generated.ContentDraft
@@ -184,7 +189,7 @@ func (s *Service) SaveDraft(ctx context.Context, scope domain.ProductScope, id s
 	raw, e := Command(ctx, s.Store, scope, "saveContentDraft", key, id, "ContentDraft", struct {
 		Revision uint64
 		Input    generated.DraftInput
-	}{expected, in}, []store.LockKey{Key(scope, "content_draft", id)}, func(tx store.Tx) (any, error) {
+	}{expected, in}, append([]store.LockKey{Key(scope, "content_draft", id)}, importLineageLocks(scope, id, in)...), func(tx store.Tx) (any, error) {
 		d, e := current(ctx, tx, scope, id, expected)
 		if e != nil {
 			return nil, e
@@ -196,6 +201,9 @@ func (s *Service) SaveDraft(ctx context.Context, scope domain.ProductScope, id s
 			return nil, ErrBlocked
 		}
 		d.Input = in
+		if e = s.applyImportLineage(ctx, tx, scope, &d, nil); e != nil {
+			return nil, e
+		}
 		d.ContentHash, e = Hash(in)
 		if e != nil {
 			return nil, e
@@ -208,7 +216,7 @@ func (s *Service) SaveDraft(ctx context.Context, scope domain.ProductScope, id s
 		if e = tx.RequireLock(Key(scope, "content_draft", id)); e != nil {
 			return nil, e
 		}
-		if _, e = tx.ExecContext(ctx, "UPDATE content_drafts SET current_revision=? WHERE tenant_id=? AND product_id=? AND draft_id=?", expected+1, scope.TenantID, scope.ProductID, id); e != nil {
+		if _, e = tx.ExecContext(ctx, "UPDATE content_drafts SET current_revision=?,state=? WHERE tenant_id=? AND product_id=? AND draft_id=?", expected+1, d.State, scope.TenantID, scope.ProductID, id); e != nil {
 			return nil, e
 		}
 		if e = writeRevision(ctx, tx, scope, d); e != nil {

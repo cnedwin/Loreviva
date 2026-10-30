@@ -25,10 +25,11 @@ type FieldErrors struct{ Findings []generated.FieldError }
 func (e *FieldErrors) Error() string { return "definition field validation failed" }
 
 type Service struct {
-	Store       *store.Store
-	cursorOnce  sync.Once
-	cursorKey   [32]byte
-	cursorError error
+	Store        *store.Store
+	PackageFiles PackageFileReader
+	cursorOnce   sync.Once
+	cursorKey    [32]byte
+	cursorError  error
 }
 
 type originalPayloadKey struct{}
@@ -37,7 +38,16 @@ func WithOriginalPayload(ctx context.Context, raw []byte) context.Context {
 	return context.WithValue(ctx, originalPayloadKey{}, json.RawMessage(append([]byte(nil), raw...)))
 }
 
-func New(s *store.Store) *Service { return &Service{Store: s} }
+func New(s *store.Store) *Service {
+	service := &Service{Store: s}
+	// Pure transaction helpers also use New(nil); owner registration requires a
+	// concrete Store and must not make those read-only helpers dereference nil.
+	if s != nil {
+		s.PackagePreviewOwner = service
+		s.PackageExportOwner = service
+	}
+	return service
+}
 func Scope(s domain.ProductScope) generated.ProductScope {
 	return generated.ProductScope{TenantID: s.TenantID, ProductID: s.ProductID}
 }

@@ -1,12 +1,15 @@
 package wepkg
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+
+	"loreviva.local/loreviva/internal/generated"
 )
 
 // schemaExample returns the manifest published inside the format schema. It is
@@ -152,7 +155,7 @@ func TestCheckGraphCoversReferencesEntrypointsAndDependencies(t *testing.T) {
 
 func TestCheckGraphRejectsUnregisteredCapability(t *testing.T) {
 	m := schemaExample(t)
-	m.Requirements.Tool = []Capability{{CapabilityID: "teleport", Required: true}}
+	m.Requirements.Tool = []ToolRequirement{{ToolCapabilityID: "teleport", RegisteredContractVersion: "1.0.0", Required: true}}
 	if findings := CheckGraph(m); !has(findings, CodeCapabilityUnknown) {
 		t.Fatalf("unregistered capability accepted: %v", codes(findings))
 	}
@@ -169,7 +172,7 @@ func TestCheckRulePrimitivesRefusesUnknownPrimitive(t *testing.T) {
 }
 
 func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
-	body := []byte(`{"name":"coffee"}`)
+	body := mustJSON(t, portableSchemaFixture(t, "WORLD"))
 	sum := sha256.Sum256(body)
 	digest := hex.EncodeToString(sum[:])
 	records := []fileDigest{{Path: "definitions/coffee.json", SHA256: digest, SizeBytes: int64(len(body))}}
@@ -182,7 +185,7 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 	manifest := map[string]any{
 		"format_version": "1.0", "package_id": "coffee.demo", "kind": "WORLD", "package_version": "1.0.0",
 		"content_sha256": content,
-		"compatibility":  map[string]any{"package_format_major": 1},
+		"compatibility":  map[string]any{"public_api_major": 1, "package_format_major": 1, "minimum_runtime_contract": "1.0.0", "rule_primitive_set": "core.v1"},
 		"entrypoints":    []string{"coffee_demo"},
 		"entries": []any{map[string]any{"logical_id": "coffee_demo", "kind": "WORLD", "path": "definitions/coffee.json",
 			"version": "1.0.0", "sha256": digest, "references": []string{}}},
@@ -190,9 +193,9 @@ func TestCheckEndToEndRejectsAndAccepts(t *testing.T) {
 			"media_type": "application/json", "rights": map[string]any{"license": "CC0-1.0", "source_reference": "synthetic",
 				"redistribution_allowed": true, "allowed_uses": []string{"WORLD_CONTENT"}}}},
 		"dependencies": []any{},
-		"requirements": map[string]any{"model_capabilities": []any{}, "tool_capabilities": []any{}, "presentation_capabilities": []any{
+		"requirements": map[string]any{"tested_configurations": []any{}, "model_capabilities": []any{}, "tool_capabilities": []any{}, "presentation_capabilities": []any{
 			map[string]any{"capability_id": "text", "required": true}}},
-		"provenance": map[string]any{"author_display_name": "test", "license": "CC0-1.0", "source_references": []string{"synthetic"}},
+		"provenance": map[string]any{"created_at": "2026-10-28T00:00:00Z", "synthetic_examples_only": true, "author_display_name": "test", "license": "CC0-1.0", "source_references": []string{"synthetic"}},
 	}
 	manifestRaw, _ := json.Marshal(manifest)
 	archive := build(t, member{name: "manifest.json", body: manifestRaw}, member{name: "definitions/coffee.json", body: body})
@@ -268,4 +271,114 @@ func mustJSON(t *testing.T, v any) []byte {
 		t.Fatal(e)
 	}
 	return raw
+}
+
+func TestCheckReportsMatchWireContract(t *testing.T) {
+	body := mustJSON(t, portableSchemaFixture(t, "WORLD"))
+	sum := sha256.Sum256(body)
+	digest := hex.EncodeToString(sum[:])
+	m := Manifest{
+		FormatVersion: "1.0", PackageID: "wire.fixture", Kind: "WORLD", PackageVersion: "1.0.0",
+		Entrypoints: []string{"world"},
+		Entries:     []Entry{{LogicalID: "world", Kind: "WORLD", Path: "definitions/world.json", Version: "1.0.0", SHA256: digest, References: []string{}}},
+		Files: []FileRecord{{Path: "definitions/world.json", SHA256: digest, SizeBytes: int64(len(body)), MediaType: "application/json",
+			Rights: Rights{License: "CC0-1.0", SourceReference: "synthetic", RedistributionAllowed: true, AllowedUses: []string{"WORLD_CONTENT"}}}},
+		Dependencies:  []Dependency{},
+		Requirements:  Requirements{Model: []Capability{}, Tool: []ToolRequirement{}, Presentation: []Capability{{CapabilityID: "text", Required: true}}, TestedConfigurations: []TestedConfiguration{}},
+		Compatibility: Compatibility{PublicAPIMajor: 1, PackageFormatMajor: 1, MinimumRuntimeContract: "1.0.0", RulePrimitiveSet: "core.v1"},
+		Provenance:    Provenance{AuthorDisplayName: "test", License: "CC0-1.0", SourceReferences: []string{"synthetic"}, CreatedAt: "2026-10-28T00:00:00Z", SyntheticExamplesOnly: true},
+	}
+	var err error
+	m.ContentSHA256, err = ContentHash(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := mustJSON(t, m)
+	manifestPart := member{name: "manifest.json", body: manifest}
+	bodyPart := member{name: "definitions/world.json", body: body}
+	archive := build(t, manifestPart, bodyPart)
+	report := Check(archive, DefaultLimits)
+	if report.Verdict != "PASS" {
+		t.Fatalf("fixture rejected: %v", codes(report.Findings))
+	}
+	rejected := Check(build(t, manifestPart, bodyPart, member{name: "extra.json", body: []byte(`{}`)}), DefaultLimits)
+	if rejected.Verdict != "REJECT" || !has(rejected.Findings, CodeFileUndeclared) {
+		t.Fatal("missing undeclared-file rejection")
+	}
+	wantLimits := map[string]int64{
+		"archive_bytes": DefaultLimits.ArchiveBytes, "manifest_bytes": DefaultLimits.ManifestBytes,
+		"entries": int64(DefaultLimits.Entries), "file_bytes": DefaultLimits.FileBytes,
+		"total_bytes": DefaultLimits.TotalBytes, "ratio": DefaultLimits.Ratio,
+		"path_length": int64(DefaultLimits.PathLength), "path_depth": int64(DefaultLimits.PathDepth),
+	}
+	for _, tc := range []struct {
+		name   string
+		report Report
+	}{{"PASS", report}, {"REJECT", rejected}} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Validate actual serialized reports, before same-type decoding can hide field spelling.
+			raw := mustJSON(t, tc.report)
+			if err := generated.Validate("PackagePreflightReport", raw); err != nil {
+				t.Errorf("report wire schema: %v", err)
+			}
+			var wire struct {
+				Limits json.RawMessage `json:"limits"`
+			}
+			if err := json.Unmarshal(raw, &wire); err != nil {
+				t.Fatal(err)
+			}
+			if err := generated.Validate("PackagePreflightLimits", wire.Limits); err != nil {
+				t.Errorf("limits wire schema: %v", err)
+			}
+			var limits map[string]int64
+			if err := json.Unmarshal(wire.Limits, &limits); err != nil {
+				t.Fatal(err)
+			}
+			if len(limits) != len(wantLimits) {
+				t.Fatalf("limit key count: got %d want %d", len(limits), len(wantLimits))
+			}
+			for key, want := range wantLimits {
+				if got, ok := limits[key]; !ok || got != want {
+					t.Errorf("limit %s missing or incorrect", key)
+				}
+			}
+		})
+	}
+	t.Run("determinism_and_repack", func(t *testing.T) {
+		again := Check(archive, DefaultLimits)
+		if !bytes.Equal(mustJSON(t, report), mustJSON(t, again)) {
+			t.Fatal("same input changed report bytes")
+		}
+		// Reuse identical member bodies in reverse container order, not a hand-edited report.
+		repackedBytes := build(t, bodyPart, manifestPart)
+		repacked := Check(repackedBytes, DefaultLimits)
+		if bytes.Equal(archive, repackedBytes) || report.ArchiveSHA256 == repacked.ArchiveSHA256 {
+			t.Fatal("fixture did not change container bytes")
+		}
+		if repacked.Verdict != "PASS" || repacked.ManifestSHA256 != report.ManifestSHA256 || repacked.ContentHashComputed != report.ContentHashComputed || repacked.ReportSHA256 != report.ReportSHA256 {
+			t.Fatal("repacking changed content or report identity")
+		}
+	})
+	for _, tc := range []struct {
+		name   string
+		change func(*Limits)
+	}{
+		{"archive_bytes", func(l *Limits) { l.ArchiveBytes++ }},
+		{"manifest_bytes", func(l *Limits) { l.ManifestBytes++ }},
+		{"entries", func(l *Limits) { l.Entries++ }},
+		{"file_bytes", func(l *Limits) { l.FileBytes++ }},
+		{"total_bytes", func(l *Limits) { l.TotalBytes++ }},
+		{"ratio", func(l *Limits) { l.Ratio++ }},
+		{"path_length", func(l *Limits) { l.PathLength++ }},
+		{"path_depth", func(l *Limits) { l.PathDepth++ }},
+	} {
+		t.Run("limit_"+tc.name, func(t *testing.T) {
+			limits := DefaultLimits
+			tc.change(&limits)
+			changed := Check(archive, limits)
+			if changed.Verdict != "PASS" || changed.ReportSHA256 == report.ReportSHA256 {
+				t.Fatal("applied limit did not change passing report identity")
+			}
+		})
+	}
 }

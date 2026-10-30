@@ -24,6 +24,22 @@ func receiptPhase(r BarrierRequest) string {
 	return r.phase
 }
 func validateBarrier(r BarrierRequest) error {
+	if r.packageTransferRead != (r.Operation == "PACKAGE_EXPORT_READ") {
+		return ErrDenied
+	}
+	if r.packageTransferRead && (!r.commandOnly || r.Runtime != nil || r.WorldScope != nil || r.TaskID != "" || r.Purpose != ExecutionPurpose) {
+		return ErrDenied
+	}
+	if r.packageApproval != nil && (r.Operation != "approvePackageDraft" || !r.commandOnly || r.WorldScope != nil || r.TaskID != "" || r.packageApproval.scope != r.ProductScope || r.OwnerSubjectID != r.ProductScope.SubjectID) {
+		return ErrDenied
+	}
+	if r.packagePreview != (r.Operation == "PACKAGE_LOCAL_PREVIEW") {
+		return ErrDenied
+	}
+	if r.packagePreview && (!r.commandOnly || r.WorldScope != nil || r.Runtime != nil || r.TaskID != "" || r.candidateExecution || r.candidateHistoryRead != nil || r.rehearsalHistory != nil || r.Purpose != ExecutionPurpose || r.OwnerSubjectID != r.ProductScope.SubjectID) {
+		return ErrDenied
+	}
+
 	if r.draftResolution && (!r.commandOnly || r.WorldScope != nil || r.Runtime != nil || r.TaskID != "" || r.candidateExecution || r.candidateHistoryRead != nil || r.rehearsalHistory != nil || r.Purpose != ExecutionPurpose || r.Operation != "DRAFT_GENERATION_RESOLUTION" || r.OwnerSubjectID != r.ProductScope.SubjectID) {
 		return ErrDenied
 	}
@@ -112,6 +128,7 @@ func validateBarrier(r BarrierRequest) error {
 	return nil
 }
 func baseLocks(r BarrierRequest) []LockKey {
+	r = packageHistoryLockView(r)
 	t, p, sub := r.ProductScope.TenantID, r.ProductScope.ProductID, r.ProductScope.SubjectID
 	kind, _, w := scopeOf(r)
 	keys := []LockKey{{Rank: 10, IDs: []string{t}}, {Rank: 20, IDs: []string{t, p}}, {Rank: 30, IDs: []string{t, p, sub}}, {Rank: 45, IDs: []string{t, p, sub, r.Operation, kind, w, r.CommandKey}}, {Rank: 110, Kind: "commit_receipts", IDs: []string{r.CommitKey}}}
@@ -214,7 +231,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	if e := s.prepareIntegrationExecution(ctx, &r); e != nil {
 		return receipt, false, e
 	}
- if e:=s.planIntegrationMemoryBirth(&r);e!=nil{return receipt,false,e}
+	if e := s.planIntegrationMemoryBirth(&r); e != nil {
+		return receipt, false, e
+	}
 	if e := s.planIntegrationDelivery(ctx, &r); e != nil {
 		return receipt, false, e
 	}
@@ -233,7 +252,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		return receipt, false, e
 	}
 	if r.integrationGovernance == nil {
-		if e := s.prepareOperatorBarrier(ctx, &r); e != nil { return receipt, false, e }
+		if e := s.prepareOperatorBarrier(ctx, &r); e != nil {
+			return receipt, false, e
+		}
 	} else if p := r.integrationGovernance; !p.active || !p.executing || p.store != s || p.owner != s.integrationGovernanceOwner || ctx.Value(integrationGovernanceContextKey{}) != p || r.Operation != "MEMORY_GOVERNANCE_ACCEPT" || !r.commandOnly || p.hash != r.PayloadHash {
 		return receipt, false, ErrDenied
 	}
@@ -256,9 +277,20 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}()
 	u := &unit{tx: tx, plan: map[string]bool{}, scope: r.ProductScope, taskID: r.TaskID, commandOnly: r.commandOnly, fence: r.Fence, purpose: r.Purpose, world: worldKey(r)}
 	u.operatorStore = s
- u.integrationMemoryBirth=r.integrationMemoryBirth
- if p:=r.integrationMemoryBirth;p!=nil {if p.unit!=nil||p.closed{return receipt,false,ErrDenied};p.unit=u;defer func(){p.closed=true;p.active=false;p.beforeRaw=nil;p.afterRaw=nil;p.input.Body=""}()}
-	if p := r.integrationGovernance; p != nil { if p.unit != nil { return receipt, false, ErrDenied }; p.unit = u }
+	u.integrationMemoryBirth = r.integrationMemoryBirth
+	if p := r.integrationMemoryBirth; p != nil {
+		if p.unit != nil || p.closed {
+			return receipt, false, ErrDenied
+		}
+		p.unit = u
+		defer func() { p.closed = true; p.active = false; p.beforeRaw = nil; p.afterRaw = nil; p.input.Body = "" }()
+	}
+	if p := r.integrationGovernance; p != nil {
+		if p.unit != nil {
+			return receipt, false, ErrDenied
+		}
+		p.unit = u
+	}
 	u.integrationDelivery = r.integrationDelivery
 	if r.integrationDelivery != nil {
 		r.integrationDelivery.unit = u
@@ -271,11 +303,14 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	u.integrationControl = r.integrationControl
 	u.integrationTurn = r.integrationTurn
 	u.operation = r.Operation
+	u.contentAction = r.contentAction
 	u.runtime = r.Runtime
 	u.rehearsalInitialization = r.rehearsalInitialization
 	u.rehearsalChildStart = r.rehearsalChildStart
 	u.rehearsalExecution = r.rehearsalExecution
 	u.rehearsalReportRead = r.rehearsalReportRead
+	u.packageTransferRead = r.packageTransferRead
+	u.packagePreviewRead = r.packagePreview
 	u.rehearsalReport = r.rehearsalReport
 	u.rehearsalHistory = r.rehearsalHistory
 	u.candidateSourcesOwner = s.DraftCandidateOwner
@@ -288,7 +323,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}
 	for _, k := range plan {
 		if e = s.acquire(ctx, tx, r, k); e != nil {
-			if r.integrationGovernance != nil { return receipt, false, fmt.Errorf("integration governance lock rank %d: %w", k.Rank, e) }
+			if r.integrationGovernance != nil {
+				return receipt, false, fmt.Errorf("integration governance lock rank %d: %w", k.Rank, e)
+			}
 			if r.integrationTurn != nil {
 				return receipt, false, fmt.Errorf("integration turn lock rank %d: %w", k.Rank, e)
 			}
@@ -302,7 +339,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 			s.Trace(k)
 		}
 	}
-	if e = s.checkIntegrationGovernance(ctx, u, r, false); e != nil { return receipt, false, fmt.Errorf("integration governance current: %w", e) }
+	if e = s.checkIntegrationGovernance(ctx, u, r, false); e != nil {
+		return receipt, false, fmt.Errorf("integration governance current: %w", e)
+	}
 	if e = s.checkOperatorBarrier(ctx, tx, r); e != nil {
 		if r.integrationTurn != nil {
 			return receipt, false, fmt.Errorf("integration turn current: %w", e)
@@ -379,7 +418,9 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 		return receipt, false, e
 	}
 	if e = body(u); e != nil {
-		if r.integrationGovernance != nil { return receipt, false, fmt.Errorf("integration governance body: %w", e) }
+		if r.integrationGovernance != nil {
+			return receipt, false, fmt.Errorf("integration governance body: %w", e)
+		}
 		if r.integrationTurn != nil {
 			return receipt, false, fmt.Errorf("integration %s body: %w", r.Operation, e)
 		}
@@ -408,6 +449,7 @@ func (s *Store) barrier(ctx context.Context, r BarrierRequest, body func(Tx) err
 	}
 	return CommitReceipt{Key: r.CommitKey, TaskID: r.TaskID, OwnerSubjectID: r.OwnerSubjectID, Committed: true}, false, nil
 }
+
 // Task-backed requests use the current database fence, worker, cancellation and expiry; command-only requests have no task lease check here.
 func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error {
 	if r.commandOnly {
@@ -438,10 +480,16 @@ func checkCurrentLease(ctx context.Context, tx *sql.Tx, r BarrierRequest) error 
 	}
 	return nil
 }
+
 // Planned keys do not replace current row checks: base gates and task locks validate their owned identities, while specialized branches retain their own validators.
 func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k LockKey) error {
- if handled,e:=s.acquireIntegrationMemoryBirth(ctx,tx,r,k);handled{return e}
-	if handled, e := s.acquireGovernanceIdentityKey(ctx, tx, r, k); handled { return e }
+	r = packageHistoryLockView(r)
+	if handled, e := s.acquireIntegrationMemoryBirth(ctx, tx, r, k); handled {
+		return e
+	}
+	if handled, e := s.acquireGovernanceIdentityKey(ctx, tx, r, k); handled {
+		return e
+	}
 	if handled, e := s.acquireIntegrationTurnKey(ctx, tx, r, k); handled {
 		return e
 	}
@@ -559,7 +607,15 @@ func (s *Store) acquire(ctx context.Context, tx *sql.Tx, r BarrierRequest, k Loc
 		if k.IDs[2] == sub {
 			switch r.Purpose {
 			case ExecutionPurpose:
-				if r.draftResolution {
+				if r.packageTransferRead {
+					if e := operatorActionTx(ctx, tx, s, r.ProductScope, "content.copy"); e != nil {
+						return e
+					}
+				} else if r.packagePreview {
+					if e := operatorActionTx(ctx, tx, s, r.ProductScope, "content.check"); e != nil {
+						return e
+					}
+				} else if r.draftResolution {
 					if e := s.draftResolutionReadTx(ctx, tx, r.ProductScope); e != nil {
 						return e
 					}

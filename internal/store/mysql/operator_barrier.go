@@ -28,12 +28,24 @@ func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) e
 		}
 		return nil // Exact private plan is checked before body/replay and final commit.
 	}
+	if r.packageApproval != nil && r.packageApproval.store != s {
+		return ErrDenied
+	}
 	var actions []string
 	switch r.Operation {
+	case "approvePackageDraft":
+		actions = []string{"content.read", "content.check", "content.edit", "content.copy", "content.publish"}
+		if r.packageApproval != nil {
+			actions = append(actions, "content.rehearse")
+		}
+	case "exportContentPackage", "PACKAGE_EXPORT_READ":
+		actions = []string{"content.read", "content.copy"}
 	case withdrawalOperation:
 		actions = []string{"content.archive"}
 	case "createContentDraft", "saveContentDraft":
 		actions = []string{"content.edit"}
+	case "importContentPackage":
+		actions = []string{"content.read", "content.check", "content.edit", "content.copy"}
 	case "checkDraftImpact", "checkDraftForPublish":
 		actions = []string{"content.check"}
 	case "publishContentDraft":
@@ -63,6 +75,8 @@ func (s *Store) prepareOperatorBarrier(ctx context.Context, r *BarrierRequest) e
 		actions = []string{"content.assist"}
 	case "REHEARSAL_PREPARE", "REHEARSAL_INTAKE", "REHEARSAL_SOURCE_INSPECT", "REHEARSAL_INSPECT":
 		actions = []string{"content.rehearse"}
+	case "PACKAGE_LOCAL_PREVIEW":
+		actions = []string{"content.read", "content.check", "content.edit", "content.copy"}
 	case "DRAFT_GENERATION_RESOLUTION":
 		actions = []string{"content.read"}
 	}

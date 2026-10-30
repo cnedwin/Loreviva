@@ -13,12 +13,22 @@ import (
 // These closed routes/profile fingerprints are projected from the same fixed
 // source as generated.IntegrationCapabilities. A descriptor never grants caller
 // authority: actual mount and current owning composition are checked separately.
-const capabilityTableSourceHash = "8b47e97040db2fa8b3d9ef4ad65459b649c580b59fbfef74ca4a3208e88420ce"
-const capabilityProfiles = `[{"profile":"public_v1","selector_header":"Loreviva-Client-Contract","default":true,"openapi_ref":"/contracts/profiles/public_v1.openapi.json","openapi_sha256":"338e8d86cda919f495170f3cdf0744ead0c7f1d6adc11a094174687539924479","projections":[]},{"profile":"integration_r0_v1","selector_header":"Loreviva-Client-Contract","default":false,"openapi_ref":"/contracts/profiles/integration_r0_v1.openapi.json","openapi_sha256":"af191848ce68c4f283d72a0a8c2e01550deef180cec1065d4708d3ab7cebc96f","projections":[{"operation_id":"getTurn","status":"200","media_type":"application/json","schema_name":"IntegrationTurnView","parameter":"NONE","value":"DEFAULT"},{"operation_id":"getEvents","status":"200","media_type":"application/json","schema_name":"IntegrationEventPage","parameter":"NONE","value":"DEFAULT"},{"operation_id":"streamEvents","status":"200","media_type":"text/event-stream","schema_name":"IntegrationSSEUpdate","parameter":"NONE","value":"DEFAULT","sse_data_schema":"IntegrationSSEUpdate"},{"operation_id":"listMemories","status":"200","media_type":"application/json","schema_name":"PlayerMemoryMetadataPage","parameter":"include","value":"DEFAULT"},{"operation_id":"getMemory","status":"200","media_type":"application/json","schema_name":"PlayerMemoryMetadata","parameter":"include","value":"DEFAULT"}]}]`
+const capabilityTableSourceHash = "9e705e5844e8895de53c82937d4c2faa823b9635c862945ce916c8092abb492f"
+const capabilityProfiles = `[{"profile":"public_v1","selector_header":"Loreviva-Client-Contract","default":true,"openapi_ref":"/contracts/profiles/public_v1.openapi.json","openapi_sha256":"88850c812a9d898f2608f6c5f6cc13b4b97bc8133596486bc5c3d4569e8db06f","projections":[]},{"profile":"integration_r0_v1","selector_header":"Loreviva-Client-Contract","default":false,"openapi_ref":"/contracts/profiles/integration_r0_v1.openapi.json","openapi_sha256":"c81c1b193695ffd193e0678c8708c3a4816d18f87ba450e669696c8ac05121a8","projections":[{"operation_id":"getTurn","status":"200","media_type":"application/json","schema_name":"IntegrationTurnView","parameter":"NONE","value":"DEFAULT"},{"operation_id":"getEvents","status":"200","media_type":"application/json","schema_name":"IntegrationEventPage","parameter":"NONE","value":"DEFAULT"},{"operation_id":"streamEvents","status":"200","media_type":"text/event-stream","schema_name":"IntegrationSSEUpdate","parameter":"NONE","value":"DEFAULT","sse_data_schema":"IntegrationSSEUpdate"},{"operation_id":"listMemories","status":"200","media_type":"application/json","schema_name":"PlayerMemoryMetadataPage","parameter":"include","value":"DEFAULT"},{"operation_id":"getMemory","status":"200","media_type":"application/json","schema_name":"PlayerMemoryMetadata","parameter":"include","value":"DEFAULT"}]}]`
 
 type capabilityRoute struct{ method, path, group string }
 
 var capabilityRoutes = map[string]capabilityRoute{
+	"getDocumentCapabilities":           {"GET", "/world/v1/admin/document-capabilities", "files"},
+	"previewContentDocument":            {"POST", "/world/v1/admin/assets/{asset_id}/document-preview", "files"},
+	"approvePackageDraft":               {"POST", "/world/v1/admin/content-drafts/{draft_id}/isolation-approvals", "content"},
+	"exportContentPackage":              {"POST", "/world/v1/admin/content-packages/exports", "content"},
+	"getPackageExport":                  {"GET", "/world/v1/admin/content-packages/exports/{export_id}", "content"},
+	"downloadPackageExport":             {"GET", "/world/v1/admin/content-packages/exports/{export_id}/archive", "content"},
+	"readContentPackageFile":            {"POST", "/world/v1/admin/content-packages/file-bytes", "content"},
+	"importContentPackage":              {"POST", "/world/v1/admin/content-packages/imports", "content"},
+	"getPackageImportResult":            {"GET", "/world/v1/admin/content-packages/imports/{request_key}", "content"},
+	"previewContentPackage":             {"POST", "/world/v1/admin/content-packages/preview", "content"},
 	"preflightContentPackage":           {"POST", "/world/v1/admin/content-packages/preflight", "content"},
 	"getContentPackageCapabilities":     {"GET", "/world/v1/admin/content-packages/capabilities", "content"},
 	"cancelAdminTask":                   {"POST", "/world/v1/admin/tasks/{task_id}/cancel", "task"},
@@ -129,11 +139,11 @@ func (r *Runtime) integrationCapabilitiesRoutes(mux *http.ServeMux) {
 			failure(w, e)
 			return
 		}
-		out := generated.IntegrationCapabilities{ContractVersion: "1.6.0", SourceHash: generated.SourceHash, SelectedProfile: profile, Profiles: json.RawMessage(capabilityProfiles), RuntimeMediaMimeTypes: []string{}, CommercialStatus: "SYNTHETIC_MOCK"}
+		out := generated.IntegrationCapabilities{ContractVersion: "1.11.0", SourceHash: generated.SourceHash, SelectedProfile: profile, Profiles: json.RawMessage(capabilityProfiles), RuntimeMediaMimeTypes: []string{}, CommercialStatus: "SYNTHETIC_MOCK"}
 		owners := r.capabilityOwners(ctx)
 		values := reflect.ValueOf(&out.Operations).Elem()
 		shape := values.Type()
-		if values.NumField() != 67 || len(capabilityRoutes) != 67 {
+		if values.NumField() != 77 || len(capabilityRoutes) != 77 {
 			failure(w, wire.ErrJSON)
 			return
 		}
