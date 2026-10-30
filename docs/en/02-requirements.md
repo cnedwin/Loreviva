@@ -1,3 +1,5 @@
+> Current safe-document preview and remaining scope: [document extraction](../progress/2026-10-30-documents.en.md). Full import and whole Task9/R0 remain incomplete.
+
 > Current package approval, export and second-installation status: [installation transfer](../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
 
 # Requirements and Implementation Status

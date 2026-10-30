@@ -8,8 +8,8 @@ connect through their own applications.
 
 > **Status: development snapshot, not a release.** Tasks 1–8 have local acceptance
 > within their declared scopes; Tasks 9–12 and whole R0 remain incomplete. Only the
-> synthetic Mock model and Mock billing are enabled. Working contract **1.9.0
-> (75 operations / 197 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
+> synthetic Mock model and Mock billing are enabled. Working contract **1.11.0
+> (77 operations / 204 schemas)**; approved baseline **1.4.0 (58 / 156)**. An
 > operation declared in the contract is not evidence that a handler is mounted,
 > and publishing source is not publishing a product.
 >
@@ -30,9 +30,10 @@ connect through their own applications.
 | Locally accepted within Task8 scope | TypeScript integration SDK, thin backend, Vue reference client and personal-memory governance |
 | Implemented within Task9 P2/P3/P4 | Local package matching, creator preview, atomic isolated import and original-receipt recovery |
 | Implemented within Task9 P4 | Revision approval, static export/download and second-installation review/publication |
+| Implemented within Task9 P5 preview | Bounded TXT/MD/DOCX/text-PDF inspection, current source authority and explicit omissions |
 | Planned | Metering, complete backup/restore, real model and hosted billing validation |
 
-Current package work supports local matching, persistent isolated import, exact revision approval and static installation transfer. Editing, copying or restoring requires a fresh review; protected origins remain intact. See the [current package progress note](docs/progress/2026-10-29-transfer.en.md) for actual verification and remaining scope.
+Current package work supports local matching, persistent isolated import, exact revision approval and static installation transfer. Editing, copying or restoring requires a fresh review; protected origins remain intact. See the [current package progress note](docs/progress/2026-10-30-documents.en.md) for actual verification and remaining scope.
 
 ## Repository layout
 
@@ -83,7 +84,7 @@ retry and require review; it is not a clean gate. Retry failures, missing result
 and skipped retries cannot erase an initial failure. Shared server load and timing
 still affect parallel runs; no fixed speedup is promised.
 
-See [current progress and R0 gaps](docs/progress/2026-10-29-transfer.en.md).
+See [current progress and R0 gaps](docs/progress/2026-10-30-documents.en.md).
 Task9 remains in progress after local preview, isolated import and installation transfer. Product design is 3.1.0; published long-form
 design reading views still retain 3.0.2, with R0 execution baseline 3.0.1.
 
@@ -98,3 +99,9 @@ Security reports follow [SECURITY.md](SECURITY.md).
 
 Original code is [Apache-2.0](LICENSE). Third-party material keeps its own
 licence; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Declarative Skill sharing adds a reproducible [source-aware reply example](examples/skills/source-aware-reply/README.md), isolated creator review, export and a second installation. Contract1.11.0 retains77 operations/204 schemas; only the existing registered TEXT Skill signature becomes portable. [Scope and verification](docs/progress/2026-10-30-skills.en.md). Whole Task9/R0 remains incomplete.
+
+The [document mapping kernel](docs/progress/2026-10-30-document-mapping.en.md) prepares source-governed internal field differences and fresh snapshot rechecks. It is unconnected foundation code: creator adoption/save and protected durable lineage are still unavailable.
+
+Migration confirmation now hashes the [complete ordered migration plan](docs/progress/2026-10-30-migration-plan.en.md), including0010. Old incomplete confirmation IDs require a fresh explicit plan; this repair does not perform an automatic upgrade.

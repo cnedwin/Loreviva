@@ -120,3 +120,9 @@ test('regular manifest is guarded and read without requiring a Git checkout',asy
  try{await writeFile(path.join(root,'a.ts'),'export {};\n');await writeFile(path.join(root,'PUBLICATION.json'),JSON.stringify({files:{'a.ts':{}}})+'\n');assert.equal((await checkBytes(root)).length,2);}
  finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('wepkg archives retain exact binary identity without text conversion',()=>{
+ const original=Buffer.from([0x50,0x4b,3,4,0,13,10,255,239,187,191]);const snapshot=Buffer.from(original);
+ assert.equal(verifyBytes('examples/skills/sample.wepkg',original),'BINARY_RAW');assert.deepEqual(original,snapshot);
+ assert.throws(()=>verifyBytes('examples/skills/sample.json',original));
+});

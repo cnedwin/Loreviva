@@ -1570,7 +1570,8 @@
                 "DraftInput",
                 "PublishCheckReport",
                 "TurnRequest",
-                "ApprovedPacket"
+                "ApprovedPacket",
+                "GenerationMaterial"
               ]
             }
           ]
@@ -1585,7 +1586,8 @@
                 "DraftInput",
                 "PublishCheckReport",
                 "TurnRequest",
-                "ApprovedPacket"
+                "ApprovedPacket",
+                "DispatchAuthorization"
               ]
             }
           ]

@@ -1,0 +1,19 @@
+{
+  "kind": "synthetic_acceptance_expectations",
+  "not_execution_proof": true,
+  "scenarios": [
+    "build reproduces exact checked-in archive",
+    "canonical preflight and explicit local Mock mapping",
+    "isolation/rehearsal/approval/immutable publish in two installations",
+    "imported TEXT binding executes once within one parent text purchase",
+    "unknown tools and incompatible adapter refused before procurement",
+    "COPY and REDISTRIBUTE required; old release and active task unchanged"
+  ],
+  "not_tested": [
+    "real-model quality",
+    "human outcomes",
+    "performance",
+    "charging",
+    "deployment"
+  ]
+}

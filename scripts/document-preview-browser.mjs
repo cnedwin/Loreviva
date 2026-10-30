@@ -1,0 +1,15 @@
+import {chromium,expect} from '@playwright/test';
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+const base=process.env.LOREVIVA_DOCUMENT_BASE,bearer=process.env.LOREVIVA_DOCUMENT_BEARER,text=process.env.LOREVIVA_DOCUMENT_TEXT,scan=process.env.LOREVIVA_DOCUMENT_SCAN,output=process.env.LOREVIVA_DOCUMENT_PREVIEW_EVIDENCE,executable=process.env.LOREVIVA_TEST_CHROMIUM;
+if(!base||!bearer||!text||!scan||!output||!executable)throw Error('explicit synthetic document browser fixture required');
+const u=new URL(base);if(u.protocol!=='http:'||u.hostname!=='127.0.0.1'||!u.port||u.origin!==base)throw Error('owned loopback required');
+await mkdir(output,{recursive:true});const browser=await chromium.launch({executablePath:executable,headless:true,chromiumSandbox:true}),context=await browser.newContext({viewport:{width:1400,height:1050}}),page=await context.newPage();page.setDefaultTimeout(15000);const errors=[],steps=[];page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto(base+'/studio/');await page.getByLabel('操作员凭据').fill(bearer);await page.getByRole('button',{name:'连接',exact:true}).click();await page.getByRole('heading',{name:'工作空间',exact:true}).waitFor();await page.getByRole('link',{name:/内容与资源/}).click();
+ const panel=page.getByRole('region',{name:'文档提取预览'});await expect(panel.getByTestId('document-limits')).toContainText('8 MiB');steps.push('current limits visible before selecting knowledge source');
+ await panel.getByTestId('document-asset-id').fill(text);await panel.getByTestId('document-preview').click();const result=panel.getByTestId('document-result');await expect(result).toContainText('支持范围内文字已提取');await expect(result).toContainText('<script>globalThis.__documentExecuted=true</script>');assert.equal(await page.evaluate(()=>globalThis.__documentExecuted),undefined);await expect(result).toContainText('line:2');await expect(result).toContainText('预览尚未保存为知识');steps.push('authorized text and original positions render inertly without adoption or script execution');await page.screenshot({path:path.join(output,'literal-preview.png'),fullPage:true});
+ await panel.getByTestId('document-asset-id').fill(scan);await expect(panel.getByTestId('document-result')).toHaveCount(0);await panel.getByTestId('document-preview').click();await expect(panel.getByTestId('document-result')).toContainText('需要OCR');await expect(panel.getByTestId('document-missing')).toContainText('PDF_IMAGE_REQUIRES_OCR');steps.push('source change clears old preview; image-only PDF explicitly requires unavailable OCR');await page.screenshot({path:path.join(output,'scan-preview.png'),fullPage:true});
+ assert.deepEqual(errors,[]);await writeFile(path.join(output,'result.json'),JSON.stringify({passed:true,steps,errors},null,2)+'\n');console.log(JSON.stringify({passed:true,steps:steps.length,errors}));
+}catch(error){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true});await writeFile(path.join(output,'failure.txt'),String(error)+'\n'+await page.locator('body').innerText());throw error}finally{await context.close();await browser.close()}

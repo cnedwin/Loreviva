@@ -1,0 +1,65 @@
+{
+  "format_version": "1.0",
+  "package_id": "loreviva.source-aware-reply",
+  "kind": "WORLD",
+  "package_version": "1.0.0",
+  "content_sha256": "cc8c18ea674bc3c1d0a9b078fb883d49ca6dc2fc3fe3af9a2c6967e03992519f",
+  "compatibility": {
+    "public_api_major": 1,
+    "package_format_major": 1,
+    "minimum_runtime_contract": "1.11.0",
+    "rule_primitive_set": "core.v1"
+  },
+  "entrypoints": [
+    "content"
+  ],
+  "entries": [
+    {
+      "logical_id": "content",
+      "kind": "WORLD",
+      "path": "definitions.json",
+      "version": "1.0.0",
+      "sha256": "087acd9e8adb59c652892e2e8bd555a0ab621ebac848be0a77855504b9d352f1",
+      "references": []
+    }
+  ],
+  "files": [
+    {
+      "path": "definitions.json",
+      "sha256": "087acd9e8adb59c652892e2e8bd555a0ab621ebac848be0a77855504b9d352f1",
+      "size_bytes": 15303,
+      "media_type": "application/json",
+      "rights": {
+        "license": "Apache-2.0",
+        "source_reference": "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply",
+        "redistribution_allowed": true,
+        "allowed_uses": [
+          "WORLD_CONTENT",
+          "SKILL_CONTENT",
+          "SYNTHETIC_TEST"
+        ]
+      }
+    }
+  ],
+  "dependencies": [],
+  "requirements": {
+    "model_capabilities": [
+      {
+        "capability_id": "text",
+        "required": true
+      }
+    ],
+    "tool_capabilities": [],
+    "presentation_capabilities": [],
+    "tested_configurations": []
+  },
+  "provenance": {
+    "author_display_name": "Loreviva contributors",
+    "license": "Apache-2.0",
+    "source_references": [
+      "https://github.com/cnedwin/Loreviva/tree/main/examples/skills/source-aware-reply"
+    ],
+    "created_at": "2026-10-29T19:16:14.108991+00:00",
+    "synthetic_examples_only": true
+  }
+}

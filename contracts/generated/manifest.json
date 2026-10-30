@@ -1,12 +1,12 @@
 {
-  "source_hash": "b96513ebbf2ce15d55a8008a79e9cacb8ebccc532c934df86c241296d0f34399",
+  "source_hash": "9e705e5844e8895de53c82937d4c2faa823b9635c862945ce916c8092abb492f",
   "source_hashes": {
-    "openapi.yaml": "f1850f2dce33a3456edc607f5579611d5c79fcdc54c37c62fd4d25e60ac9f011",
-    "wepkg.schema.json": "e19c77a0b15168caa348ead591f2434083a56ac6a96c642e681d9be364e76be0"
+    "openapi.yaml": "43d8536293434a0ed814e8aa3a7a2fb24d81cf0c22ea2c5b51658a9a478b1d8a",
+    "wepkg.schema.json": "56d0e0de7ee48cd45a0e9c5e003eeb55d6894aac9e5157f88b864d18e11289ca"
   },
   "profile_hashes": {
-    "contracts/generated/profiles/public_v1.openapi.json": "a5d2622945bfbb5e3deb788d6f0e358c19a7fd95538b7fb3a9208f2cc84d5228",
-    "contracts/generated/profiles/integration_r0_v1.openapi.json": "8785ebe4063ed38eced75cf7449b9dd0b242f53dc5ce1bdefcf30597f223a9b4"
+    "contracts/generated/profiles/public_v1.openapi.json": "88850c812a9d898f2608f6c5f6cc13b4b97bc8133596486bc5c3d4569e8db06f",
+    "contracts/generated/profiles/integration_r0_v1.openapi.json": "c81c1b193695ffd193e0678c8708c3a4816d18f87ba450e669696c8ac05121a8"
   },
   "generator_versions": {
     "loreviva": "1.6.1",
@@ -17,6 +17,7 @@
   "operation_ids": [
     "uploadContentAsset",
     "getContentAsset",
+    "previewContentDocument",
     "getCreatorCapabilities",
     "listContentDrafts",
     "createContentDraft",
@@ -40,6 +41,7 @@
     "getPackageImportResult",
     "preflightContentPackage",
     "previewContentPackage",
+    "getDocumentCapabilities",
     "listAdminInstances",
     "createAdminInstance",
     "getAdminInstance",
@@ -98,16 +100,16 @@
   ],
   "transport_artifacts": {
     "packages/sdk-ts/src/generated/transport.ts": {
-      "bytes": 469330,
-      "sha256": "0de218debd44d116ea5176ef80702216109a4c8fec73127224807e3f006898c3"
+      "bytes": 481039,
+      "sha256": "21609b8862c2c77a8ccdb8dc389e244a27e98f457b3da54af6da33069525dc6f"
     },
     "packages/sdk-ts/src/generated/validators.cjs": {
-      "bytes": 25961614,
-      "sha256": "6330fcc9cbb09057d7717481a52b4804f625a7eb78c6a5c7bc97284bf0b2a924"
+      "bytes": 26702710,
+      "sha256": "4f1dbf94a0f12235d927e703ad597b9a2cd42e1002c673d96af53b180650f97d"
     },
     "packages/sdk-ts/src/generated/validators.d.cts": {
-      "bytes": 136515,
-      "sha256": "3a66bc80152564a8e4af7ac04d34b9245e1121a9ecc4736353b8712f8ca1acaf"
+      "bytes": 140391,
+      "sha256": "2f3ad6b5a359157341ae084f214aa3cbe6a22781601f45f531cde34a87911fd2"
     }
   },
   "portable_projection": {
@@ -140,16 +142,16 @@
     },
     "artifacts": {
       "contracts/generated/wepkg-portable.schema.json": {
-        "bytes": 63004,
-        "sha256": "16791fc17edd914b979849331ce5d4c188e83d7b4749970ca542198d29c41ae0"
+        "bytes": 63083,
+        "sha256": "51a15d7fa133d65af6d69c63fc39aa068b0fd4f293fc2f12e5ae7336c3565a96"
       },
       "internal/generated/wepkg-portable.schema.json": {
-        "bytes": 63004,
-        "sha256": "16791fc17edd914b979849331ce5d4c188e83d7b4749970ca542198d29c41ae0"
+        "bytes": 63083,
+        "sha256": "51a15d7fa133d65af6d69c63fc39aa068b0fd4f293fc2f12e5ae7336c3565a96"
       },
       "internal/generated/wepkg_portable_validate.go": {
         "bytes": 3722,
-        "sha256": "a558e442264bfd5977c11ce8d2630893b9b6aaca2786a64ead6277e0822c00e8"
+        "sha256": "783eca759295f567eee3a93b8bd9f0c0694a7c3cc1037824b5124e79eb1472e8"
       }
     }
   }
