@@ -41,7 +41,7 @@ The MySQL Go driver's MPL-2.0 remains separate from Apache-2.0 for original proj
 | ajv-formats | 3.0.1 | 直接开发依赖，格式校验 | MIT | [LICENSE](LICENSES/ajv-formats-3.0.1-LICENSE.txt) |
 | typescript | 5.9.3 | 直接开发依赖，SDK 类型检查 | Apache-2.0 | [LICENSE](LICENSES/typescript-5.9.3-LICENSE.txt) |
 | fast-deep-equal | 3.1.3 | Ajv 的传递依赖 | MIT | [LICENSE](LICENSES/fast-deep-equal-3.1.3-LICENSE.txt) |
-| fast-uri | 3.1.8 | Ajv 的传递依赖 | BSD-3-Clause | [LICENSE](LICENSES/fast-uri-3.1.8-LICENSE.txt) |
+| fast-uri | 3.1.9 | Ajv 的传递依赖 | BSD-3-Clause | [LICENSE](LICENSES/fast-uri-3.1.8-LICENSE.txt) |
 | json-schema-traverse | 1.0.0 | Ajv 的传递依赖 | MIT | [LICENSE](LICENSES/json-schema-traverse-1.0.0-LICENSE.txt) |
 | require-from-string | 2.0.2 | Ajv 的传递依赖 | MIT | [license](LICENSES/require-from-string-2.0.2-LICENSE.txt) |
 
@@ -106,3 +106,7 @@ Dependency upgrades, new third-party source or distribution of binaries, contain
 采用 MIT 许可，版权归 Doug Clark。已有锁定模块作为直接依赖，用于有时限的 ECMAScript Schema 正则匹配。[上游 v1.11.0](https://github.com/dlclark/regexp2/tree/v1.11.0) 与[完整许可原文](LICENSES/dlclark-regexp2-v1.11.0-MIT.txt)分别保留版本与原始字节。
 
 MIT, copyright Doug Clark. The already locked module is a direct dependency for bounded ECMAScript Schema patterns. The [upstream v1.11.0 source](https://github.com/dlclark/regexp2/tree/v1.11.0) and [complete license](LICENSES/dlclark-regexp2-v1.11.0-MIT.txt) retain the version and original license bytes.
+
+fast-uri 3.1.9 的完整许可与已保留的 3.1.8 许可原文字节相同。
+
+The full fast-uri 3.1.9 license is byte-identical to the retained 3.1.8 license text.
