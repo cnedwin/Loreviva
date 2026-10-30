@@ -1,12 +1,18 @@
+> Current safe-document preview and remaining scope: [document extraction](../../progress/2026-10-30-documents.en.md). Full import and whole Task9/R0 remain incomplete.
+
+> Current package approval, export and second-installation status: [installation transfer](../../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
+
 # Design and Repository Support
 
-Updated23 October2026.
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 includes persistent isolated import, revision approval, static export/download and second-installation publication. Safe documents, complete Skill sharing and whole Task9/R0 remain incomplete. Working contract1.9.0:75 operations/197 schemas; migrations0001–0010. See [current package verification](../../progress/2026-10-29-transfer.en.md).
 
-Published long-form design views retain3.0.2; current product design is3.1.0 and R0 execution baseline is3.0.1. The design defines the full world-authoring, character, memory and customer-integration goals. The approved machine-contract baseline remains1.4.0 (58 operations,156 schemas, migrations0001–0007); this checkout now also contains the Task8 development snapshot, whose working contract is1.6.0 (67 operations,181 schemas, migrations0001–0008). The two must not be conflated: a working contract in the tree does not mean1.6.0 or complete Task8 is accepted. Reserved contract operations do not imply registered handlers. R0 support is the verified **Windows local fixed-volume** path: the durability and coordinator layer refuses to open a non-Windows volume, so unit packages and the maintenance journal are exercised on Windows only, while the tree must still build on Linux.
+Updated29 October2026.
 
-The `.wepkg` static preflight is the one Task9 capability that is implemented end to end (contract 1.6.0 operations `preflightContentPackage` and `getContentPackageCapabilities`); package import, rehearsal and local publish are not.
+Published long-form design views retain3.0.2; current product design is3.1.0 and R0 execution is3.0.1. The historical approved machine contract is1.4.0 (58 operations/156 schemas); the working contract is1.9.0 (75 operations/197 schemas), with migrations0001–0010. Reserved contract operations do not establish mounted handlers or accepted product effects.
 
-The SDK, reference-client and self-memory governance implementations entered the tree with that snapshot after finite reviews; complete Task8,1.6.0 as a whole, Tasks9–12, sustained character growth and24 long-term experience scenarios are still not delivered as a complete product. Real-model quality, human experience, the complete installation release, payments and deployment remain unaccepted. Known failures and not-run items for this batch are listed in the[progress note](../../progress/2026-10-23.en.md); a documentation correction does not replace them.
+Tasks1–8 retain scoped local acceptance. Task9 connects complete body admission, logical references and pure plans, local matching/preview, persistent isolated import and original-receipt recovery. A pure plan itself grants no local permission. Revision approval, static export/download and second-installation publication are implemented. Safe documents, complete Skill sharing and whole Task9 remain incomplete. Actual verification and initial failures are retained in the [current progress note](../../progress/2026-10-29-transfer.en.md).
+
+R0 supports the verified Windows local fixed-volume path. Linux buildability does not establish Linux runtime support. Tasks10–12, whole R0, sustained character growth, long-term experience, real models, human outcomes, performance, charging and deployment remain unaccepted as a complete product.
 
 - [Current repository requirements and implementation](../../en/02-requirements.md)
 - [Actual HTTP and module support](../../en/03-architecture.md)

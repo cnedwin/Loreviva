@@ -1,12 +1,12 @@
 import validators from './generated/validators.cjs';
 import {operationRoutes} from './generated/contracts.ts';
-import type {Operations,AssetUploadMetadata,FileRecord} from './generated/contracts.ts';
+import type {Operations,AssetUploadMetadata,FileRecord,PackagePreviewOptions,PackageImportPreview,PackageImportOptions,PackageImportResult,PackageExportReceipt,PackageFileInfo} from './generated/contracts.ts';
 
 function validate(name:string,value:unknown):void {if(!Object.hasOwn(validators,name))throw Error('未知契约');const validator=validators[name as keyof typeof validators];if(!validator(value))throw new AdminTransportError(422,{message:'字段格式不符合契约',field_errors:validator.errors?.map(e=>({pointer:e.instancePath,code:e.keyword,message:e.message??'字段无效'}))})}
 export function validateContract(name:string,value:unknown):void {validate('schema_'+name,value)}
 export class AdminTransportError extends Error {readonly status:number;readonly body:unknown;constructor(status:number,body:unknown){super((body as {message?:string})?.message??'请求失败');this.status=status;this.body=body;this.name='AdminTransportError'}}
 type Keys={ [K in keyof Operations]: (typeof operationRoutes)[K]['path'] extends `/world/v1/admin/${string}` ? K:never}[keyof Operations];
-export type AdminOperation=Exclude<Keys,'uploadContentAsset'>;
+export type AdminOperation=Exclude<Keys,'uploadContentAsset'|'previewContentPackage'|'importContentPackage'|'downloadPackageExport'|'readContentPackageFile'>;
 export type AdminSuccess<K extends keyof Operations>=Operations[K]['responses'][Extract<keyof Operations[K]['responses'],`2${string}`>];
 interface Input {path?:Record<string,string>;query?:Record<string,unknown>;headers?:Record<string,string>;body?:unknown}
 const MAX_BYTES=16*1024*1024;
@@ -26,10 +26,40 @@ export function createAdminClient(options:{getOperatorBearer:()=>string|null;fet
   const path=route.path.replace(/\{([^}]+)\}/g,(_,key:string)=>{const value=actual.path?.[key];if(value===undefined)throw Error('缺少路径字段');return encodeURIComponent(value)});
   const query=new URLSearchParams();for(const [k,v] of Object.entries(actual.query??{}))if(v!==undefined)query.set(k,String(v));
   const init:RequestInit={method:route.method,headers:{...actual.headers,...auth},credentials:'omit',redirect:'error',cache:'no-store'};if(signal)init.signal=signal;if(actual.body!==undefined){init.headers={...init.headers,'Content-Type':'application/json'};init.body=JSON.stringify(actual.body)}
-  const response=await request(path+(query.size?'?'+query:''),init);const value=await decode(response);try{validate('response_'+operation+'_'+response.status,value)}catch{throw new AdminTransportError(0,{message:'响应无法验证；请用原请求键恢复，勿新建操作'})}return value as AdminSuccess<K>;
+  const response=await request(path+(query.size?'?'+query:''),init);let value:unknown;
+  try{value=await decode(response)}catch(error){const write=!['GET','HEAD'].includes(route.method);if(write){let verified=false;if(response.status>=400&&response.status<500&&error instanceof AdminTransportError){try{validateContract('AdminError',error.body);verified=true}catch{/* Keep ambiguous writes bound to their original request. */}}if(!verified)throw new AdminTransportError(0,{code:'EXTERNAL_UNKNOWN',message:'操作结果尚未确认，请用原请求恢复'})}throw error}
+  try{validate('response_'+operation+'_'+response.status,value)}catch{throw new AdminTransportError(0,{code:'EXTERNAL_UNKNOWN',message:'响应无法验证；请用原请求键恢复，勿新建操作'})}return value as AdminSuccess<K>;
  }
  async function readAsset(assetId:string,productId:string,size:string,signal?:AbortSignal):Promise<Uint8Array> {if(!/^\d+$/.test(size)||BigInt(size)>BigInt(MAX_BYTES))throw Error('资产大小不受支持');const url=operationRoutes.readAuthorizedAsset.path.replace('{asset_id}',encodeURIComponent(assetId));const response=await request(url+'?'+new URLSearchParams({product_id:productId}),{headers:headers(),credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});if(!response.ok){await decode(response);throw Error('读取失败')}const bytes=await bounded(response,Number(size));if(bytes.length!==Number(size))throw Error('资产大小不符');return bytes}
  async function upload(metadata:AssetUploadMetadata,file:Blob,key:string):Promise<FileRecord> {validateContract('AssetUploadMetadata',metadata);if(String(file.size)!==metadata.expected_size||file.size>MAX_BYTES)throw Error('上传大小不符');const form=new FormData();form.set('metadata',JSON.stringify(metadata));form.set('file',file,metadata.name);const response=await request(operationRoutes.uploadContentAsset.path,{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store'});const value=await decode(response);validateContract('FileRecord',value);return value as FileRecord}
- return {call,readAsset,upload};
+ // Preview is bounded multipart, not a JSON command or a persisted import.
+ async function previewPackage(productId:string,file:Blob,options:PackagePreviewOptions,key:string,signal?:AbortSignal):Promise<PackageImportPreview> {
+  validateContract('PackagePreviewOptions',options);if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(key)||file.size>64*1024*1024)throw Error('内容包或请求标识超出限制');
+  const encoded=JSON.stringify(options);if(new TextEncoder().encode(encoded).byteLength>65536)throw Error('映射选项超过大小限制');const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',encoded);
+  const url=operationRoutes.previewContentPackage.path+'?'+new URLSearchParams({product_id:productId});const response=await request(url,{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});const value=await decode(response);validateContract('PackageImportPreview',value);return value as PackageImportPreview;
+ }
+ // The caller captures this key and original options before sending. An abort
+ // or transport failure is not rollback proof; recover the original result.
+ async function importPackage(productId:string,file:Blob,options:PackageImportOptions,key:string,signal?:AbortSignal):Promise<PackageImportResult>{
+  validateContract('PackageImportOptions',options);if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(key)||file.size>64*1024*1024)throw Error('内容包或请求标识超出限制');const raw=JSON.stringify(options);if(new TextEncoder().encode(raw).byteLength>65536)throw Error('导入选项超过大小限制');
+  const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',raw);const response=await request(operationRoutes.importContentPackage.path+'?'+new URLSearchParams({product_id:productId}),{method:'POST',headers:headers({'Idempotency-Key':key}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});
+  // An unreadable success or unverified error cannot prove that COMMIT failed.
+  // Retain the original request so callers query its receipt instead of buying
+  // another effect with a fresh key.
+  try{const result=await decode(response);validateContract('PackageImportResult',result);return result as PackageImportResult}
+  catch(error){if(!response.ok&&response.status>=400&&response.status<500&&error instanceof AdminTransportError){let verified=false;try{validateContract('AdminError',error.body);verified=true}catch{/* An unverified refusal still has an unknown outcome. */}if(verified)throw error}
+   throw new AdminTransportError(0,{code:'EXTERNAL_UNKNOWN',message:'导入结果尚未确认，请查询原请求回执'})}
+ }
+ async function downloadPackage(receipt:PackageExportReceipt,productId:string,signal?:AbortSignal):Promise<Uint8Array>{
+  validateContract('PackageExportReceipt',receipt);if(receipt.scope.product_id!==productId||BigInt(receipt.size_bytes)>64n*1024n*1024n)throw Error('内容包范围或大小不符');
+  const url=operationRoutes.downloadPackageExport.path.replace('{export_id}',encodeURIComponent(receipt.export_id))+'?'+new URLSearchParams({product_id:productId});const response=await request(url,{headers:headers(),credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});if(!response.ok){await decode(response);throw Error('导出暂不可读取')}
+  const raw=await bounded(response,Number(receipt.size_bytes));const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',raw as Uint8Array<ArrayBuffer>))].map(b=>b.toString(16).padStart(2,'0')).join('');if(String(raw.length)!==receipt.size_bytes||hash!==receipt.archive_sha256)throw Error('内容包完整性检查未通过');return raw;
+ }
+ async function readPackageFile(productId:string,file:Blob,filePath:string,signal?:AbortSignal):Promise<{bytes:Uint8Array;metadata:PackageFileInfo}>{
+  validateContract('PackageFileOptions',{file_path:filePath});if(file.size>64*1024*1024)throw Error('内容包超出限制');const form=new FormData();form.set('archive',file,'content.wepkg');form.set('options',JSON.stringify({file_path:filePath}));
+  const response=await request(operationRoutes.readContentPackageFile.path+'?'+new URLSearchParams({product_id:productId}),{method:'POST',headers:headers({'Idempotency-Key':crypto.randomUUID()}),body:form,credentials:'omit',redirect:'error',cache:'no-store',...(signal?{signal}:{})});if(!response.ok){await decode(response);throw Error('素材暂不可读取')}
+  const header=response.headers.get('Loreviva-Package-File');if(!header||header.length>16000)throw Error('素材来源元数据缺失');let metadata:unknown;try{metadata=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(header),c=>c.charCodeAt(0))))}catch{throw Error('素材来源元数据无效')};validateContract('PackageFileInfo',metadata);const info=metadata as {file_path:string;size_bytes:string;sha256:string};if(info.file_path!==filePath||BigInt(info.size_bytes)>BigInt(MAX_BYTES))throw Error('素材范围不符');const bytes=await bounded(response,Number(info.size_bytes));const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as Uint8Array<ArrayBuffer>))].map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==info.sha256||String(bytes.length)!==info.size_bytes)throw Error('素材完整性检查未通过');return {bytes,metadata:metadata as PackageFileInfo};
+ }
+ return {call,readAsset,upload,previewPackage,importPackage,downloadPackage,readPackageFile};
 }
 export type AdminClient=ReturnType<typeof createAdminClient>;

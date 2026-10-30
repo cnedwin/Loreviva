@@ -192,6 +192,7 @@ func (s *Service) CheckPublish(ctx context.Context, scope domain.ProductScope, i
 	}
 	return out, e
 }
+
 // A passed report is not sufficient to publish: the new transaction rechecks the draft, dependency rights and route snapshot before inserting the immutable release.
 func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id string, expected uint64, reportID string, labels []string, key string) (generated.Release, error) {
 	var out generated.Release
@@ -206,6 +207,8 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 	releaseID := Identity(scope.TenantID, scope.ProductID, scope.SubjectID, "publish", key)
 	locks := append(dependencyLocks(scope, snapshot.Input), Key(scope, "content_draft", id), Key(scope, "content_release", releaseID), Key(scope, "content_check", reportID))
 	locks = append(locks, store.RoutePolicyLocks(scope)...)
+	locks = append(locks, importLineageLocks(scope, id, snapshot.Input)...)
+	locks = append(locks, adoptionKey(scope, id))
 	raw, e := Command(ctx, s.Store, scope, "publishContentDraft", key, id, "Release", struct {
 		Revision uint64
 		Report   string
@@ -213,6 +216,9 @@ func (s *Service) Publish(ctx context.Context, scope domain.ProductScope, id str
 	}{expected, reportID, labels}, locks, func(tx store.Tx) (any, error) {
 		d, e := current(ctx, tx, scope, id, expected)
 		if e != nil {
+			return nil, e
+		}
+		if e := s.requirePackageAdoption(ctx, tx, scope, d); e != nil {
 			return nil, e
 		}
 		if d.State != "DRAFT" {

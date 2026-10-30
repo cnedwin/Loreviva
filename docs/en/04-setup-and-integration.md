@@ -1,4 +1,10 @@
+> Current safe-document preview and remaining scope: [document extraction](../progress/2026-10-30-documents.en.md). Full import and whole Task9/R0 remain incomplete.
+
+> Current package approval, export and second-installation status: [installation transfer](../progress/2026-10-29-transfer.en.md). Whole Task9/R0 remain incomplete.
+
 # Setup and Integration Guide
+
+Current scope (2026-10-29): Tasks1–8 retain scoped local acceptance. Task9 includes persistent isolated import, revision approval, static export/download and second-installation publication. Safe documents, complete Skill sharing and whole Task9/R0 remain incomplete. Working contract1.9.0:75 operations/197 schemas; migrations0001–0010. See [current package verification](../progress/2026-10-29-transfer.en.md).
 
 Loreviva — The AI Platform for Living Worlds.
 
@@ -98,7 +104,7 @@ Memory metadata, private bodies, governance, and use policies have separate elig
 
 ## Next steps for customer integration
 
-The [TypeScript package](../../packages/sdk-ts/src/index.ts) exports administrative/integration clients, prepared commands, BFF recovery, media and SSE types. The [thin backend](../../examples/thin-backend/) and [reference client](../../apps/reference-client/) provide reference integration. See [Quickstart](../integration/Quickstart.en.md) for prerequisites. Never send Operator credentials to players. Whole Task8/R0 remain unaccepted.
+The [TypeScript package](../../packages/sdk-ts/src/index.ts) exports administrative/integration clients, prepared commands, BFF recovery, media and SSE types. The [thin backend](../../examples/thin-backend/) and [reference client](../../apps/reference-client/) provide reference integration. See [Quickstart](../integration/Quickstart.en.md) for prerequisites. Never send Operator credentials to players. Task8 has scoped local acceptance; whole R0 remains unaccepted.
 
 The planned Integration Kit will provide restricted sessions, interaction, snapshot/event recovery, media updates, a reference client, and thin backend adapters. Customer backends remain responsible for player identities, business eligibility, industry rules, wallets/orders/payments/refunds, and receipts from original business services; clients do not hold Operator or model secrets.
 
@@ -113,7 +119,7 @@ pnpm test
 go test ./...
 ```
 
-Contract sources are maintained in `contracts/source/`; the working contract is 1.6.0 / 67 operations / 181 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0008; complete product installation/upgrade releases remain unaccepted.
+Contract sources are maintained in `contracts/source/`; the working contract is 1.9.0 / 75 operations / 197 schemas (the approved baseline remains 1.4.0 / 58 / 156). Generated files must not be manually turned into a second source. The original 18 operations/43 DTO and source1.2 49 operations/123 Schema fixtures in `tests/fixtures/` retain their respective historical comparison meanings; source1.3 is 51/131. Root `pnpm test` covers contract/SDK scripts and includes Studio contract and CSP checks; Studio unit tests, Vue type checking, and the production build use the separate commands below, not an old check total as a substitute for actual results. Embedded migrations are 0001–0010; complete product installation/upgrade releases remain unaccepted.
 
 ```powershell
 pnpm --dir apps/studio test
@@ -129,4 +135,4 @@ These commands define verification entry points; each result is bound to its sou
 
 Database integration tests require TCP `127.0.0.1:33267` and a non-root account. A privately provided `LOREVIVA_TEST_DSN` creates and cleans up `loreviva_test_<24位小写十六进制>` test databases. Without that variable, tests fail rather than automatically skipping; the account should have permissions only within this restricted test scope. Actual CLI tests also use `LOREVIVA_TEST_GO_EXE` to specify the executor. These are test-fixture restrictions; the service's `LOREVIVA_DB_ADDR` is set through configuration. Check results are specific to the published copy.
 
-Return to [home](README.md) · View [requirements and status](02-requirements.md)
+Return to [home](../../README.md) · View [requirements and status](02-requirements.md)

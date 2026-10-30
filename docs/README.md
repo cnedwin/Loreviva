@@ -1,3 +1,5 @@
+> 当前安全文档预览与剩余范围见[文档提取](progress/2026-10-30-documents.zh.md)。完整导入和Task9/R0仍未验收。
+
 # Documentation
 
 English is the primary language; every English document has a Chinese companion.
@@ -14,6 +16,8 @@ English is the primary language; every English document has a Chinese companion.
 | Roadmap | [05-roadmap](design/en/05-roadmap.md) | [05-roadmap](design/05-roadmap.md) |
 | Documentation style | [06-documentation-style](design/en/06-documentation-style.md) | [06-documentation-style](design/06-documentation-style.md) |
 | Concurrent worlds | [07-concurrent-worlds](design/en/07-concurrent-worlds.md) | [07-concurrent-worlds](design/07-concurrent-worlds.md) |
+
+Current package workflow: [English](progress/2026-10-29-transfer.en.md) · [中文](progress/2026-10-29-transfer.zh.md).
 
 ## Operations
 
@@ -37,3 +41,9 @@ never edited by hand.
 - State the supported range and the acceptance boundary, not an ambition.
 - Distinguish "declared in the contract" from "implemented and verified".
 - Reference files and operations rather than describing them in prose.
+
+- Declarative Skill sharing: [English](progress/2026-10-30-skills.en.md) / [中文](progress/2026-10-30-skills.zh.md).
+
+- Document mapping foundation (unconnected): [English](progress/2026-10-30-document-mapping.en.md) / [中文](progress/2026-10-30-document-mapping.zh.md).
+
+- Complete migration-plan confirmation: [English](progress/2026-10-30-migration-plan.en.md) / [中文](progress/2026-10-30-migration-plan.zh.md).

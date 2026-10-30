@@ -67,7 +67,13 @@ func stringsValid(b []byte) bool {
 	return !in
 }
 func Parse(data []byte) (any, error) {
-	if len(data) > MaxBytes || !stringsValid(data) {
+	return ParseBounded(data, MaxBytes)
+}
+
+// ParseBounded uses a trusted caller-specific ceiling without changing ordinary
+// wire limits. All callers retain the same strict syntax and exact numbers.
+func ParseBounded(data []byte, maxBytes int64) (any, error) {
+	if maxBytes <= 0 || int64(len(data)) > maxBytes || !stringsValid(data) {
 		return nil, ErrJSON
 	}
 	d := json.NewDecoder(bytes.NewReader(data))
@@ -181,7 +187,12 @@ func number(s string) (string, error) {
 	return sign + s + "e" + strconv.FormatInt(exp, 10), nil
 }
 func Canonical(data []byte) ([]byte, error) {
-	v, e := Parse(data)
+	return CanonicalBounded(data, MaxBytes)
+}
+
+// CanonicalBounded retains the canonical algorithm with an explicit byte bound.
+func CanonicalBounded(data []byte, maxBytes int64) ([]byte, error) {
+	v, e := ParseBounded(data, maxBytes)
 	if e != nil {
 		return nil, e
 	}

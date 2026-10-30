@@ -1,0 +1,11 @@
+# Document mapping foundation
+
+The internal deterministic mapping kernel prepares one complete document excerpt for an empty NOTE. It compares the exact draft revision/content/object basis with a bounded parser report and source snapshot, preserves literal text and computes only closed field changes. A source needs EDIT/COPY rights and a valid licence/expiry; the candidate retains those rights and the stricter source/target audience. A whole selected chunk must fit10000 Unicode code points. Partial, OCR, stale, mismatched, oversized or already-provenanced targets are refused rather than truncated or merged.
+
+The proposal carries independent bounded source/report/target/candidate digests and a small domain-separated provenance record. Copy-returning accessors avoid caller alias mutation. A fresh recheck recomputes from the supplied current snapshots and rejects changed owner, rights, audience, expiry, content, parser or target basis. A matching digest proves consistency only: it cannot establish source authenticity, current grants or file custody.
+
+This package is internal foundation code, **not a connected feature**. It adds no API, GUI adoption button, database table, writer, model call, public wire schema or runtime initialization support. Contract1.11.0 remains unchanged. In particular, optional NOTE source fields do not become trusted lineage just because this kernel can compute them, and a transient preview does not receive a persistent extraction-report ID.
+
+Before creators can save mapped knowledge, the owning port must acquire program-owned source custody/current permissions, atomically save protected provenance with the exact draft revision and original request recovery, and preserve it through edits, copies, restores, publication and model consumers. Persistent administrative DOCUMENT_EXTRACTION remains a separate original requirement. The kernel does not replace those gates.
+
+Focused synthetic verification uses actual P5 parser output and checks the closed difference, unchanged caller/unrelated objects, current source/basis refusals, source-use narrowing, expiry, literal Unicode limits and alias isolation. No database/browser rerun applies to this unconnected pure code. Initial fixture-hash failures are retained. Whole Task9/R0 and real-model, human, performance, charging and deployment acceptance remain open.

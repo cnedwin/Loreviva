@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Loreviva public design contract",
-    "version": "1.6.0",
+    "version": "1.11.0",
     "description": "Development specification3.0.1; additive administrative contract1.1.0. Canonical source: contracts/source/openapi.yaml in independent Loreviva engineering checkout. Existing18 public operations retain their original wire shapes. Machine contract is not evidence of future task handlers, real models, billing or acceptance. All fixtures are synthetic."
   },
   "servers": [
@@ -11931,6 +11931,1197 @@
             }
           }
         },
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/world/v1/admin/content-packages/preview": {
+      "post": {
+        "operationId": "previewContentPackage",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "options": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "UTF-8 JSON matching PackagePreviewOptions; at most 65536 raw bytes."
+                  },
+                  "archive": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "archive",
+                  "options"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Discovery, resolved editing candidate or bounded blocking diagnostics; execution_ready and persisted are always false.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageImportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Discover caller-supplied portable declarations or inspect an explicitly mapped local editing candidate. Never imports, publishes, purchases or grants authority. Each resolve checks current local source rights and route admission."
+      }
+    },
+    "/world/v1/admin/content-packages/imports": {
+      "post": {
+        "operationId": "importContentPackage",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "options": {
+                    "$ref": "#/components/schemas/PackageImportOptions"
+                  },
+                  "archive": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "archive",
+                  "options"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Original durable isolated-import result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Synchronously persist a validated package as an isolated draft. The import, protected origin lineage, original request result and commit receipt are atomic. Query the original request key when the commit outcome is unknown. This operation never publishes or removes isolation.",
+        "summary": "Persist an explicitly mapped content package as an isolated draft"
+      }
+    },
+    "/world/v1/admin/content-packages/imports/{request_key}": {
+      "get": {
+        "operationId": "getPackageImportResult",
+        "summary": "Read the original committed package-import result",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original committed result metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Current authority, original request or mapping refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not accepted or not visible; no hidden existence or secret disclosure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Read the owning operator original committed import receipt without rereading an archive or mutable dependency configuration. A missing receipt does not prove that an in-flight request rolled back."
+      }
+    },
+    "/world/v1/admin/content-drafts/{draft_id}/isolation-approvals": {
+      "post": {
+        "operationId": "approvePackageDraft",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageApprovalRequest"
+              }
+            }
+          }
+        },
+        "summary": "Explicit revision-bound isolation approval with current source and original applicable Mock evidence",
+        "description": "Explicit revision-bound isolation approval with current source and original applicable Mock evidence",
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/world/v1/admin/content-packages/exports": {
+      "post": {
+        "operationId": "exportContentPackage",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageExportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageExportRequest"
+              }
+            }
+          }
+        },
+        "summary": "Persist an authorized static package and original request receipt atomically",
+        "description": "Persist an authorized static package and original request receipt atomically",
+        "x-implementation-status": "implemented"
+      }
+    },
+    "/world/v1/admin/content-packages/exports/{export_id}": {
+      "get": {
+        "operationId": "getPackageExport",
+        "summary": "Read the current authorized original package export",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageExportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Revalidate current rights and scope; an old receipt never grants delivery after revocation."
+      }
+    },
+    "/world/v1/admin/content-packages/exports/{export_id}/archive": {
+      "get": {
+        "operationId": "downloadPackageExport",
+        "summary": "Read the current authorized original package export",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Revalidate current rights and scope; an old receipt never grants delivery after revocation."
+      }
+    },
+    "/world/v1/admin/content-packages/file-bytes": {
+      "post": {
+        "operationId": "readContentPackageFile",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "options": {
+                    "$ref": "#/components/schemas/PackageFileOptions"
+                  },
+                  "archive": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "archive",
+                  "options"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completed current-authority operation",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Loreviva-Package-File": {
+                "description": "Base64 UTF-8 JSON validated as PackageFileInfo. Carries source declarations, not local grants.",
+                "schema": {
+                  "type": "string",
+                  "maxLength": 16000
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refusal or unknown original outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "description": "Read-only bounded extraction. Does not create assets or grant local import rights.",
+        "summary": "Read one exact declared file from the original validated archive"
+      }
+    },
+    "/world/v1/admin/document-capabilities": {
+      "get": {
+        "operationId": "getDocumentCapabilities",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authorized read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentCapabilities"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "implemented",
+        "summary": "Read fixed safe-document limits and supported subset",
+        "description": "Local read-only preview limits; no OCR, model egress or knowledge adoption."
+      }
+    },
+    "/world/v1/admin/assets/{asset_id}/document-preview": {
+      "post": {
+        "operationId": "previewContentDocument",
+        "security": [
+          {
+            "OperatorBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authorized read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Bounded refusal, never source text in diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-action": "content.check",
+        "x-owner-task": 3,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentPreviewRequest"
+              }
+            }
+          }
+        },
+        "summary": "Inspect a current authorized KNOWLEDGE asset as inert text",
+        "description": "Bounded read-only preview. No job, draft, tool invocation or publication; explicit missing content remains blocked from adoption.",
         "x-implementation-status": "implemented"
       }
     }
@@ -25527,8 +26718,7 @@
         "type": "object",
         "properties": {
           "contract_version": {
-            "type": "string",
-            "const": "1.6.0"
+            "const": "1.11.0"
           },
           "source_hash": {
             "type": "string",
@@ -26119,6 +27309,86 @@
                   "UNAVAILABLE",
                   "PAYMENT_GATE_PENDING"
                 ]
+              },
+              "previewContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "importContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPackageImportResult": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "approvePackageDraft": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "exportContentPackage": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getPackageExport": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "downloadPackageExport": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "readContentPackageFile": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "getDocumentCapabilities": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
+              },
+              "previewContentDocument": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE",
+                  "PAYMENT_GATE_PENDING"
+                ]
               }
             },
             "required": [
@@ -26188,7 +27458,17 @@
               "readRuntimeMedia",
               "getOriginalTurnIntakeReceipt",
               "preflightContentPackage",
-              "getContentPackageCapabilities"
+              "getContentPackageCapabilities",
+              "previewContentPackage",
+              "importContentPackage",
+              "getPackageImportResult",
+              "approvePackageDraft",
+              "exportContentPackage",
+              "getPackageExport",
+              "downloadPackageExport",
+              "readContentPackageFile",
+              "getDocumentCapabilities",
+              "previewContentDocument"
             ],
             "additionalProperties": false
           },
@@ -26219,7 +27499,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "contract_version": "1.6.0",
+            "contract_version": "1.11.0",
             "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "selected_profile": "public_v1",
             "profiles": [
@@ -26349,7 +27629,17 @@
               "readRuntimeMedia": "UNAVAILABLE",
               "getOriginalTurnIntakeReceipt": "UNAVAILABLE",
               "preflightContentPackage": "AVAILABLE",
-              "getContentPackageCapabilities": "AVAILABLE"
+              "getContentPackageCapabilities": "AVAILABLE",
+              "previewContentPackage": "AVAILABLE",
+              "importContentPackage": "AVAILABLE",
+              "getPackageImportResult": "AVAILABLE",
+              "approvePackageDraft": "AVAILABLE",
+              "exportContentPackage": "AVAILABLE",
+              "getPackageExport": "AVAILABLE",
+              "downloadPackageExport": "AVAILABLE",
+              "readContentPackageFile": "AVAILABLE",
+              "getDocumentCapabilities": "AVAILABLE",
+              "previewContentDocument": "AVAILABLE"
             },
             "runtime_media_mime_types": [],
             "commercial_status": "SYNTHETIC_MOCK"
@@ -26607,6 +27897,1576 @@
               "sign_custody",
               "text"
             ]
+          }
+        ]
+      },
+      "PackageDependencyMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "target": {
+            "$ref": "#/components/schemas/DependencyLock"
+          }
+        },
+        "required": [
+          "pointer",
+          "target"
+        ],
+        "examples": [
+          {
+            "pointer": "/module_agent_bindings/0/role_ref",
+            "target": {
+              "release_id": "local-release",
+              "object_id": "local-role",
+              "version": "1",
+              "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        ]
+      },
+      "PackageModelMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "capability_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GenerationSettings"
+          }
+        },
+        "required": [
+          "capability_id",
+          "settings"
+        ],
+        "examples": [
+          {
+            "capability_id": "text",
+            "settings": {
+              "mode": "OVERRIDE",
+              "connection_ref": "mock-local",
+              "model_id": "synthetic-text-v1",
+              "required_capabilities": [
+                "TEXT"
+              ],
+              "allowed_external_uses": [
+                "NONE"
+              ]
+            }
+          }
+        ]
+      },
+      "PackageAssetMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "asset_id": {
+            "$ref": "#/components/schemas/Identity"
+          }
+        },
+        "required": [
+          "file_path",
+          "asset_id"
+        ],
+        "examples": [
+          {
+            "file_path": "assets/note.txt",
+            "asset_id": "local-asset"
+          }
+        ]
+      },
+      "PackageRightsMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "allowed_uses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EDIT",
+                "COPY",
+                "PUBLISH",
+                "REDISTRIBUTE"
+              ]
+            },
+            "maxItems": 4,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "object_id",
+          "allowed_uses"
+        ],
+        "examples": [
+          {
+            "object_id": "note",
+            "allowed_uses": [
+              "EDIT",
+              "COPY"
+            ]
+          }
+        ]
+      },
+      "PackagePreviewOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "DISCOVER",
+              "RESOLVE"
+            ]
+          },
+          "entrypoint": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "dependency_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageDependencyMapping"
+            },
+            "maxItems": 100
+          },
+          "additional_locks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyLock"
+            },
+            "maxItems": 100
+          },
+          "model_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageModelMapping"
+            },
+            "maxItems": 100
+          },
+          "local_capabilities": {
+            "type": "object",
+            "maxProperties": 100,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "TEXT",
+                "SIGN_CUSTODY"
+              ]
+            }
+          },
+          "asset_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageAssetMapping"
+            },
+            "maxItems": 100
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageRightsMapping"
+            },
+            "maxItems": 200
+          },
+          "rights_attested": {
+            "const": true
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "stage": {
+                  "const": "RESOLVE"
+                }
+              },
+              "required": [
+                "stage"
+              ]
+            },
+            "then": {
+              "required": [
+                "entrypoint",
+                "namespace",
+                "dependency_mappings",
+                "additional_locks",
+                "model_mappings",
+                "local_capabilities",
+                "asset_mappings",
+                "rights",
+                "rights_attested"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "dependency_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "additional_locks"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "model_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "local_capabilities"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "asset_mappings"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "rights"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "rights_attested"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "stage": "DISCOVER"
+          }
+        ]
+      },
+      "PackagePreviewID": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": [
+              "OBJECT",
+              "SLOT",
+              "MODULE_BINDING",
+              "SKILL_BINDING"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "logical_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "local_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "domain",
+          "owner",
+          "logical_id",
+          "local_id"
+        ],
+        "examples": [
+          {
+            "domain": "OBJECT",
+            "owner": "",
+            "logical_id": "note",
+            "local_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "PackagePreviewRequirements": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "logical_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/RootContentKind"
+                }
+              },
+              "required": [
+                "logical_id",
+                "kind"
+              ]
+            },
+            "maxItems": 10000
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "object_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "kind": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "license": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "source_reference": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "source_version": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                }
+              },
+              "required": [
+                "object_id",
+                "kind",
+                "license",
+                "source_reference",
+                "source_version"
+              ]
+            },
+            "maxItems": 200
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "pointer": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "PACKAGE_ENTRY",
+                    "DEPENDENCY_EXPORT"
+                  ]
+                },
+                "logical_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "package_id": {
+                  "type": "string",
+                  "maxLength": 96
+                },
+                "package_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "content_sha256": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "expected_kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "maxItems": 10
+                }
+              },
+              "required": [
+                "pointer",
+                "kind",
+                "logical_id",
+                "package_id",
+                "package_version",
+                "content_sha256",
+                "expected_kinds"
+              ]
+            },
+            "maxItems": 100
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "file_path": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "size_bytes": {
+                  "$ref": "#/components/schemas/ExactUnsigned"
+                },
+                "media_type": {
+                  "type": "string",
+                  "maxLength": 150
+                }
+              },
+              "required": [
+                "file_path",
+                "sha256",
+                "size_bytes",
+                "media_type"
+              ]
+            },
+            "maxItems": 100
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "capability_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+                },
+                "family": {
+                  "type": "string",
+                  "enum": [
+                    "MODEL",
+                    "TOOL",
+                    "PRESENTATION"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "usages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "GENERATION",
+                      "SKILL",
+                      "REQUIRED_DECLARATION"
+                    ]
+                  },
+                  "maxItems": 3,
+                  "uniqueItems": true
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "temperature": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2
+                    },
+                    "max_output_tokens": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 8192
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "capability_id",
+                "family",
+                "required",
+                "usages"
+              ]
+            },
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "entries",
+          "objects",
+          "references",
+          "files",
+          "capabilities"
+        ],
+        "examples": [
+          {
+            "entries": [
+              {
+                "logical_id": "note-entry",
+                "kind": "KNOWLEDGE"
+              }
+            ],
+            "objects": [
+              {
+                "object_id": "note",
+                "kind": "KNOWLEDGE",
+                "license": "CC0-1.0",
+                "source_reference": "synthetic:preview-example",
+                "source_version": "1"
+              }
+            ],
+            "references": [],
+            "files": [],
+            "capabilities": []
+          }
+        ]
+      },
+      "PackageImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEEDS_MAPPING",
+              "RESOLVED",
+              "BLOCKED"
+            ]
+          },
+          "execution_ready": {
+            "const": false
+          },
+          "persisted": {
+            "const": false
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "plan_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entrypoint": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$"
+          },
+          "preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "maxItems": 32
+          },
+          "id_mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackagePreviewID"
+            },
+            "maxItems": 600
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/PackagePreviewRequirements"
+          },
+          "input": {
+            "$ref": "#/components/schemas/DraftInput"
+          }
+        },
+        "required": [
+          "status",
+          "execution_ready",
+          "persisted",
+          "findings",
+          "id_mappings"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "RESOLVED"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "archive_sha256",
+                "plan_sha256",
+                "preview_sha256",
+                "route_snapshot_hash",
+                "namespace",
+                "entrypoint",
+                "input"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "input"
+                ]
+              },
+              "properties": {
+                "id_mappings": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "NEEDS_MAPPING"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "requirements",
+                "plan_sha256",
+                "namespace",
+                "entrypoint",
+                "archive_sha256"
+              ]
+            }
+          }
+        ],
+        "examples": [
+          {
+            "status": "BLOCKED",
+            "execution_ready": false,
+            "persisted": false,
+            "findings": [],
+            "id_mappings": []
+          }
+        ]
+      },
+      "PackageImportOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mapping": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackagePreviewOptions"
+              },
+              {
+                "properties": {
+                  "stage": {
+                    "const": "RESOLVE"
+                  }
+                }
+              }
+            ]
+          },
+          "expected_preview_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "copy_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          }
+        },
+        "required": [
+          "mapping",
+          "expected_preview_sha256"
+        ],
+        "examples": [
+          {
+            "mapping": {
+              "stage": "RESOLVE",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "dependency_mappings": [],
+              "additional_locks": [],
+              "model_mappings": [],
+              "local_capabilities": {},
+              "asset_mappings": [],
+              "rights": [
+                {
+                  "object_id": "note",
+                  "allowed_uses": [
+                    "EDIT",
+                    "COPY"
+                  ]
+                }
+              ],
+              "rights_attested": true
+            },
+            "expected_preview_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "PackageImportReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "import_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ProductScope"
+          },
+          "package_id": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entrypoint": {
+            "type": "string",
+            "maxLength": 96
+          },
+          "namespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "draft_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "draft_state_at_import": {
+            "const": "ISOLATED_IMPORT"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "import_id",
+          "scope",
+          "package_id",
+          "package_version",
+          "content_sha256",
+          "archive_sha256",
+          "entrypoint",
+          "namespace",
+          "draft_id",
+          "draft_state_at_import",
+          "created_at"
+        ],
+        "examples": [
+          {
+            "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "scope": {
+              "tenant_id": "demo-local",
+              "product_id": "coffee"
+            },
+            "package_id": "sample.note",
+            "package_version": "1.0.0",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "entrypoint": "note",
+            "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "draft_state_at_import": "ISOLATED_IMPORT",
+            "created_at": "2026-10-29T00:00:00Z"
+          }
+        ]
+      },
+      "PackageImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "request_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/PackageImportReceipt"
+          },
+          "persisted": {
+            "const": true
+          }
+        },
+        "required": [
+          "request_key",
+          "request_sha256",
+          "receipt",
+          "persisted"
+        ],
+        "examples": [
+          {
+            "request_key": "synthetic-import-0001",
+            "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "receipt": {
+              "import_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "scope": {
+                "tenant_id": "demo-local",
+                "product_id": "coffee"
+              },
+              "package_id": "sample.note",
+              "package_version": "1.0.0",
+              "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "entrypoint": "note",
+              "namespace": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "draft_state_at_import": "ISOLATED_IMPORT",
+              "created_at": "2026-10-29T00:00:00Z"
+            },
+            "persisted": true
+          }
+        ]
+      },
+      "PackageApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "expected_draft_revision": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "check_report_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "rights_attested": {
+            "const": true
+          },
+          "rehearsal_task_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "approval_note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "product_id",
+          "expected_draft_revision",
+          "check_report_id",
+          "rights_attested",
+          "approval_note"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "expected_draft_revision": "1",
+            "check_report_id": "review-check",
+            "rights_attested": true,
+            "approval_note": "Synthetic source review"
+          }
+        ]
+      },
+      "PackageExportRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "release_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "package_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$",
+            "maxLength": 100
+          },
+          "author_display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "rights_attested": {
+            "const": true
+          }
+        },
+        "required": [
+          "product_id",
+          "release_id",
+          "package_id",
+          "package_version",
+          "author_display_name",
+          "rights_attested"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "release_id": "release-source",
+            "package_id": "coffee.world",
+            "package_version": "1.0.0",
+            "author_display_name": "Synthetic creator",
+            "rights_attested": true
+          }
+        ]
+      },
+      "PackageExportReceipt": {
+        "type": "object",
+        "properties": {
+          "export_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ProductScope"
+          },
+          "release_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "release_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "request_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "maxLength": 128
+          },
+          "package_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,95}$",
+            "maxLength": 96
+          },
+          "package_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[A-Za-z0-9.-]+)?$",
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archive_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "export_id",
+          "scope",
+          "release_id",
+          "release_hash",
+          "request_key",
+          "package_id",
+          "package_version",
+          "content_sha256",
+          "archive_sha256",
+          "size_bytes",
+          "created_at"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "export_id": "export-synthetic",
+            "scope": {
+              "tenant_id": "demo-local",
+              "product_id": "coffee"
+            },
+            "release_id": "release-source",
+            "release_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "request_key": "export-original",
+            "package_id": "coffee.world",
+            "package_version": "1.0.0",
+            "content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "archive_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "size_bytes": "512",
+            "created_at": "2026-10-29T00:00:00Z"
+          }
+        ]
+      },
+      "PackageFileOptions": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "file_path": "files/note.txt"
+          }
+        ]
+      },
+      "PackageFileInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "media_type": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "source_rights": {
+            "$ref": "#/components/schemas/SourceRights"
+          }
+        },
+        "required": [
+          "file_path",
+          "sha256",
+          "size_bytes",
+          "media_type",
+          "source_rights"
+        ],
+        "examples": [
+          {
+            "file_path": "files/note.txt",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": "4",
+            "media_type": "text/plain",
+            "source_rights": {
+              "origin_kind": "LICENSED",
+              "source_label": "Content package file",
+              "license": "CC0-1.0",
+              "allowed_uses": [],
+              "source_location": "fixture:static-note"
+            }
+          }
+        ]
+      },
+      "DocumentLimits": {
+        "type": "object",
+        "properties": {
+          "input_bytes": {
+            "type": "integer",
+            "const": 8388608
+          },
+          "expanded_bytes": {
+            "type": "integer",
+            "const": 16777216
+          },
+          "member_bytes": {
+            "type": "integer",
+            "const": 4194304
+          },
+          "output_bytes": {
+            "type": "integer",
+            "const": 524288
+          },
+          "chunks": {
+            "type": "integer",
+            "const": 1000
+          },
+          "pages": {
+            "type": "integer",
+            "const": 200
+          },
+          "zip_entries": {
+            "type": "integer",
+            "const": 128
+          },
+          "expansion_ratio": {
+            "type": "integer",
+            "const": 100
+          },
+          "xml_depth": {
+            "type": "integer",
+            "const": 64
+          },
+          "pdf_objects": {
+            "type": "integer",
+            "const": 4096
+          },
+          "tokens": {
+            "type": "integer",
+            "const": 200000
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "const": 3000
+          },
+          "encoded_response_bytes": {
+            "type": "integer",
+            "const": 1048576
+          }
+        },
+        "required": [
+          "input_bytes",
+          "expanded_bytes",
+          "member_bytes",
+          "output_bytes",
+          "chunks",
+          "pages",
+          "zip_entries",
+          "expansion_ratio",
+          "xml_depth",
+          "pdf_objects",
+          "tokens",
+          "timeout_ms",
+          "encoded_response_bytes"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "input_bytes": 8388608,
+            "expanded_bytes": 16777216,
+            "member_bytes": 4194304,
+            "output_bytes": 524288,
+            "chunks": 1000,
+            "pages": 200,
+            "zip_entries": 128,
+            "expansion_ratio": 100,
+            "xml_depth": 64,
+            "pdf_objects": 4096,
+            "tokens": 200000,
+            "timeout_ms": 3000,
+            "encoded_response_bytes": 1048576
+          }
+        ]
+      },
+      "DocumentCapabilities": {
+        "type": "object",
+        "properties": {
+          "parser_version": {
+            "type": "string",
+            "const": "bounded-text-v1"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TXT",
+                "MD",
+                "DOCX",
+                "PDF"
+              ]
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "limits": {
+            "$ref": "#/components/schemas/DocumentLimits"
+          },
+          "read_only": {
+            "type": "boolean",
+            "const": true
+          },
+          "ocr": {
+            "type": "boolean",
+            "const": false
+          },
+          "supported_subset": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "execution_ready": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "parser_version",
+          "formats",
+          "limits",
+          "read_only",
+          "ocr",
+          "supported_subset",
+          "execution_ready"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "parser_version": "bounded-text-v1",
+            "formats": [
+              "TXT",
+              "MD",
+              "DOCX",
+              "PDF"
+            ],
+            "limits": {
+              "input_bytes": 8388608,
+              "expanded_bytes": 16777216,
+              "member_bytes": 4194304,
+              "output_bytes": 524288,
+              "chunks": 1000,
+              "pages": 200,
+              "zip_entries": 128,
+              "expansion_ratio": 100,
+              "xml_depth": 64,
+              "pdf_objects": 4096,
+              "tokens": 200000,
+              "timeout_ms": 3000,
+              "encoded_response_bytes": 1048576
+            },
+            "read_only": true,
+            "ocr": false,
+            "supported_subset": [
+              "UTF8 literal text; ordinary WordprocessingML body; standard-font text PDF"
+            ],
+            "execution_ready": false
+          }
+        ]
+      },
+      "DocumentPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "expected_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "product_id",
+          "expected_sha256"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "product_id": "coffee",
+            "expected_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "DocumentChunk": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 524288
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "byte_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8388608
+          },
+          "byte_end": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8388608
+          },
+          "paragraph": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200000
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "location",
+          "text",
+          "sha256"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "location": "line:1",
+            "text": "Synthetic source\n",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "line": 1,
+            "byte_start": 0,
+            "byte_end": 17
+          }
+        ]
+      },
+      "DocumentMissing": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{0,79}$"
+          }
+        },
+        "required": [
+          "location",
+          "code"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "location": "page:1",
+            "code": "PDF_UNSUPPORTED_FONT"
+          }
+        ]
+      },
+      "DocumentExtractionReport": {
+        "type": "object",
+        "properties": {
+          "parser_version": {
+            "type": "string",
+            "const": "bounded-text-v1"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "TXT",
+              "MD",
+              "DOCX",
+              "PDF"
+            ]
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "$ref": "#/components/schemas/ExactUnsigned"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETE",
+              "PARTIAL",
+              "OCR_REQUIRED",
+              "UNSUPPORTED"
+            ]
+          },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentChunk"
+            },
+            "maxItems": 1000
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentMissing"
+            },
+            "maxItems": 1000
+          },
+          "ocr": {
+            "type": "boolean",
+            "const": false
+          },
+          "execution_ready": {
+            "type": "boolean",
+            "const": false
+          },
+          "adoptable": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "parser_version",
+          "format",
+          "source_sha256",
+          "size_bytes",
+          "status",
+          "chunks",
+          "missing",
+          "ocr",
+          "execution_ready",
+          "adoptable"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "parser_version": "bounded-text-v1",
+            "format": "TXT",
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": "17",
+            "status": "COMPLETE",
+            "chunks": [
+              {
+                "location": "line:1",
+                "text": "Synthetic source\n",
+                "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "line": 1,
+                "byte_start": 0,
+                "byte_end": 17
+              }
+            ],
+            "missing": [],
+            "ocr": false,
+            "execution_ready": false,
+            "adoptable": false
+          }
+        ]
+      },
+      "DocumentPreview": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/FileRecord"
+          },
+          "report": {
+            "$ref": "#/components/schemas/DocumentExtractionReport"
+          }
+        },
+        "required": [
+          "asset",
+          "report"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "asset": {
+              "scope": {
+                "tenant_id": "demo-local",
+                "product_id": "coffee"
+              },
+              "asset_id": "synthetic-source",
+              "owner_subject_id": "synthetic-owner",
+              "state": "READY",
+              "name": "synthetic.txt",
+              "purpose": "KNOWLEDGE",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "media_type": "text/plain",
+              "size_bytes": "17",
+              "rights": {
+                "origin_kind": "SYNTHETIC",
+                "source_label": "Synthetic source",
+                "license": "Apache-2.0",
+                "allowed_uses": []
+              },
+              "audience_policy": "PRODUCT_EDITORS",
+              "created_at": "2026-10-30T00:00:00Z"
+            },
+            "report": {
+              "parser_version": "bounded-text-v1",
+              "format": "TXT",
+              "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": "17",
+              "status": "COMPLETE",
+              "chunks": [
+                {
+                  "location": "line:1",
+                  "text": "Synthetic source\n",
+                  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "line": 1,
+                  "byte_start": 0,
+                  "byte_end": 17
+                }
+              ],
+              "missing": [],
+              "ocr": false,
+              "execution_ready": false,
+              "adoptable": false
+            }
           }
         ]
       }

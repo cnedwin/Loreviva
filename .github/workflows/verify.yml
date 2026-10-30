@@ -32,6 +32,8 @@ jobs:
       - run: pnpm check:studio
       - run: go build ./...
       - run: go vet ./internal/...
+      # These preview guards are pure and deliberately select no database tests.
+      - run: go test -count=1 ./internal/content ./internal/store/mysql -run '^TestPackagePreview'
       # Unit packages must not need a database; anything that does belongs in the
       # integration suite, which runs against a disposable MySQL outside CI.
       # Temp files must live on a path whose real and lexical forms agree: the

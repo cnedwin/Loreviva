@@ -54,6 +54,7 @@ func lockBytes(k LockKey) []byte {
 	}
 	return b
 }
+
 // Freeze one validated, sorted and deduplicated lock plan before the transaction; length-prefixed identity bytes are not the ordering relation.
 func PlanLocks(input []LockKey) ([]LockKey, error) {
 	p := make([]LockKey, len(input))
@@ -93,7 +94,13 @@ func marker(ctx context.Context, tx *sql.Tx, k LockKey) error {
 }
 
 type unit struct {
- integrationMemoryBirth *integrationMemoryBirthPlan
+	packageImportInspection *packageImportInspection
+	packageApprovalCheck    *packageApprovalCheck
+	packageExportInspection *packageExportInspection
+	packageTransferRead     bool
+	contentAction           string
+	packagePreviewRead      bool
+	integrationMemoryBirth  *integrationMemoryBirthPlan
 	integrationDelivery     *integrationDeliveryPlan
 	contentWithdrawal       *contentWithdrawalPlan
 	integrationControl      *integrationControlPlan
@@ -137,7 +144,7 @@ type unit struct {
 }
 
 func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
-	if u.rehearsalReportRead || u.rehearsalHistory != nil {
+	if u.packageTransferRead || u.packagePreviewRead || u.rehearsalReportRead || u.rehearsalHistory != nil {
 		u.err = ErrDenied
 		return nil, u.err
 	}
@@ -183,7 +190,7 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 		rank, kind = 90, "content_release"
 	case "assets", "file_staging", "memory_asset_lineage":
 		rank, kind = 90, "asset"
-	case "content_checks", "admin_results", "seed_receipts":
+	case "content_checks", "admin_results", "seed_receipts", "content_package_imports", "content_package_import_lineage", "content_package_adoptions", "content_package_exports":
 		rank, kind = 90, "content_check"
 	case "inbox":
 		rank = 100
@@ -195,7 +202,9 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 		return nil, u.err
 	}
 	res, e := u.tx.ExecContext(ctx, q, args...)
- if e==nil{e=u.recordIntegrationBirthSave(table)}
+	if e == nil {
+		e = u.recordIntegrationBirthSave(table)
+	}
 	if e != nil {
 		u.err = e
 	}
@@ -203,9 +212,9 @@ func (u *unit) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 }
 
 type trackedRow struct {
- query string
-	row *sql.Row
-	u   *unit
+	query string
+	row   *sql.Row
+	u     *unit
 }
 type failureRow struct{ err error }
 
@@ -213,7 +222,9 @@ func (r failureRow) Scan(...any) error { return r.err }
 
 func (r trackedRow) Scan(args ...any) error {
 	e := r.row.Scan(args...)
- if e==nil {e=r.u.observeIntegrationBirthUTC(r.query,args)}
+	if e == nil {
+		e = r.u.observeIntegrationBirthUTC(r.query, args)
+	}
 	if e != nil && !errors.Is(e, sql.ErrNoRows) {
 		r.u.err = e
 	}
@@ -229,7 +240,7 @@ func (u *unit) QueryRowContext(ctx context.Context, q string, args ...any) Row {
 		u.err = ErrReplan
 		return failureRow{u.err}
 	}
-	return trackedRow{row: u.tx.QueryRowContext(ctx, q, args...), u: u,query:normal}
+	return trackedRow{row: u.tx.QueryRowContext(ctx, q, args...), u: u, query: normal}
 }
 func (u *unit) RequireLock(k LockKey) error {
 	if !u.plan[string(lockBytes(k))] {
